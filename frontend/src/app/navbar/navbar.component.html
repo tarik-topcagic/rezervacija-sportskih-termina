@@ -1,0 +1,53 @@
+  <nav class="navbar navbar-expand-lg bg-primary" data-bs-theme="dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#" style="font-weight: bold;">Rezervacija sportskih termina</a>
+    
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01"
+        aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    
+      <div class="collapse navbar-collapse" id="navbarColor01">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">Početna</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Sport</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Kalendar</a>
+          </li>
+        </ul>
+    
+        <div class="ms-auto text-white" style="font-weight: 500;" *ngIf="username">
+          <div class="dropdown d-none d-lg-block">
+            <span class="nav-link dropdown-toggle" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Dobrodošli, {{ username }}
+            </span>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li><a class="dropdown-item" href="#">Profil</a></li>
+              <li><a class="dropdown-item" href="#">Postavke</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" (click)="logout()" style="cursor: pointer;">Odjava</a></li>
+            </ul>
+          </div>   
+
+          <div class="d-lg-none">
+            <span class="nav-link" role="button" (click)="toggleDropdown()">
+              Dobrodošli, {{ username }} <i class="bi bi-caret-down-fill"></i>
+            </span>
+            <ul class="list-group mt-2" [ngClass]="{'d-block': isDropdownOpen, 'd-none': !isDropdownOpen}">
+              <li class="list-group-item"><a class="nav-link" href="#">Profil</a></li>
+              <li class="list-group-item"><a class="nav-link" href="#">Postavke</a></li>
+              <li class="list-group-item"><a class="nav-link" (click)="logout()" style="cursor: pointer;">Odjava</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+  
+  
+
+
