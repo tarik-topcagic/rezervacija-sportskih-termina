@@ -26,7 +26,7 @@
               Dobrodošli, {{ username }}
             </span>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-              <li><a class="dropdown-item" href="#">Profil</a></li>
+              <li><a class="dropdown-item" routerLink="/moj-profil">Profil</a></li>
               <li><a class="dropdown-item" href="#">Postavke</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" (click)="logout()" style="cursor: pointer;">Odjava</a></li>
@@ -38,7 +38,7 @@
               Dobrodošli, {{ username }} <i class="bi bi-caret-down-fill"></i>
             </span>
             <ul class="list-group mt-2" [ngClass]="{'d-block': isDropdownOpen, 'd-none': !isDropdownOpen}">
-              <li class="list-group-item"><a class="nav-link" href="#">Profil</a></li>
+              <li class="list-group-item"><a class="nav-link" routerLink="/moj-profil">Profil</a></li>
               <li class="list-group-item"><a class="nav-link" href="#">Postavke</a></li>
               <li class="list-group-item"><a class="nav-link" (click)="logout()" style="cursor: pointer;">Odjava</a></li>
             </ul>
