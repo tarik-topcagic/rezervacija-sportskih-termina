@@ -39,5 +39,28 @@ namespace SportskiTerminiAPI.Controllers
 
             return Ok(profileDto);
         }
+
+        [HttpPut("update-user")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto updateProfileDto)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null)
+                return Unauthorized();
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound();
+
+            user.FullName = updateProfileDto.FullName;
+            user.ProfilePictureUrl = updateProfileDto.ProfilePictureUrl;
+            user.PhoneNumber = updateProfileDto.PhoneNumber;
+            user.Location = updateProfileDto.Location;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
+            return Ok(result);
+        }
     }
 }
