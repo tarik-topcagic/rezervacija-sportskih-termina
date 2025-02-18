@@ -2,11 +2,14 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SportskiTerminiAPI.Data;
+using SportskiTerminiAPI.Helpers;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
+using SportskiTerminiAPI.Repositories;
 using SportskiTerminiAPI.Services;
 using System.Text;
 
@@ -54,7 +57,13 @@ namespace SportskiTerminiAPI
                         },
                         new string[] {}
                     }
-                }); 
+                });
+
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "SportskiTerminiAPI", Version = "v1" });
+                c.MapType<IFormFile>(() => new OpenApiSchema { Type = "string", Format = "binary" });
+
+                // Ispravno mapiranje IFormFile za Swagger
+                c.OperationFilter<FileUploadOperationFilter>();
             });
 
             builder.Services.AddDbContext<ApplicationDBContext>(options => 
@@ -89,6 +98,8 @@ namespace SportskiTerminiAPI
             });
 
             builder.Services.AddScoped<ITokenService, TokenService>();
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IGradRepository, GradRepository>();
 
             var app = builder.Build();
 
@@ -103,6 +114,7 @@ namespace SportskiTerminiAPI
             }
 
             app.UseHttpsRedirection();
+            app.UseStaticFiles(); 
 
             app.UseAuthentication();
             app.UseAuthorization();

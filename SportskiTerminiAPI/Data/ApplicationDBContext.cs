@@ -11,5 +11,6 @@ namespace SportskiTerminiAPI.Data
             
 
         }
+        public DbSet<Grad> Gradovi { get; set; } 
     }
 }

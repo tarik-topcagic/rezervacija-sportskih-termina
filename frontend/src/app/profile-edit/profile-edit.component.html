@@ -1,1 +1,150 @@
-<p>profile-edit works!</p>
+<app-navbar></app-navbar>
+<div class="container mt-4">
+  <div class="card mx-auto shadow-sm" style="max-width: 600px">
+    <div class="card-body">
+      <h3 class="card-title text-center mb-4">Uredi profil</h3>
+
+      <form [formGroup]="editForm" (ngSubmit)="onSubmit()">
+        <div class="mb-3 text-center">
+          <label for="profilePicture" class="form-label">Profilna slika</label>
+          <div class="mb-2">
+            <ng-container *ngIf="!previewUrl; else imgPreview">
+              <div
+                class="rounded-circle bg-light d-flex align-items-center justify-content-center"
+                style="
+                  width: 150px;
+                  height: 150px;
+                  border: 2px dashed #ccc;
+                  cursor: pointer;
+                  margin: 0 auto;
+                "
+              >
+                <i class="bi bi-camera" style="font-size: 2rem"></i>
+              </div>
+            </ng-container>
+
+            <ng-template #imgPreview>
+              <div class="position-relative">
+                <img
+                  [src]="previewUrl"
+                  alt="Profilna slika"
+                  class="rounded-circle"
+                  style="width: 150px; height: 150px; object-fit: cover"
+                  (error)="handleImageError()"
+                />
+                <button
+                  type="button"
+                  class="btn btn-sm position-absolute top-0 end-0 mt-1 me-1"
+                  style="background-color: #e4e4e4"
+                  (click)="removeProfilePicture()"
+                  title="Ukloni profilnu sliku"
+                >
+                  <i class="bi bi-trash" style="color: #585858"></i>
+                </button>
+              </div>
+            </ng-template>
+          </div>
+
+          <input
+            type="file"
+            id="profilePicture"
+            (change)="onFileSelected($event)"
+            class="form-control"
+          />
+          <div *ngIf="fileError" class="text-danger mt-2">{{ fileError }}</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="fullName" class="form-label">Ime i prezime</label>
+          <input
+            type="text"
+            id="fullName"
+            formControlName="fullName"
+            class="form-control"
+            placeholder="Unesite ime i prezime"
+          />
+          <div
+            *ngIf="
+              editForm.get('fullName')?.invalid &&
+              editForm.get('fullName')?.touched
+            "
+            class="text-danger"
+          >
+            Obavezno polje.
+          </div>
+        </div>
+
+        <div class="mb-3 position-relative">
+          <label for="location" class="form-label">Lokacija</label>
+          <input
+            type="text"
+            id="location"
+            formControlName="location"
+            class="form-control"
+            placeholder="Unesite grad"
+            (focus)="showDropdown = true"
+          />
+
+          <ul
+            *ngIf="showDropdown && (filteredCities$ | async)?.length"
+            class="list-group position-absolute w-100"
+            style="z-index: 1000"
+          >
+            <li
+              class="list-group-item list-group-item-action"
+              *ngFor="let city of filteredCities$ | async"
+              (click)="selectCity(city)"
+            >
+              {{ city.naziv }}, {{ city.kanton }}
+            </li>
+          </ul>
+
+          <div
+            *ngIf="
+              editForm.get('location')?.invalid &&
+              editForm.get('location')?.touched
+            "
+            class="text-danger"
+          >
+            Obavezno polje.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="phoneNumber" class="form-label">Broj telefona</label>
+          <input
+            type="text"
+            id="phoneNumber"
+            formControlName="phoneNumber"
+            class="form-control"
+            placeholder="+387XXXXXXXX"
+          />
+          <div
+            *ngIf="
+              editForm.get('phoneNumber')?.errors &&
+              editForm.get('phoneNumber')?.touched
+            "
+            class="text-danger"
+          >
+            <div *ngIf="editForm.get('phoneNumber')?.errors?.['required']">
+              Obavezno polje.
+            </div>
+            <div *ngIf="editForm.get('phoneNumber')?.errors?.['pattern']">
+              Pogrešan format broja.
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <button
+            type="submit"
+            class="btn btn-primary mb-2"
+            [disabled]="editForm.pristine || editForm.invalid"
+          >
+            Spremi promjene
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

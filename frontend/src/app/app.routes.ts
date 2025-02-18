@@ -6,6 +6,7 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { AuthGuard } from './guards/auth.guard';
 import { ProfileComponent } from './profile/profile.component';
 import { ProfileEditComponent } from './profile-edit/profile-edit.component';
+import { PendingChangesGuard } from './guards/pending-changes.guard';
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
@@ -13,6 +14,6 @@ export const routes: Routes = [
     { path: 'prijava', component: LoginComponent },
     { path: 'pocetna', component: DashboardComponent, canActivate: [AuthGuard] },
     { path: 'moj-profil', component: ProfileComponent, canActivate: [AuthGuard] },
-    { path: 'postavke-profila', component: ProfileEditComponent, canActivate: [AuthGuard] },
+    { path: 'postavke-profila', component: ProfileEditComponent, canActivate: [AuthGuard], canDeactivate: [PendingChangesGuard] },
     { path: '**', redirectTo: '' }
 ];

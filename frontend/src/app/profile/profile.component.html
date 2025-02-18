@@ -1,54 +1,66 @@
 <app-navbar></app-navbar>
 <div *ngIf="userProfile; else loading" class="container mt-4">
-  <div class="card mx-auto shadow-sm" style="max-width: 500px; position: relative; padding-bottom: 60px;">
+  <div
+    class="card mx-auto shadow-sm"
+    style="max-width: 500px; position: relative; padding-bottom: 20px"
+  >
     <div class="card-body text-center">
-      <div class="rounded-circle mb-3 mx-auto" 
-           style="width: 150px; height: 150px; background-color: #e9ecef; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+      <div
+        class="rounded-circle mb-3 mx-auto"
+        style="
+          width: 150px;
+          height: 150px;
+          background-color: #e9ecef;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        "
+      >
         <ng-container *ngIf="userProfile.profilePictureUrl; else defaultImage">
-          <img [src]="userProfile.profilePictureUrl" 
-               alt="Profile Picture" 
-               style="width: 100%; height: 100%; object-fit: cover;">
+          <img
+            [src]="userProfile.profilePictureUrl + '?t=' + timestamp"
+            (error)="handleImageError()"
+            alt="Profile Picture"
+            style="width: 100%; height: 100%; object-fit: cover"
+          />
         </ng-container>
         <ng-template #defaultImage>
           <div class="d-flex flex-column align-items-center">
-            <i class="bi bi-camera" style="font-size: 2rem;"></i>
+            <i class="bi bi-camera"></i>
             <span>Profilna slika</span>
           </div>
         </ng-template>
       </div>
-      <h2 class="fw-bold">{{ userProfile.username }}</h2>  
+
+      <h2 class="fw-bold">{{ userProfile.username }}</h2>
       <p class="h5 text-secondary mb-3">
         {{ userProfile.fullName }}
       </p>
-      <hr>
+      <hr />
       <p class="mb-3">
         <i class="bi bi-geo-alt-fill me-2"></i>
-        {{ userProfile.location ? userProfile.location : 'Nije postavljena' }}
-      </p>  
+        {{ userProfile.location ? userProfile.location : "Nije postavljena" }}
+      </p>
       <p class="mb-3">
         <i class="bi bi-telephone-fill me-2"></i>
-        {{ userProfile.phoneNumber ? userProfile.phoneNumber : 'N/A' }}
+        {{ userProfile.phoneNumber ? userProfile.phoneNumber : "N/A" }}
       </p>
     </div>
-    <button 
-      type="button" 
-      class="btn btn-primary position-absolute end-0 m-3"
-      routerLink="/postavke-profila"
-      style="bottom: 10px;">
-      <i class="bi bi-pencil me-1"></i> Uredi
-    </button>
+    <div class="text-center">
+      <button
+        type="button"
+        class="btn btn-primary"
+        routerLink="/postavke-profila"
+      >
+        <i class="bi bi-pencil me-1"></i> Uredi
+      </button>
+    </div>
   </div>
 </div>
 
 <ng-template #loading>
   <div class="container mt-4">
-    <div class="alert alert-info" role="alert">
-      Učitavanje profila...
-    </div>
+    <div class="alert alert-info" role="alert">Učitavanje profila...</div>
   </div>
 </ng-template>
-
-
-
-
-  
