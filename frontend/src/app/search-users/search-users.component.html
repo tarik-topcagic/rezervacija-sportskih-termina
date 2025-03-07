@@ -1,0 +1,68 @@
+<app-navbar></app-navbar>
+<div class="container mt-4">
+  <div class="row mb-5 justify-content-center">
+    <div class="col-md-8">
+      <h2 class="text-center mb-4">Pretraga korisnika</h2>
+      <div class="input-group">
+        <input 
+          type="text" 
+          [(ngModel)]="searchQuery" 
+          class="form-control" 
+          placeholder="Unesite ime ili korisničko ime">
+        <button class="btn btn-primary" (click)="searchUsers()">Pretraži</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="row row-cols-2 row-cols-md-6 g-4">
+        <div class="col" *ngFor="let user of pagedUsers">
+          <div class="card h-100 border-0 modern-card">
+            <div class="card-body text-center">
+              <ng-container *ngIf="user.profilePictureUrl && user.profilePictureUrl !== 'default-profile.png'; else placeholder">
+                <img [src]="user.profilePictureUrl" 
+                     alt="User Avatar" 
+                     class="rounded-circle mb-3" 
+                     style="width: 150px; height: 150px; object-fit: cover;">
+              </ng-container>
+              <ng-template #placeholder>
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mb-3 mx-auto"
+                     style="width: 150px; height: 150px;">
+                  <i class="bi bi-person" style="font-size: 2rem; color: #aaa;"></i>
+                </div>
+              </ng-template>
+              <h6 class="mb-1">{{ user.fullName }}</h6>
+              <small class="text-muted">{{ user.location }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col d-flex justify-content-center">
+      <nav aria-label="User pagination">
+        <ul class="pagination flex-nowrap">
+          <li class="page-item" [class.disabled]="currentPage === 1">
+            <a class="page-link" (click)="previousPage($event)">Prethodna</a>
+          </li>
+          <li 
+            class="page-item" 
+            *ngFor="let page of totalPagesArray" 
+            [class.active]="page === currentPage">
+            <a class="page-link" (click)="goToPage(page, $event)">{{ page }}</a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === totalPages">
+            <a class="page-link" (click)="nextPage($event)">Sljedeća</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+
+

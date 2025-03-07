@@ -62,7 +62,6 @@ namespace SportskiTerminiAPI
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "SportskiTerminiAPI", Version = "v1" });
                 c.MapType<IFormFile>(() => new OpenApiSchema { Type = "string", Format = "binary" });
 
-                // Ispravno mapiranje IFormFile za Swagger
                 c.OperationFilter<FileUploadOperationFilter>();
             });
 

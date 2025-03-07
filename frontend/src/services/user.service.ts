@@ -15,13 +15,11 @@ export class UserService {
   constructor(private http: HttpClient) {}
 
   getMyProfile(): Observable<User> {
-    // return this.http.get<User>(`${this.apiUrl}/my-profile`);
     return this.profileRefresh.pipe(
       switchMap(() => this.http.get<User>(`${this.apiUrl}/my-profile`)),
     );
   }
 
-  // Dodajte metodu za osvježavanje
   refreshProfile(): void {
     this.profileRefresh.next();
   }
@@ -36,5 +34,13 @@ export class UserService {
 
   deleteProfilePicture(): Observable<any> {
     return this.http.delete('api/user/delete-profile-picture');
+  }
+
+  searchUsers(query: string = ''): Observable<any[]> {
+    let url = `${this.apiUrl}/get-users`;
+    if (query.trim()) {
+      url += `?query=${encodeURIComponent(query.trim())}`;
+    }
+    return this.http.get<any[]>(url);
   }
 }

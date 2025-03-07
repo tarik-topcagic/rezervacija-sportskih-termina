@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
@@ -10,7 +10,7 @@ import { Router, RouterLink } from '@angular/router';
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit, OnDestroy {
   registerModel = {
     fullName: '',
     email: '',
@@ -25,6 +25,10 @@ export class RegisterComponent {
   usernameSpaceError = false;
 
   constructor(private authService: AuthService, private router: Router) {}
+  
+  ngOnInit(): void {
+    document.body.classList.add('register-page');
+  }
 
   validateUsername(): void {
     this.usernameSpaceError = false;
@@ -82,6 +86,10 @@ export class RegisterComponent {
 
   togglePasswordVisibility() {
     this.passwordVisible = !this.passwordVisible;
+  }
+
+  ngOnDestroy(): void {
+    document.body.classList.remove('register-page');
   }
 }
 

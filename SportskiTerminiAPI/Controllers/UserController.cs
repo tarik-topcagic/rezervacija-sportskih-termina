@@ -65,6 +65,40 @@ namespace SportskiTerminiAPI.Controllers
             return Ok(result);
         }
 
+        [HttpGet("get-users")]
+        public async Task<IActionResult> SearchUsers([FromQuery] string? query)
+        {
+            var currentUserId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                var allUsers = await _userRepository.GetAllUsersAsync();
+                var filteredUsers = allUsers.Where(u => u.Id != currentUserId).ToList();
+
+                var allUserDtos = filteredUsers.Select(user => new UserProfileDto
+                {
+                    FullName = user.FullName,
+                    Username = user.UserName,
+                    ProfilePictureUrl = user.ProfilePictureUrl,
+                    Location = user.Location
+                });
+
+                return Ok(allUserDtos);
+            }
+
+            var users = await _userRepository.SearchUsersAsync(query);
+            var filteredSearchUsers = users.Where(users => users.Id != currentUserId).ToList();
+            var userDtos = filteredSearchUsers.Select(user => new UserProfileDto
+            {
+                FullName = user.FullName,
+                Username = user.UserName,
+                ProfilePictureUrl = user.ProfilePictureUrl,
+                Location = user.Location
+            });
+
+            return Ok(userDtos);
+        }
+
         [HttpPost("upload-profile-picture")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadProfilePicture([FromForm] UpdateProfilePictureDto updateProfilePictureDto)

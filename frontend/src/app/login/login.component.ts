@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit, OnDestroy {
   loginModel = {
     username: '',
     password: ''
@@ -19,6 +19,9 @@ export class LoginComponent {
   passwordVisible: boolean = false;
 
   constructor(private authService: AuthService, private router: Router) {}
+  ngOnInit(): void {
+    document.body.classList.add('login-page');
+  }
 
   login() {
     this.authService.login(this.loginModel).subscribe(
@@ -35,6 +38,10 @@ export class LoginComponent {
 
   togglePasswordVisibility() {
     this.passwordVisible = !this.passwordVisible; 
+  }
+
+  ngOnDestroy(): void {
+    document.body.classList.remove('login-page');
   }
 }
 
