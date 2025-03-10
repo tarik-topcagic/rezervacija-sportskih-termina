@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { NavbarComponent } from "../navbar/navbar.component";
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../services/user.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-search-users',
@@ -18,7 +19,7 @@ export class SearchUsersComponent {
   itemsPerPage: number = 6;
   totalPages: number = 0;
 
-  constructor(private userService: UserService) {
+  constructor(private userService: UserService, private router: Router) {
     this.loadAllUsers();
   }
 
@@ -71,5 +72,14 @@ export class SearchUsersComponent {
 
   get totalPagesArray(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  goToProfile(user: any): void {
+    this.router.navigate(['/korisnicki-profil', user.username]);
+  }
+
+  viewProfile(event: Event, user: any): void {
+    event.stopPropagation(); 
+    this.goToProfile(user);
   }
 }
