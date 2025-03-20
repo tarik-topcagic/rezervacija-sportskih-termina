@@ -31,7 +31,11 @@ namespace SportskiTerminiAPI
                                     .AllowCredentials());
             });
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+                });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
@@ -99,6 +103,7 @@ namespace SportskiTerminiAPI
             builder.Services.AddScoped<ITokenService, TokenService>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IGradRepository, GradRepository>();
+            builder.Services.AddScoped<IGroupRepository, GroupRepository>();
 
             var app = builder.Build();
 
