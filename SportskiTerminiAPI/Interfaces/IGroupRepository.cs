@@ -1,4 +1,5 @@
-﻿using SportskiTerminiAPI.Models;
+﻿using SportskiTerminiAPI.DTOs;
+using SportskiTerminiAPI.Models;
 
 namespace SportskiTerminiAPI.Interfaces
 {
@@ -14,5 +15,8 @@ namespace SportskiTerminiAPI.Interfaces
         Task<IEnumerable<GroupMembership>> GetMembershipsForGroupAsync(int groupId);
         Task RemoveMembershipAsync(int membershipId);
         Task UpdateMembershipAsync(GroupMembership membership);
+        Task<IEnumerable<Group>> GetMemberGroupsAsync(string userId);
+        Task<IEnumerable<GroupDto>> SearchGroupsAsync(string query, string userId);
+        Task<IEnumerable<GroupDto>> GetPublicGroupsAsync(string userId);
     }
 }

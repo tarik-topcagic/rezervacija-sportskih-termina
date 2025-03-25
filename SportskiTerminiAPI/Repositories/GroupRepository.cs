@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SportskiTerminiAPI.Data;
+using SportskiTerminiAPI.DTOs;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
 
@@ -43,7 +44,17 @@ namespace SportskiTerminiAPI.Repositories
 
         public async Task<IEnumerable<Group>> GetGroupsByAdminAsync(string adminId)
         {
-            return await _context.Groups.Where(g => g.AdminId == adminId).ToListAsync();
+            return await _context.Groups
+                .Include(g => g.Memberships)
+                .Where(g => g.AdminId == adminId).ToListAsync();
+        }
+
+        public async Task<IEnumerable<Group>> GetMemberGroupsAsync(string userId)
+        {
+            return await _context.Groups
+                .Include(g => g.Memberships)
+                .Where(g => g.Memberships.Any(m => m.UserId == userId && m.Status == MembershipStatus.Accepted) && g.AdminId != userId)
+                .ToListAsync();
         }
 
         public async Task<GroupMembership?> GetMembershipByIdAsync(int membershipId)
@@ -59,6 +70,27 @@ namespace SportskiTerminiAPI.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<GroupDto>> GetPublicGroupsAsync(string userId)
+        {
+            //return await _context.Groups
+            //    .Where(g => g.AdminId != userId && !g.Memberships.Any(m => m.UserId == userId))
+            //    .ToListAsync();
+
+            return await _context.Groups
+                .Include(g => g.Memberships)
+                .Where(g => g.AdminId != userId && !g.Memberships.Any(m => m.UserId == userId))
+                .Select(g => new GroupDto
+                {
+                    Id = g.Id,
+                    Name = g.Name,
+                    Description = g.Description,
+                    AdminId = g.AdminId,
+                    ImageUrl = g.ImageUrl,
+                    MembersCount = g.Memberships.Count()
+                })
+                .ToListAsync();
+        }
+
         public async Task RemoveMembershipAsync(int membershipId)
         {
             var membership = await _context.GroupMemberships.FindAsync(membershipId);
@@ -67,6 +99,26 @@ namespace SportskiTerminiAPI.Repositories
                 _context.GroupMemberships.Remove(membership);
                 await _context.SaveChangesAsync();  
             }
+        }
+
+        public async Task<IEnumerable<GroupDto>> SearchGroupsAsync(string query, string userId)
+        {
+            //return await _context.Groups
+            //    .Where(g => g.Name.Contains(query) || g.Description.Contains(query))
+            //    .ToListAsync();
+            return await _context.Groups
+                .Include(g => g.Memberships)
+                .Where(g => (g.Name.Contains(query) || g.Description.Contains(query)))
+                .Select(g => new GroupDto
+                {
+                    Id = g.Id,
+                    Name = g.Name,
+                    Description = g.Description,
+                    AdminId = g.AdminId,
+                    ImageUrl = g.ImageUrl,
+                    MembersCount = g.Memberships.Count()
+                })
+                .ToListAsync();
         }
 
         public async Task<Group> UpdateGroupAsync(Group group)

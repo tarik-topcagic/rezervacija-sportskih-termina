@@ -66,7 +66,6 @@ namespace SportskiTerminiAPI.Controllers
             return Ok(updatedGroup);
         }
 
-
         [HttpPost("{groupId}/join-request")]
         public async Task <IActionResult> RequestToJoin(int groupId)
         {
@@ -197,6 +196,69 @@ namespace SportskiTerminiAPI.Controllers
                 await _groupRepository.RemoveMembershipAsync(membership.Id);
                 return Ok(new { message = "Join request rejected and membership removed" });
             }
+        }
+
+        [HttpGet("admin")]
+        public async Task<IActionResult> GetMyGroups()
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var groups = await _groupRepository.GetGroupsByAdminAsync(userId);
+            var groupDtos = groups.Select(g => new GroupDto
+            {
+                Id = g.Id,
+                Name = g.Name,
+                Description = g.Description,
+                AdminId = g.AdminId,
+                ImageUrl = g.ImageUrl,
+                MembersCount = g.Memberships?.Count ?? 0
+            });
+
+            return Ok(groupDtos);
+        }
+
+        [HttpGet("membership")]
+        public async Task<IActionResult> GetMemberGroups()
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var groups = await _groupRepository.GetMemberGroupsAsync(userId);
+            var groupDtos = groups.Select(g => new GroupDto
+            {
+                Id = g.Id,
+                Name = g.Name,
+                Description = g.Description,
+                AdminId = g.AdminId,
+                ImageUrl = g.ImageUrl,
+                MembersCount = g.Memberships?.Count ?? 0
+            });
+
+            return Ok(groupDtos);
+        }
+
+        [HttpGet("search-groups")]
+        public async Task<IActionResult> SearchGroups([FromQuery] string? query)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            IEnumerable<GroupDto> groups;
+
+            if(string.IsNullOrWhiteSpace(query))
+            {
+                groups = await _groupRepository.GetPublicGroupsAsync(userId);
+            }
+            else
+            {
+                groups = await _groupRepository.SearchGroupsAsync(query, userId);
+            }
+
+            return Ok(groups);
         }
 
         [HttpPost("{groupId}/upload-group-picture")]

@@ -9,6 +9,7 @@ import { ProfileEditComponent } from './profile-edit/profile-edit.component';
 import { PendingChangesGuard } from './guards/pending-changes.guard';
 import { SearchUsersComponent } from './search-users/search-users.component';
 import { UserProfileComponent } from './user-profile/user-profile.component';
+import { SearchGroupsComponent } from './search-groups/search-groups.component';
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
@@ -19,5 +20,6 @@ export const routes: Routes = [
     { path: 'postavke-profila', component: ProfileEditComponent, canActivate: [AuthGuard], canDeactivate: [PendingChangesGuard] },
     { path: 'pretraga-korisnika', component: SearchUsersComponent, canActivate: [AuthGuard] },
     { path: 'korisnicki-profil/:username', component: UserProfileComponent, canActivate: [AuthGuard] },
+    { path: 'grupe', component: SearchGroupsComponent, canActivate: [AuthGuard] },
     { path: '**', redirectTo: '' }
 ];
