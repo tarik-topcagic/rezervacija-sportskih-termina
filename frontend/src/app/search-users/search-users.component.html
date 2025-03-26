@@ -33,15 +33,25 @@
                 </ng-template>
                 <div class="overlay">
                   <div class="overlay-icons">
-                    <div class="icon-square" title="Pogledaj profil" (click)="viewProfile($event, user)">
-                      <i class="bi bi-eye"></i>
-                    </div>
-                    <div class="icon-square" title="Dodaj u grupu">
-                      <i class="bi bi-people"></i>
-                    </div>
-                    <div class="icon-square" title="Pošalji poruku">
-                      <i class="bi bi-chat-dots"></i>
-                    </div>
+                    <ng-container *ngIf="user.username === currentUsername; else otherUserIcons">
+                      <div class="icon-square" title="Pogledaj profil" (click)="viewProfile($event, user)">
+                        <i class="bi bi-eye"></i>
+                      </div>
+                      <div class="icon-square" title="Uredi" (click)="editProfile($event, user)">
+                        <i class="bi bi-pencil"></i>
+                      </div>
+                    </ng-container>
+                    <ng-template #otherUserIcons>
+                      <div class="icon-square" title="Pogledaj profil" (click)="viewProfile($event, user)">
+                        <i class="bi bi-eye"></i>
+                      </div>
+                      <div class="icon-square" title="Dodaj u grupu">
+                        <i class="bi bi-people"></i>
+                      </div>
+                      <div class="icon-square" title="Pošalji poruku">
+                        <i class="bi bi-chat-dots"></i>
+                      </div>
+                    </ng-template>
                   </div>
                 </div>
               </div>

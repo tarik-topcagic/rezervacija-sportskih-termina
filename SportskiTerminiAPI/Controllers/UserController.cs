@@ -87,7 +87,11 @@ namespace SportskiTerminiAPI.Controllers
             }
 
             var users = await _userRepository.SearchUsersAsync(query);
-            var filteredSearchUsers = users.Where(users => users.Id != currentUserId).ToList();
+            var filteredSearchUsers = users.Where(user => user.Id != currentUserId || 
+                (user.Id == currentUserId && ((user.UserName != null && user.UserName.ToLower().Contains(query)) ||
+                (user.FullName != null && user.FullName.ToLower().Contains(query))))
+                ).ToList();
+
             var userDtos = filteredSearchUsers.Select(user => new UserProfileDto
             {
                 FullName = user.FullName,

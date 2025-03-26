@@ -4,6 +4,7 @@ import { NavbarComponent } from "../navbar/navbar.component";
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../services/user.service';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-search-users',
@@ -14,12 +15,19 @@ import { Router } from '@angular/router';
 export class SearchUsersComponent {
   searchQuery: string = '';
   users: any[] = [];
+  currentUsername: string = '';
+
   pagedUsers: any[] = [];
   currentPage: number = 1;
   itemsPerPage: number = 6;
   totalPages: number = 0;
 
-  constructor(private userService: UserService, private router: Router) {
+  constructor(private userService: UserService, private router: Router, private authService: AuthService) {
+    const currentUser = this.authService.currentUserValue;
+    if (currentUser) {
+      this.currentUsername = currentUser.username;
+    }
+
     this.loadAllUsers();
   }
 
@@ -80,6 +88,17 @@ export class SearchUsersComponent {
 
   viewProfile(event: Event, user: any): void {
     event.stopPropagation(); 
-    this.goToProfile(user);
+    if (user.username === this.currentUsername) {
+      this.router.navigate(['/moj-profil']);
+    } else {
+      this.goToProfile(user);
+    }
+  }
+
+  editProfile(event: Event, user: any): void {
+    event.stopPropagation();
+    if (user.username === this.currentUsername) {
+      this.router.navigate(['/postavke-profila']);
+    }
   }
 }
