@@ -3,12 +3,14 @@ import { Group } from '../interfaces/group.model';
 import { GroupService } from '../../services/group.service';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { FormsModule } from '@angular/forms';
-import { NgFor, NgIf } from '@angular/common';
+import { NgClass, NgFor, NgIf } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { CreateGroupModalComponent } from '../create-group-modal/create-group-modal.component';
+import { EditGroupModalComponent } from '../edit-group-modal/edit-group-modal.component';
 
 @Component({
   selector: 'app-search-groups',
-  imports: [NgIf, NgFor, NavbarComponent, FormsModule],
+  imports: [NgIf, NgFor, NgClass, NavbarComponent, FormsModule, CreateGroupModalComponent, EditGroupModalComponent],
   templateUrl: './search-groups.component.html',
   styleUrl: './search-groups.component.scss'
 })
@@ -18,6 +20,8 @@ export class SearchGroupsComponent{
   myGroups: Group[] = [];
   memberGroups: Group[] = [];
   showCreateGroupModal: boolean = false;
+  showEditGroupModal: boolean = false;
+  selectedGroupToEdit: Group | null = null;
 
   currentPage: number = 1;
   pageSize: number = 6;
@@ -102,6 +106,29 @@ export class SearchGroupsComponent{
   closeCreateGroupModal(): void {
     this.showCreateGroupModal = false;
     this.getMyGroups();
+  }
+
+  onGroupCreated(newGroup: Group): void {
+    this.getMyGroups();
+    this.closeCreateGroupModal();
+    window.location.reload();
+  }
+
+  openEditGroupModal(group: Group): void {
+    this.selectedGroupToEdit = group;
+    this.showEditGroupModal = true;
+  }
+
+  closeEditGroupModal(): void {
+    this.showEditGroupModal = false;
+    this.selectedGroupToEdit = null;
+    this.getMyGroups();
+  }
+
+  onGroupUpdated(updatedGroup: Group): void {
+    this.getMyGroups();
+    this.closeEditGroupModal();
+    window.location.reload();
   }
 
   isMyGroup(group: Group): boolean {

@@ -72,10 +72,6 @@ namespace SportskiTerminiAPI.Repositories
 
         public async Task<IEnumerable<GroupDto>> GetPublicGroupsAsync(string userId)
         {
-            //return await _context.Groups
-            //    .Where(g => g.AdminId != userId && !g.Memberships.Any(m => m.UserId == userId))
-            //    .ToListAsync();
-
             return await _context.Groups
                 .Include(g => g.Memberships)
                 .Where(g => g.AdminId != userId && !g.Memberships.Any(m => m.UserId == userId))
@@ -103,9 +99,6 @@ namespace SportskiTerminiAPI.Repositories
 
         public async Task<IEnumerable<GroupDto>> SearchGroupsAsync(string query, string userId)
         {
-            //return await _context.Groups
-            //    .Where(g => g.Name.Contains(query) || g.Description.Contains(query))
-            //    .ToListAsync();
             return await _context.Groups
                 .Include(g => g.Memberships)
                 .Where(g => (g.Name.Contains(query) || g.Description.Contains(query)))

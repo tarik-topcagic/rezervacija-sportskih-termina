@@ -1,5 +1,5 @@
 <app-navbar></app-navbar>
-<div class="container mt-4">
+<div class="container mt-4" [ngClass]="{'blur' : showCreateGroupModal || showEditGroupModal}">
   <div class="row mb-5 justify-content-center">
     <div class="col-md-8">
       <h2 class="text-center mb-4">Pretraga grupa</h2>
@@ -50,7 +50,7 @@
               </div>
               <h6 class="mt-2 mb-2">{{ group.name }}</h6>
               <small class="text-muted mb-2" style="display:block;">{{ group.description }}</small>
-              <small class="text-muted" style="font-size: 12px;">{{ group.membersCount > 0 ? group.membersCount + 'članova' : 'Nema članova' }}</small>
+              <small class="text-muted" style="font-size: 12px;">{{ group.membersCount > 0 ? group.membersCount + ' članova' : 'Nema članova' }}</small>
             </div>
           </div>
         </div>
@@ -64,7 +64,7 @@
             <li class="page-item" [class.disabled]="currentPage === 1">
               <a class="page-link" (click)="previousPage($event)">Prethodna</a>
             </li>
-            <li class="page-item" *ngFor="let page of totalPagesArray" [class.active]="page === currentPage">
+            <li class="page-item" *ngFor="let page of getTotalPagesArray()" [class.active]="page === currentPage">
               <a class="page-link" (click)="goToPage(page, $event)">{{ page }}</a>
             </li>
             <li class="page-item" [class.disabled]="currentPage === totalPages">
@@ -102,7 +102,7 @@
                     <div class="icon-square" title="Pogledaj grupu">
                       <i class="bi bi-eye"></i>
                     </div>
-                    <div class="icon-square" title="Uredi grupu">
+                    <div class="icon-square" title="Uredi grupu" (click)="openEditGroupModal(group)">
                       <i class="bi bi-pencil"></i>
                     </div>
                   </div>
@@ -167,6 +167,10 @@
   </div>
 </div>
 
-<!-- Modal za kreiranje grupe -->
-<!-- <app-create-group-modal *ngIf="showCreateGroupModal" (close)="closeCreateGroupModal()"></app-create-group-modal> -->
+<app-create-group-modal *ngIf="showCreateGroupModal" 
+(close)="closeCreateGroupModal()" (groupCreated)="onGroupCreated($event)"></app-create-group-modal>
+
+<app-edit-group-modal *ngIf="showEditGroupModal" 
+  [group]="selectedGroupToEdit!" (close)="closeEditGroupModal()" (groupUpdated)="onGroupUpdated($event)"></app-edit-group-modal>
+
 

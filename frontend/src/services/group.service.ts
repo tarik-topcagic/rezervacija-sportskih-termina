@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../environments/environment';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { group } from '@angular/animations';
 import { Group } from '../app/interfaces/group.model';
 
 @Injectable({
@@ -13,8 +12,9 @@ export class GroupService {
 
   constructor(private http: HttpClient) {}
 
-  createGroup(formData: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/create`, formData);
+  createGroup(data: any): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post(`${this.apiUrl}/create`, data, { headers });
   }
 
   updateGroup(groupId: number, updateData: any): Observable<any> {

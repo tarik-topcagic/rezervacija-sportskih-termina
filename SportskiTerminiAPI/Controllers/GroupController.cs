@@ -25,6 +25,11 @@ namespace SportskiTerminiAPI.Controllers
             if (userId == null)
                 return Unauthorized();
 
+            if(!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var group = new Group
             {
                 Name = groupDto.Name,
@@ -52,6 +57,11 @@ namespace SportskiTerminiAPI.Controllers
             if (userId == null)
                 return Unauthorized();
 
+            if(!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var group = await _groupRepository.GetGroupByIdAsync(groupId);
             if (group == null)
                 return NotFound("Group not found");
@@ -61,6 +71,7 @@ namespace SportskiTerminiAPI.Controllers
 
             group.Name = updateGroupDto.Name;
             group.Description = updateGroupDto.Description;
+            group.ImageUrl = updateGroupDto.GroupPictureUrl ?? "default-group.png";
 
             var updatedGroup = await _groupRepository.UpdateGroupAsync(group);
             return Ok(updatedGroup);
