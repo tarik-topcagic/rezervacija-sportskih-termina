@@ -1,8 +1,8 @@
 <nav class="navbar navbar-expand-lg bg-primary fixed-top" data-bs-theme="dark">
   <div class="container-fluid custom-navbar-container">
-    <a class="navbar-brand" routerLink="/pocetna" style="font-weight: bold"
-      >Rezervacija sportskih termina</a
-    >
+    <a class="navbar-brand" routerLink="/pocetna" style="font-weight: bold">
+      {{ 'appTitle' | translate }}
+    </a>
 
     <button
       class="navbar-toggler"
@@ -11,7 +11,7 @@
       data-bs-target="#navbarColor01"
       aria-controls="navbarColor01"
       aria-expanded="false"
-      aria-label="Toggle navigation"
+      [attr.aria-label]="'toggleNavigation' | translate"
     >
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -19,31 +19,24 @@
     <div class="collapse navbar-collapse" id="navbarColor01">
       <ul class="navbar-nav me-auto">
         <li class="nav-item">
-          <a
-            class="nav-link active"
-            routerLink="/pocetna"
-            routerLinkActive="active"
-            >Početna</a
-          >
+          <a class="nav-link active" routerLink="/pocetna" routerLinkActive="active">
+            {{ 'home' | translate }}
+          </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#" routerLinkActive="active"
-            >Sportski tereni</a
-          >
+          <a class="nav-link" href="#" routerLinkActive="active">
+            {{ 'sportsFields' | translate }}
+          </a>
         </li>
         <li class="nav-item">
-          <a
-            class="nav-link"
-            routerLink="/pretraga-korisnika"
-            routerLinkActive="active"
-            >Korisnici</a
-          >
+          <a class="nav-link" routerLink="/pretraga-korisnika" routerLinkActive="active">
+            {{ 'users' | translate }}
+          </a>
         </li>
         <li class="nav-item">
-          <a 
-          class="nav-link"
-          routerLink="/grupe"
-          routerLinkActive="active">Grupe</a>
+          <a class="nav-link" routerLink="/grupe" routerLinkActive="active">
+            {{ 'groups' | translate }}
+          </a>
         </li>
       </ul>
 
@@ -56,9 +49,9 @@
             data-bs-toggle="dropdown"
             aria-expanded="false"
           >
-            <span class="ms-2">Dobrodošli, {{ username }}</span>
+            <span class="ms-2">{{ 'welcome' | translate }}, {{ username }}</span>
             <ng-container *ngIf="profileImageUrl; else defaultIcon">
-              <img [src]="profileImageUrl" alt="Profilna slika" class="profile-img rounded-circle" />
+              <img [src]="profileImageUrl" [alt]="'profilePicture' | translate" class="profile-img rounded-circle" />
             </ng-container>
             <ng-template #defaultIcon>
               <div class="default-profile-img">
@@ -68,19 +61,23 @@
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
             <li>
-              <a class="dropdown-item" routerLink="/moj-profil">Profil</a>
+              <a class="dropdown-item" routerLink="/moj-profil">{{ 'profile' | translate }}</a>
             </li>
-            <li><a class="dropdown-item" routerLink="/postavke-profila">Postavke</a></li>
+            <li>
+              <a class="dropdown-item" routerLink="/postavke">{{ 'settings' | translate }}</a>
+            </li>
             <li><hr class="dropdown-divider" /></li>
             <li>
-              <a class="dropdown-item" (click)="logout()" style="cursor: pointer">Odjava</a>
+              <a class="dropdown-item" (click)="logout()" style="cursor: pointer">
+                {{ 'logout' | translate }}
+              </a>
             </li>
           </ul>
         </div>
 
         <div class="d-lg-none">
           <span class="nav-link" role="button" (click)="toggleDropdown()">
-            Dobrodošli, {{ username }}
+            {{ 'welcome' | translate }}, {{ username }}
             <i class="bi bi-caret-down-fill"></i>
           </span>
           <ul
@@ -88,13 +85,15 @@
             [ngClass]="{ 'd-block': isDropdownOpen, 'd-none': !isDropdownOpen }"
           >
             <li class="list-group-item">
-              <a class="nav-link" routerLink="/moj-profil">Profil</a>
+              <a class="nav-link" routerLink="/moj-profil">{{ 'profile' | translate }}</a>
             </li>
             <li class="list-group-item">
-              <a class="nav-link" routerLink="/postavke-profila">Postavke</a>
+              <a class="nav-link" routerLink="/postavke">{{ 'settings' | translate }}</a>
             </li>
             <li class="list-group-item">
-              <a class="nav-link" (click)="logout()" style="cursor: pointer">Odjava</a>
+              <a class="nav-link" (click)="logout()" style="cursor: pointer">
+                {{ 'logout' | translate }}
+              </a>
             </li>
           </ul>
         </div>
@@ -102,5 +101,3 @@
     </div>
   </div>
 </nav>
-
-

@@ -2,13 +2,14 @@ import { NgFor, NgIf } from '@angular/common';
 import { Component } from '@angular/core';
 import { NavbarComponent } from "../navbar/navbar.component";
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '../pipes/translate.pipe';
 import { UserService } from '../../services/user.service';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-search-users',
-  imports: [NgFor, NgIf, NavbarComponent, FormsModule],
+  imports: [NgFor, NgIf, NavbarComponent, FormsModule, TranslatePipe],
   templateUrl: './search-users.component.html',
   styleUrl: './search-users.component.scss'
 })

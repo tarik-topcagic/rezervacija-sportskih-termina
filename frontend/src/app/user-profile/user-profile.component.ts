@@ -3,10 +3,11 @@ import { ActivatedRoute } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { NgIf } from '@angular/common';
 import { NavbarComponent } from "../navbar/navbar.component";
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-user-profile',
-  imports: [NgIf, NavbarComponent],
+  imports: [NgIf, NavbarComponent, TranslatePipe],
   templateUrl: './user-profile.component.html',
   styleUrl: './user-profile.component.scss'
 })

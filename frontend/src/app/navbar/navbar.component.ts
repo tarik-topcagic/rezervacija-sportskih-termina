@@ -3,10 +3,11 @@ import { AuthService } from '../../services/auth.service';
 import { NgClass, NgIf } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { UserService } from '../../services/user.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-navbar',
-  imports: [NgIf, NgClass, RouterModule, RouterModule],
+  imports: [NgIf, NgClass, RouterModule, TranslatePipe],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.scss'],
 })

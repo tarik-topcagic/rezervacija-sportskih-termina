@@ -2,10 +2,17 @@
 <div class="container mt-4" [ngClass]="{'blur' : showCreateGroupModal || showEditGroupModal}">
   <div class="row mb-5 justify-content-center">
     <div class="col-md-8">
-      <h2 class="text-center mb-4">Pretraga grupa</h2>
+      <h2 class="text-center mb-4">{{ 'searchGroupsTitle' | translate }}</h2>
       <div class="input-group">
-        <input type="text" [(ngModel)]="searchQuery" class="form-control" placeholder="Unesite naziv grupe">
-        <button class="btn btn-primary" (click)="searchGroups()">Pretraži</button>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          class="form-control"
+          [placeholder]="'enterGroupName' | translate"
+        />
+        <button class="btn btn-primary" (click)="searchGroups()">
+          {{ 'search' | translate }}
+        </button>
       </div>
     </div>
   </div>
@@ -18,7 +25,7 @@
             <div class="card-body text-center">
               <div class="group-image-container mx-auto">
                 <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultPlaceholder">
-                  <img [src]="group.imageUrl" alt="{{ group.name }}" class="rounded-circle group-image">
+                  <img [src]="group.imageUrl" [alt]="group.name" class="rounded-circle group-image" />
                 </ng-container>
                 <ng-template #defaultPlaceholder>
                   <div class="default-placeholder">
@@ -28,29 +35,31 @@
                 <div class="overlay">
                   <div class="overlay-icons">
                     <ng-container *ngIf="isMyGroup(group)">
-                      <div class="icon-square" title="Pogledaj grupu">
+                      <div class="icon-square" [title]="'viewGroup' | translate">
                         <i class="bi bi-eye"></i>
                       </div>
-                      <div class="icon-square" title="Uredi grupu">
+                      <div class="icon-square" [title]="'editGroup' | translate">
                         <i class="bi bi-pencil"></i>
                       </div>
                     </ng-container>
                     <ng-container *ngIf="!isMyGroup(group) && isMemberGroup(group)">
-                      <div class="icon-square" title="Pogledaj grupu">
+                      <div class="icon-square" [title]="'viewGroup' | translate">
                         <i class="bi bi-eye"></i>
                       </div>
                     </ng-container>
                     <ng-container *ngIf="!isMyGroup(group) && !isMemberGroup(group)">
-                      <div class="icon-square" title="Pošalji zahtjev za pridruživanje grupi">
+                      <div class="icon-square" [title]="'requestJoinGroup' | translate">
                         <i class="bi bi-person-plus"></i>
                       </div>
                     </ng-container>
                   </div>
-                </div>               
+                </div>
               </div>
               <h6 class="mt-2 mb-2">{{ group.name }}</h6>
               <small class="text-muted mb-2" style="display:block;">{{ group.description }}</small>
-              <small class="text-muted" style="font-size: 12px;">{{ group.membersCount > 0 ? group.membersCount + ' članova' : 'Nema članova' }}</small>
+              <small class="text-muted" style="font-size: 12px;">
+                {{ group.membersCount > 0 ? (group.membersCount + ' ' + ('members' | translate)) : ('noMembers' | translate) }}
+              </small>
             </div>
           </div>
         </div>
@@ -59,16 +68,16 @@
 
     <div class="row mt-4 mb-4">
       <div class="col d-flex justify-content-center">
-        <nav aria-label="Group pagination">
+        <nav [attr.aria-label]="'searchGroupsTitle' | translate">
           <ul class="pagination flex-nowrap" style="cursor: pointer;">
             <li class="page-item" [class.disabled]="currentPage === 1">
-              <a class="page-link" (click)="previousPage($event)">Prethodna</a>
+              <a class="page-link" (click)="previousPage($event)">{{ 'previous' | translate }}</a>
             </li>
             <li class="page-item" *ngFor="let page of getTotalPagesArray()" [class.active]="page === currentPage">
               <a class="page-link" (click)="goToPage(page, $event)">{{ page }}</a>
             </li>
             <li class="page-item" [class.disabled]="currentPage === totalPages">
-              <a class="page-link" (click)="nextPage($event)">Sljedeća</a>
+              <a class="page-link" (click)="nextPage($event)">{{ 'next' | translate }}</a>
             </li>
           </ul>
         </nav>
@@ -78,9 +87,9 @@
 
   <div class="row mb-5">
     <div class="col-12 d-flex justify-content-between align-items-center mb-4">
-      <h3>Moje grupe</h3>
+      <h3>{{ 'myGroups' | translate }}</h3>
       <button class="btn btn-success" (click)="openCreateGroupModal()">
-        <i class="bi bi-plus-lg"></i> Kreiraj grupu
+        <i class="bi bi-plus-lg"></i> {{ 'createGroup' | translate }}
       </button>
     </div>
     <div class="col-12" *ngIf="myGroups && myGroups.length; else noAdminGroups">
@@ -90,7 +99,7 @@
             <div class="card-body text-center">
               <div class="group-image-container mx-auto">
                 <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultPlaceholderAdmin">
-                  <img [src]="group.imageUrl" alt="{{ group.name }}" class="rounded-circle group-image">
+                  <img [src]="group.imageUrl" [alt]="group.name" class="rounded-circle group-image" />
                 </ng-container>
                 <ng-template #defaultPlaceholderAdmin>
                   <div class="default-placeholder">
@@ -99,10 +108,10 @@
                 </ng-template>
                 <div class="overlay">
                   <div class="overlay-icons">
-                    <div class="icon-square" title="Pogledaj grupu">
+                    <div class="icon-square" [title]="'viewGroup' | translate">
                       <i class="bi bi-eye"></i>
                     </div>
-                    <div class="icon-square" title="Uredi grupu" (click)="openEditGroupModal(group)">
+                    <div class="icon-square" [title]="'editGroup' | translate" (click)="openEditGroupModal(group)">
                       <i class="bi bi-pencil"></i>
                     </div>
                   </div>
@@ -111,21 +120,21 @@
               <h6 class="mt-2 mb-2">{{ group.name }}</h6>
               <small class="text-muted mb-2" style="display:block;">{{ group.description }}</small>
               <small style="font-size: 12px;" class="text-muted">
-                {{ (group.membersCount ?? 0) > 0 ? group.membersCount + ' članova' : 'Nema članova' }}
-              </small>              
+                {{ (group.membersCount ?? 0) > 0 ? ((group.membersCount ?? 0) + ' ' + ('members' | translate)) : ('noMembers' | translate) }}
+              </small>
             </div>
-          </div> 
+          </div>
         </div>
       </div>
     </div>
     <ng-template #noAdminGroups>
-      <p class="text-center">Nemate napravljenih grupa</p>
+      <p class="text-center">{{ 'noAdminGroups' | translate }}</p>
     </ng-template>
   </div>
 
   <div class="row mb-5">
     <div class="mb-4">
-      <h3>Članstva</h3>
+      <h3>{{ 'memberships' | translate }}</h3>
     </div>
     <div class="col-12 mb-4">
       <div *ngIf="memberGroups && memberGroups.length; else noMemberGroups">
@@ -135,7 +144,7 @@
               <div class="card-body text-center">
                 <div class="group-image-container mx-auto">
                   <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultPlaceholderMember">
-                    <img [src]="group.imageUrl" alt="{{ group.name }}" class="rounded-circle group-image">
+                    <img [src]="group.imageUrl" [alt]="group.name" class="rounded-circle group-image" />
                   </ng-container>
                   <ng-template #defaultPlaceholderMember>
                     <div class="default-placeholder">
@@ -144,7 +153,7 @@
                   </ng-template>
                   <div class="overlay">
                     <div class="overlay-icons">
-                      <div class="icon-square" title="Pogledaj grupu">
+                      <div class="icon-square" [title]="'viewGroup' | translate">
                         <i class="bi bi-eye"></i>
                       </div>
                     </div>
@@ -153,24 +162,29 @@
                 <h6 class="mt-2 mb-2">{{ group.name }}</h6>
                 <small class="text-muted mb-2" style="display:block;">{{ group.description }}</small>
                 <small class="text-muted" style="font-size: 12px;">
-                  {{ (group.membersCount ?? 0) > 0 ? group.membersCount + ' članova' : 'Nema članova' }}
-                </small>                
+                  {{ (group.membersCount ?? 0) > 0 ? ((group.membersCount ?? 0) + ' ' + ('members' | translate)) : ('noMembers' | translate) }}
+                </small>
               </div>
             </div>
           </div>
         </div>
       </div>
       <ng-template #noMemberGroups>
-        <p class="text-center">Niste član nijedne grupe</p>
+        <p class="text-center">{{ 'noMemberGroups' | translate }}</p>
       </ng-template>
     </div>
   </div>
 </div>
 
-<app-create-group-modal *ngIf="showCreateGroupModal" 
-(close)="closeCreateGroupModal()" (groupCreated)="onGroupCreated($event)"></app-create-group-modal>
+<app-create-group-modal
+  *ngIf="showCreateGroupModal"
+  (close)="closeCreateGroupModal()"
+  (groupCreated)="onGroupCreated($event)"
+></app-create-group-modal>
 
-<app-edit-group-modal *ngIf="showEditGroupModal" 
-  [group]="selectedGroupToEdit!" (close)="closeEditGroupModal()" (groupUpdated)="onGroupUpdated($event)"></app-edit-group-modal>
-
-
+<app-edit-group-modal
+  *ngIf="showEditGroupModal"
+  [group]="selectedGroupToEdit!"
+  (close)="closeEditGroupModal()"
+  (groupUpdated)="onGroupUpdated($event)"
+></app-edit-group-modal>

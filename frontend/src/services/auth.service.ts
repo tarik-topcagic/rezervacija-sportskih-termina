@@ -38,8 +38,22 @@ export class AuthService {
         this.currentUserSubject.next(null);
     }
 
+    updateCurrentUser(data: any) {
+        const currentUser = this.currentUserSubject.value;
+        if (!currentUser) {
+            return;
+        }
+
+        const updatedUser = { ...currentUser, ...data };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        this.currentUserSubject.next(updatedUser);
+    }
+
+    updateCurrentUsername(username: string) {
+        this.updateCurrentUser({ username });
+    }
+
     get currentUserValue(): any {
         return this.currentUserSubject.value;
     }
 }
-

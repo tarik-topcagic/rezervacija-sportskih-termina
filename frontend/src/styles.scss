@@ -7,6 +7,71 @@ html, body {
 body:not(.home-page):not(.register-page):not(.login-page) {
     padding-top: 56px;
 }
+
+body.dark-mode {
+    background-color: #121212;
+    color: #f1f3f5;
+}
+
+body.dark-mode .card,
+body.dark-mode .dropdown-menu,
+body.dark-mode .list-group-item,
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+    background-color: #1f1f1f;
+    color: #f1f3f5;
+    border-color: #3a3a3a;
+}
+
+body.dark-mode .text-secondary {
+    color: #c5c8cc !important;
+}
+
+body.dark-mode .settings-section {
+    border-color: #3a3a3a;
+}
+
+body.dark-mode .form-control::placeholder {
+    color: #adb5bd;
+}
+
+body.dark-mode .modal-content {
+    background: #1f1f1f !important;
+    color: #f1f3f5;
+    border: 1px solid #3a3a3a;
+}
+
+body.dark-mode .modal-backdrop {
+    background: rgba(0, 0, 0, 0.65) !important;
+}
+
+body.dark-mode .bg-light {
+    background-color: #2a2a2a !important;
+}
+
+body.dark-mode .cancel-button.btn.btn-secondary {
+    --bs-btn-bg: #dc3545 !important;
+    --bs-btn-border-color: #dc3545 !important;
+    --bs-btn-color: #ffffff !important;
+    --bs-btn-hover-bg: #bb2d3b !important;
+    --bs-btn-hover-border-color: #b02a37 !important;
+    --bs-btn-hover-color: #ffffff !important;
+    --bs-btn-active-bg: #b02a37 !important;
+    --bs-btn-active-border-color: #a52834 !important;
+    --bs-btn-active-color: #ffffff !important;
+    background: #dc3545 !important;
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .cancel-button.btn.btn-secondary:hover,
+body.dark-mode .cancel-button.btn.btn-secondary:focus {
+    background: #bb2d3b !important;
+    background-color: #bb2d3b !important;
+    border-color: #b02a37 !important;
+    color: #ffffff !important;
+}
   
   
   

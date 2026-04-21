@@ -1,53 +1,58 @@
 <div class="d-flex justify-content-center align-items-center min-vh-100">
   <div class="container text-center">
-    <h2 class="my-4">Prijava</h2>
+    <h2 class="my-4">{{ 'login' | translate }}</h2>
     <form #loginForm="ngForm" (ngSubmit)="login()" class="needs-validation" novalidate>
       <div class="mb-3 d-flex flex-column align-items-center">
         <div class="w-50 text-start">
-          <label for="username" class="form-label">Korisničko ime</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            id="username" 
-            [(ngModel)]="loginModel.username" 
-            name="username" 
-            required 
-            [ngClass]="{'is-invalid': errorMessage}"
-            style="padding: 10px;">
+          <label for="username" class="form-label">{{ 'username' | translate }}</label>
+          <input
+            type="text"
+            class="form-control"
+            id="username"
+            [(ngModel)]="loginModel.username"
+            name="username"
+            required
+            [ngClass]="{'is-invalid': errorMessageKey}"
+            style="padding: 10px;"
+          />
         </div>
       </div>
 
       <div class="mb-3 d-flex flex-column align-items-center">
         <div class="w-50 text-start">
-          <label for="password" class="form-label">Lozinka</label>
+          <label for="password" class="form-label">{{ 'password' | translate }}</label>
           <div class="input-group">
-            <input 
-            [type]="passwordVisible ? 'text' : 'password'" 
-            class="form-control" 
-            id="password" 
-            [(ngModel)]="loginModel.password" 
-            name="password" 
-            required 
-            [ngClass]="{'is-invalid': errorMessage}"
-            style="padding: 10px;">
+            <input
+              [type]="passwordVisible ? 'text' : 'password'"
+              class="form-control"
+              id="password"
+              [(ngModel)]="loginModel.password"
+              name="password"
+              required
+              [ngClass]="{'is-invalid': errorMessageKey}"
+              style="padding: 10px;"
+            />
             <button type="button" class="btn btn-outline-secondary" (click)="togglePasswordVisibility()">
               <i class="bi" [ngClass]="passwordVisible ? 'bi-eye-slash' : 'bi-eye'"></i>
             </button>
-            <div *ngIf="errorMessage" class="invalid-feedback">
-              Nevalidno korisničko ime ili lozinka
+            <div *ngIf="errorMessageKey" class="invalid-feedback">
+              {{ errorMessageKey | translate }}
             </div>
           </div>
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary" [disabled]="loginForm.invalid">Prijavi se</button>
+      <button type="submit" class="btn btn-primary" [disabled]="loginForm.invalid">
+        {{ 'login' | translate }}
+      </button>
     </form>
     <div class="mt-5">
-      <p>Nemate profil? <a routerLink="/registracija" class="link-primary" style="cursor: pointer;">Registruj se</a></p>
+      <p>
+        {{ 'noProfile' | translate }}
+        <a routerLink="/registracija" class="link-primary" style="cursor: pointer;">
+          {{ 'register' | translate }}
+        </a>
+      </p>
     </div>
   </div>
 </div>
-
-  
-  
-  

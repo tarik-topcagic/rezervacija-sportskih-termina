@@ -1,14 +1,13 @@
 <div class="modal-backdrop" (click)="onClose()"></div>
 <div class="modal-content" (click)="$event.stopPropagation()">
-  <h2 class="text-center mb-4">Uredi grupu</h2>
+  <h2 class="text-center mb-4">{{ 'editGroup' | translate }}</h2>
   <form [formGroup]="editGroupForm" (ngSubmit)="submitGroup()">
     <div class="mb-3 text-center">
-      <label for="groupImage" class="form-label">Slika grupe</label>
+      <label for="groupImage" class="form-label">{{ 'groupImage' | translate }}</label>
       <div class="mb-2">
         <ng-container *ngIf="!previewUrl; else imgPreview">
           <div
-            class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto"
-            style="width: 150px; height: 150px; border: 2px dashed #ccc; cursor: pointer;"
+            class="image-picker rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto"
             (click)="groupImageInput.click()"
           >
             <i class="bi bi-camera" style="font-size: 2rem"></i>
@@ -18,18 +17,17 @@
           <div class="position-relative">
             <img
               [src]="previewUrl"
-              alt="Slika grupe"
+              [alt]="'groupImage' | translate"
               class="rounded-circle"
               style="width: 150px; height: 150px; object-fit: cover;"
             />
             <button
               type="button"
-              class="btn btn-sm position-absolute top-0 end-0 mt-1 me-1"
-              style="background-color: #e4e4e4;"
+              class="btn btn-sm image-remove-button position-absolute top-0 end-0 mt-1 me-1"
               (click)="removeImage()"
-              title="Ukloni sliku"
+              [title]="'removeImage' | translate"
             >
-              <i class="bi bi-trash" style="color: #585858"></i>
+              <i class="bi bi-trash"></i>
             </button>
           </div>
         </ng-template>
@@ -44,22 +42,22 @@
       />
     </div>
     <div class="mb-3">
-      <label for="groupName" class="form-label">Naziv grupe</label>
+      <label for="groupName" class="form-label">{{ 'groupName' | translate }}</label>
       <input id="groupName" type="text" formControlName="name" class="form-control" required>
       <div *ngIf="editGroupForm.get('name')?.touched && editGroupForm.get('name')?.invalid" class="text-danger">
-        Obavezno polje
+        {{ 'requiredField' | translate }}
       </div>
     </div>
     <div class="mb-3">
-      <label for="groupDescription" class="form-label">Opis</label>
+      <label for="groupDescription" class="form-label">{{ 'description' | translate }}</label>
       <textarea id="groupDescription" formControlName="description" class="form-control"></textarea>
     </div>
     <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
     <div class="d-flex justify-content-between">
       <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || editGroupForm.invalid || editGroupForm.pristine">
-        {{ isSubmitting ? 'Ažuriranje...' : 'Ažuriraj grupu' }}
+        {{ (isSubmitting ? 'updating' : 'updateGroup') | translate }}
       </button>
-      <button type="button" class="btn btn-secondary" (click)="onClose()">Otkaži</button>
+      <button type="button" class="btn btn-secondary cancel-button" (click)="onClose()">{{ 'cancel' | translate }}</button>
     </div>
   </form>
 </div>

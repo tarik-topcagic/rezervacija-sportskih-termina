@@ -2,11 +2,12 @@
 <div class="container mt-4">
   <div class="card mx-auto shadow-sm" style="max-width: 600px">
     <div class="card-body">
-      <h3 class="card-title text-center mb-4">Uredi profil</h3>
+      <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+      <h3 class="card-title text-center mb-4">{{ 'editProfile' | translate }}</h3>
 
       <form [formGroup]="editForm" (ngSubmit)="onSubmit()">
         <div class="mb-3 text-center">
-          <label for="profilePicture" class="form-label">Profilna slika</label>
+          <label for="profilePicture" class="form-label">{{ 'profilePicture' | translate }}</label>
           <div class="mb-2">
             <ng-container *ngIf="!previewUrl; else imgPreview">
               <div
@@ -27,7 +28,7 @@
               <div class="position-relative">
                 <img
                   [src]="previewUrl"
-                  alt="Profilna slika"
+                  [alt]="'profilePicture' | translate"
                   class="rounded-circle"
                   style="width: 150px; height: 150px; object-fit: cover"
                   (error)="handleImageError()"
@@ -37,7 +38,7 @@
                   class="btn btn-sm position-absolute top-0 end-0 mt-1 me-1"
                   style="background-color: #e4e4e4"
                   (click)="removeProfilePicture()"
-                  title="Ukloni profilnu sliku"
+                  [title]="'removeProfilePicture' | translate"
                 >
                   <i class="bi bi-trash" style="color: #585858"></i>
                 </button>
@@ -55,13 +56,13 @@
         </div>
 
         <div class="mb-3">
-          <label for="fullName" class="form-label">Ime i prezime</label>
+          <label for="fullName" class="form-label">{{ 'fullName' | translate }}</label>
           <input
             type="text"
             id="fullName"
             formControlName="fullName"
             class="form-control"
-            placeholder="Unesite ime i prezime"
+            [placeholder]="'enterFullName' | translate"
           />
           <div
             *ngIf="
@@ -70,18 +71,18 @@
             "
             class="text-danger"
           >
-            Obavezno polje.
+            {{ 'requiredField' | translate }}
           </div>
         </div>
 
         <div class="mb-3 position-relative">
-          <label for="location" class="form-label">Lokacija</label>
+          <label for="location" class="form-label">{{ 'location' | translate }}</label>
           <input
             type="text"
             id="location"
             formControlName="location"
             class="form-control"
-            placeholder="Unesite grad"
+            [placeholder]="'enterCity' | translate"
             (focus)="showDropdown = true"
           />
 
@@ -106,12 +107,12 @@
             "
             class="text-danger"
           >
-            Obavezno polje.
+            {{ 'requiredField' | translate }}
           </div>
         </div>
 
         <div class="mb-3">
-          <label for="phoneNumber" class="form-label">Broj telefona</label>
+          <label for="phoneNumber" class="form-label">{{ 'phoneNumber' | translate }}</label>
           <input
             type="text"
             id="phoneNumber"
@@ -127,10 +128,10 @@
             class="text-danger"
           >
             <div *ngIf="editForm.get('phoneNumber')?.errors?.['required']">
-              Obavezno polje.
+              {{ 'requiredField' | translate }}
             </div>
             <div *ngIf="editForm.get('phoneNumber')?.errors?.['pattern']">
-              Pogrešan format broja.
+              {{ 'wrongPhoneFormat' | translate }}
             </div>
           </div>
         </div>
@@ -141,7 +142,7 @@
             class="btn btn-primary mb-2"
             [disabled]="editForm.pristine || editForm.invalid"
           >
-            Spremi promjene
+            {{ 'saveChanges' | translate }}
           </button>
         </div>
       </form>

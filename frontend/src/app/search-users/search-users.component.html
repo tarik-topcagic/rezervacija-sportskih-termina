@@ -2,14 +2,17 @@
 <div class="container mt-4">
   <div class="row mb-5 justify-content-center">
     <div class="col-md-8">
-      <h2 class="text-center mb-4">Pretraga korisnika</h2>
+      <h2 class="text-center mb-4">{{ 'searchUsersTitle' | translate }}</h2>
       <div class="input-group">
-        <input 
-          type="text" 
-          [(ngModel)]="searchQuery" 
-          class="form-control" 
-          placeholder="Unesite ime ili korisničko ime">
-        <button class="btn btn-primary" (click)="searchUsers()">Pretraži</button>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          class="form-control"
+          [placeholder]="'enterNameOrUsername' | translate"
+        />
+        <button class="btn btn-primary" (click)="searchUsers()">
+          {{ 'search' | translate }}
+        </button>
       </div>
     </div>
   </div>
@@ -22,9 +25,11 @@
             <div class="card-body text-center">
               <div class="user-image-container mx-auto">
                 <ng-container *ngIf="user.profilePictureUrl && user.profilePictureUrl !== 'default-profile.png'; else defaultPlaceholder">
-                  <img [src]="user.profilePictureUrl" 
-                       alt="User Avatar" 
-                       class="rounded-circle user-image">
+                  <img
+                    [src]="user.profilePictureUrl"
+                    [alt]="'profilePicture' | translate"
+                    class="rounded-circle user-image"
+                  />
                 </ng-container>
                 <ng-template #defaultPlaceholder>
                   <div class="default-placeholder">
@@ -34,21 +39,21 @@
                 <div class="overlay">
                   <div class="overlay-icons">
                     <ng-container *ngIf="user.username === currentUsername; else otherUserIcons">
-                      <div class="icon-square" title="Pogledaj profil" (click)="viewProfile($event, user)">
+                      <div class="icon-square" [title]="'viewProfile' | translate" (click)="viewProfile($event, user)">
                         <i class="bi bi-eye"></i>
                       </div>
-                      <div class="icon-square" title="Uredi" (click)="editProfile($event, user)">
+                      <div class="icon-square" [title]="'edit' | translate" (click)="editProfile($event, user)">
                         <i class="bi bi-pencil"></i>
                       </div>
                     </ng-container>
                     <ng-template #otherUserIcons>
-                      <div class="icon-square" title="Pogledaj profil" (click)="viewProfile($event, user)">
+                      <div class="icon-square" [title]="'viewProfile' | translate" (click)="viewProfile($event, user)">
                         <i class="bi bi-eye"></i>
                       </div>
-                      <div class="icon-square" title="Dodaj u grupu">
+                      <div class="icon-square" [title]="'addToGroup' | translate">
                         <i class="bi bi-people"></i>
                       </div>
-                      <div class="icon-square" title="Pošalji poruku">
+                      <div class="icon-square" [title]="'sendMessage' | translate">
                         <i class="bi bi-chat-dots"></i>
                       </div>
                     </ng-template>
@@ -66,27 +71,23 @@
 
   <div class="row mt-4">
     <div class="col d-flex justify-content-center">
-      <nav aria-label="User pagination">
+      <nav [attr.aria-label]="'searchUsersTitle' | translate">
         <ul class="pagination flex-nowrap" style="cursor: pointer;">
           <li class="page-item" [class.disabled]="currentPage === 1">
-            <a class="page-link" (click)="previousPage($event)">Prethodna</a>
+            <a class="page-link" (click)="previousPage($event)">{{ 'previous' | translate }}</a>
           </li>
-          <li class="page-item" 
-              *ngFor="let page of totalPagesArray" 
-              [class.active]="page === currentPage">
+          <li
+            class="page-item"
+            *ngFor="let page of totalPagesArray"
+            [class.active]="page === currentPage"
+          >
             <a class="page-link" (click)="goToPage(page, $event)">{{ page }}</a>
           </li>
           <li class="page-item" [class.disabled]="currentPage === totalPages">
-            <a class="page-link" (click)="nextPage($event)">Sljedeća</a>
+            <a class="page-link" (click)="nextPage($event)">{{ 'next' | translate }}</a>
           </li>
         </ul>
       </nav>
     </div>
   </div>
 </div>
-
-
-
-
-
-

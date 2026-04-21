@@ -2,10 +2,13 @@ import { Component, EventEmitter, Output } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { GroupService } from '../../services/group.service';
 import { NgIf } from '@angular/common';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
+import { LanguageService } from '../../services/language.service';
 
 @Component({
   selector: 'app-create-group-modal',
-  imports: [NgIf, ReactiveFormsModule],
+  imports: [NgIf, ReactiveFormsModule, TranslatePipe],
   templateUrl: './create-group-modal.component.html',
   styleUrl: './create-group-modal.component.scss'
 })
@@ -19,7 +22,12 @@ export class CreateGroupModalComponent {
   isSubmitting: boolean = false;
   errorMessage: string = '';
 
-  constructor(private groupService: GroupService, private fb: FormBuilder) {
+  constructor(
+    private groupService: GroupService,
+    private fb: FormBuilder,
+    private confirmDialogService: ConfirmDialogService,
+    private languageService: LanguageService,
+  ) {
     this.createGroupForm = this.fb.group({
       name: ['', Validators.required],
       description: ['']
@@ -65,15 +73,15 @@ export class CreateGroupModalComponent {
       },
       (error) => {
         this.isSubmitting = false;
-        this.errorMessage = 'Došlo je do greške prilikom kreiranja grupe.';
+        this.errorMessage = this.languageService.translate('createGroupError');
         console.error('Error creating group:', error);
       }
     );
   }
 
-  onClose(): void {
+  async onClose(): Promise<void> {
     if (this.createGroupForm.dirty) {
-      if (!confirm('Imate nespremljene promjene. Da li ste sigurni da želite zatvoriti modal?')) {
+      if (!(await this.confirmDialogService.confirm('unsavedChangesConfirm'))) {
         return;
       }
     }

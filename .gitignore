@@ -2,6 +2,7 @@
 
 # Compiled output
 /dist
+/frontend/dist/
 /tmp
 /out-tsc
 /bazel-out
@@ -59,4 +60,6 @@ frontend/.editorconfig
 # Backup files
 SportskiTerminiAPI/SportskiTerminiAPI - Backup.csproj.bak
 
+# Uploaded files (IMPORTANT)
+SportskiTerminiAPI/wwwroot/uploads/
 

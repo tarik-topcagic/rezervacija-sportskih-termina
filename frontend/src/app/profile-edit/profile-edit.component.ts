@@ -13,10 +13,13 @@ import { CommonModule, NgFor, NgIf } from '@angular/common';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { CanComponentDeactivate } from '../guards/can-component-deactivate';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
+import { LanguageService } from '../../services/language.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-profile-edit',
-  imports: [ReactiveFormsModule, CommonModule, NgIf, NgFor, NavbarComponent],
+  imports: [ReactiveFormsModule, CommonModule, NgIf, NgFor, NavbarComponent, TranslatePipe],
   templateUrl: './profile-edit.component.html',
   styleUrl: './profile-edit.component.scss',
 })
@@ -31,6 +34,7 @@ export class ProfileEditComponent
   fileError: string | null = null;
   showDropdown = false;
   timestamp = Date.now();
+  successMessage = '';
 
   private handleClickOutsideBound = this.handleClickOutside.bind(this);
   private beforeUnloadHandlerBound = this.beforeUnloadHandler.bind(this);
@@ -40,6 +44,8 @@ export class ProfileEditComponent
     private userService: UserService,
     private cityService: CityService,
     private router: Router,
+    private confirmDialogService: ConfirmDialogService,
+    private languageService: LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -128,7 +134,7 @@ export class ProfileEditComponent
     const file = input.files[0];
 
     if (!file.type.startsWith('image/')) {
-      this.fileError = 'Odaberite validnu sliku.';
+      this.fileError = this.languageService.translate('selectValidImage');
       return;
     }
 
@@ -158,7 +164,7 @@ export class ProfileEditComponent
         },
         error: (err) => {
           console.error('Greška pri uploadu slike', err);
-          this.fileError = 'Greška pri uploadu slike.';
+          this.fileError = this.languageService.translate('uploadImageError');
         },
       });
     } else {
@@ -175,7 +181,7 @@ export class ProfileEditComponent
     this.userService.updateProfile(this.editForm.value).subscribe({
       next: () => {
         this.userService.refreshProfile();
-        alert('Profil uspješno ažuriran!');
+        this.successMessage = this.languageService.translate('profileUpdated');
         this.editForm.markAsPristine();
         setTimeout(() => {
           this.router.navigate(['/moj-profil']);
@@ -217,16 +223,13 @@ export class ProfileEditComponent
 
   beforeUnloadHandler(event: BeforeUnloadEvent) {
     if (this.editForm.dirty) {
-      event.returnValue =
-        'Imate nespremljene promjene. Da li ste sigurni da želite napustiti ovu stranicu?';
+      event.returnValue = this.languageService.translate('unsavedChangesConfirm');
     }
   }
 
   canDeactivate(): boolean | Observable<boolean> | Promise<boolean> {
     if (this.editForm.dirty) {
-      return confirm(
-        'Imate nespremljene promjene. Da li ste sigurni da želite napustiti ovu stranicu?',
-      );
+      return this.confirmDialogService.confirm('unsavedChangesConfirm');
     }
     return true;
   }

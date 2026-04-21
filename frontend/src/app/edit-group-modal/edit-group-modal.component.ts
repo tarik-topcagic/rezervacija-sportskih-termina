@@ -3,10 +3,13 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Group } from '../interfaces/group.model';
 import { GroupService } from '../../services/group.service';
 import { NgIf } from '@angular/common';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
+import { LanguageService } from '../../services/language.service';
 
 @Component({
   selector: 'app-edit-group-modal',
-  imports: [NgIf, ReactiveFormsModule],
+  imports: [NgIf, ReactiveFormsModule, TranslatePipe],
   templateUrl: './edit-group-modal.component.html',
   styleUrl: './edit-group-modal.component.scss'
 })
@@ -21,7 +24,12 @@ export class EditGroupModalComponent implements OnInit {
   isSubmitting: boolean = false;
   errorMessage: string = '';
 
-  constructor(private groupService: GroupService, private fb: FormBuilder) {
+  constructor(
+    private groupService: GroupService,
+    private fb: FormBuilder,
+    private confirmDialogService: ConfirmDialogService,
+    private languageService: LanguageService,
+  ) {
     this.editGroupForm = this.fb.group({
       name: ['', Validators.required],
       description: ['']
@@ -80,15 +88,15 @@ export class EditGroupModalComponent implements OnInit {
       },
       (error) => {
         this.isSubmitting = false;
-        this.errorMessage = 'Došlo je do greške prilikom ažuriranja grupe.';
+        this.errorMessage = this.languageService.translate('updateGroupError');
         console.error('Error updating group:', error);
       }
     );
   }
   
-  onClose(): void {
+  async onClose(): Promise<void> {
     if (this.editGroupForm.dirty) {
-      if (!confirm('Imate nespremljene promjene. Da li ste sigurni da želite zatvoriti modal?')) {
+      if (!(await this.confirmDialogService.confirm('unsavedChangesConfirm'))) {
         return;
       }
     }

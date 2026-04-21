@@ -4,6 +4,13 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, switchMap } from 'rxjs';
 import { User } from '../app/interfaces/user';
 
+export interface UserSettings {
+  username: string;
+  email: string;
+  phoneNumber: string;
+  emailNotificationsEnabled: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -26,6 +33,22 @@ export class UserService {
 
   updateProfile(data: any): Observable<any> {
     return this.http.put(`${this.apiUrl}/update-user`, data);
+  }
+
+  getSettings(): Observable<UserSettings> {
+    return this.http.get<UserSettings>(`${this.apiUrl}/settings`);
+  }
+
+  updateEmailNotifications(emailNotificationsEnabled: boolean): Observable<any> {
+    return this.http.put(`${this.apiUrl}/settings/email-notifications`, {
+      emailNotificationsEnabled,
+    });
+  }
+
+  updateUsername(username: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/settings/username`, {
+      username,
+    });
   }
 
   uploadProfilePicture(formData: FormData): Observable<any> {

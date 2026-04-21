@@ -1,0 +1,113 @@
+<app-navbar></app-navbar>
+
+<div class="container mt-4 mb-5 settings-page">
+  <h2 class="mb-4">{{ 'settings' | translate }}</h2>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    {{ successMessage }}
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="settings; else loading">
+    <section class="settings-section">
+      <h4>{{ 'notifications' | translate }}</h4>
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="emailNotifications"
+          [(ngModel)]="emailNotificationsEnabled"
+          (change)="saveEmailNotifications()"
+        />
+        <label class="form-check-label" for="emailNotifications">
+          {{ 'receiveEmailNotifications' | translate }}
+        </label>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h4>{{ 'appearance' | translate }}</h4>
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="darkMode"
+          [(ngModel)]="darkModeEnabled"
+          (change)="toggleDarkMode()"
+        />
+        <label class="form-check-label" for="darkMode">{{ 'darkMode' | translate }}</label>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h4>{{ 'appLanguage' | translate }}</h4>
+      <label for="language" class="form-label">{{ 'selectedLanguage' | translate }}</label>
+      <div class="input-group settings-form">
+        <select
+          id="language"
+          name="language"
+          class="form-select"
+          [(ngModel)]="selectedLanguage"
+          (change)="saveLanguage()"
+        >
+          <option *ngFor="let language of languages" [value]="language.code">
+            {{ language.name }}
+          </option>
+        </select>
+      </div>
+      <p class="mt-2 mb-0 text-secondary">
+        {{ 'currentLanguage' | translate }}: {{ selectedLanguageName }}
+      </p>
+    </section>
+
+    <section class="settings-section">
+      <h4>{{ 'account' | translate }}</h4>
+      <form (ngSubmit)="changeUsername()" class="settings-form">
+        <label for="username" class="form-label">{{ 'username' | translate }}</label>
+        <div class="input-group">
+          <input
+            type="text"
+            id="username"
+            name="username"
+            class="form-control"
+            [(ngModel)]="newUsername"
+            required
+          />
+          <button type="submit" class="btn btn-primary">
+            {{ 'changeUsername' | translate }}
+          </button>
+        </div>
+      </form>
+
+      <button
+        type="button"
+        class="btn btn-outline-danger mt-3"
+        (click)="logoutFromAllDevices()"
+      >
+        {{ 'logoutAllDevices' | translate }}
+      </button>
+    </section>
+
+    <section class="settings-section">
+      <h4>{{ 'accountInfo' | translate }}</h4>
+      <dl class="row mb-0">
+        <dt class="col-sm-3">{{ 'username' | translate }}</dt>
+        <dd class="col-sm-9">{{ settings.username }}</dd>
+
+        <dt class="col-sm-3">{{ 'email' | translate }}</dt>
+        <dd class="col-sm-9">{{ settings.email || ('notSet' | translate) }}</dd>
+
+        <dt class="col-sm-3">{{ 'phone' | translate }}</dt>
+        <dd class="col-sm-9">
+          {{ settings.phoneNumber || ('notSet' | translate) }}
+        </dd>
+      </dl>
+    </section>
+  </div>
+</div>
+
+<ng-template #loading>
+  <div class="alert alert-info" role="alert">{{ 'loading' | translate }}</div>
+</ng-template>

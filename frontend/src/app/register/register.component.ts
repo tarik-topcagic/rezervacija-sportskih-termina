@@ -3,10 +3,11 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-register',
-  imports: [FormsModule, CommonModule, RouterLink],
+  imports: [FormsModule, CommonModule, RouterLink, TranslatePipe],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
@@ -22,6 +23,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
   passwordStrengthError = false;
   passwordVisible: boolean = false;
   usernameTakenError = false;
+  emailTakenError = false;
+  phoneNumberTakenError = false;
   usernameSpaceError = false;
 
   constructor(private authService: AuthService, private router: Router) {}
@@ -31,6 +34,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
   }
 
   validateUsername(): void {
+    this.usernameTakenError = false;
     this.usernameSpaceError = false;
     const username = this.registerModel.username || '';
     const spaceRegex = /\s/;  
@@ -55,12 +59,22 @@ export class RegisterComponent implements OnInit, OnDestroy {
     }
   }
 
+  clearEmailTakenError(): void {
+    this.emailTakenError = false;
+  }
+
+  clearPhoneNumberTakenError(): void {
+    this.phoneNumberTakenError = false;
+  }
+
   register(form: NgForm) {
     if (form.invalid || this.passwordStrengthError || this.usernameSpaceError) {
       return;
     }
 
     this.usernameTakenError = false; 
+    this.emailTakenError = false;
+    this.phoneNumberTakenError = false;
 
     this.authService.register(this.registerModel).subscribe({
       next: (response) => {
@@ -75,8 +89,14 @@ export class RegisterComponent implements OnInit, OnDestroy {
           });
       },
       error: (error) => {
-        if (error.error && error.error.message === "Username is already taken.") {
-          this.usernameTakenError = true; 
+        if (error.error?.field === 'username' || error.error?.message === "Username is already taken.") {
+          this.usernameTakenError = true;
+        }
+        if (error.error?.field === 'email') {
+          this.emailTakenError = true;
+        }
+        if (error.error?.field === 'phoneNumber') {
+          this.phoneNumberTakenError = true;
         }
         console.error('Registration error:', error);
         console.log('Full error details:', error.error);  
@@ -92,9 +112,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
     document.body.classList.remove('register-page');
   }
 }
-
-
-
 
 
 

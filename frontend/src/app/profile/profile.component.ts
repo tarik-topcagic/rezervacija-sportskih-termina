@@ -4,10 +4,11 @@ import { User } from '../interfaces/user';
 import { NgIf } from '@angular/common';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { RouterModule } from '@angular/router';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-profile',
-  imports: [NgIf, NavbarComponent, RouterModule],
+  imports: [NgIf, NavbarComponent, RouterModule, TranslatePipe],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })

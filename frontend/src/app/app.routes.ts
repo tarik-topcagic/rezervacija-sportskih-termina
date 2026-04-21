@@ -10,6 +10,7 @@ import { PendingChangesGuard } from './guards/pending-changes.guard';
 import { SearchUsersComponent } from './search-users/search-users.component';
 import { UserProfileComponent } from './user-profile/user-profile.component';
 import { SearchGroupsComponent } from './search-groups/search-groups.component';
+import { SettingsComponent } from './settings/settings.component';
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
@@ -18,6 +19,7 @@ export const routes: Routes = [
     { path: 'pocetna', component: DashboardComponent, canActivate: [AuthGuard] },
     { path: 'moj-profil', component: ProfileComponent, canActivate: [AuthGuard] },
     { path: 'postavke-profila', component: ProfileEditComponent, canActivate: [AuthGuard], canDeactivate: [PendingChangesGuard] },
+    { path: 'postavke', component: SettingsComponent, canActivate: [AuthGuard] },
     { path: 'pretraga-korisnika', component: SearchUsersComponent, canActivate: [AuthGuard] },
     { path: 'korisnicki-profil/:username', component: UserProfileComponent, canActivate: [AuthGuard] },
     { path: 'grupe', component: SearchGroupsComponent, canActivate: [AuthGuard] },

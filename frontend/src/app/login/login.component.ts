@@ -3,10 +3,11 @@ import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, CommonModule, RouterLink],
+  imports: [FormsModule, CommonModule, RouterLink, TranslatePipe],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
@@ -15,10 +16,13 @@ export class LoginComponent implements OnInit, OnDestroy {
     username: '',
     password: ''
   };
-  errorMessage: string = '';
+  errorMessageKey: string = '';
   passwordVisible: boolean = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+  ) {}
   ngOnInit(): void {
     document.body.classList.add('login-page');
   }
@@ -31,7 +35,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       },
       (error) => {
         console.error('Login error:', error);
-        this.errorMessage = 'Nevalidno korisničko ime ili lozinka.';
+        this.errorMessageKey = 'invalidLogin';
       }
     );
   }
@@ -44,8 +48,4 @@ export class LoginComponent implements OnInit, OnDestroy {
     document.body.classList.remove('login-page');
   }
 }
-
-
-
-
 

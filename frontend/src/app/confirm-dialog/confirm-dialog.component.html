@@ -1,0 +1,15 @@
+<ng-container *ngIf="state$ | async as state">
+  <div *ngIf="state.visible" class="confirm-backdrop">
+    <div class="confirm-dialog" role="dialog" aria-modal="true">
+      <p class="mb-4">{{ state.messageKey | translate }}</p>
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary cancel-button" (click)="close(false)">
+          {{ 'cancel' | translate }}
+        </button>
+        <button type="button" class="btn btn-primary" (click)="close(true)">
+          {{ 'confirm' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-container>

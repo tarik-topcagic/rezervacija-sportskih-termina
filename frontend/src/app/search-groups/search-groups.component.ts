@@ -7,10 +7,11 @@ import { NgClass, NgFor, NgIf } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { CreateGroupModalComponent } from '../create-group-modal/create-group-modal.component';
 import { EditGroupModalComponent } from '../edit-group-modal/edit-group-modal.component';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-search-groups',
-  imports: [NgIf, NgFor, NgClass, NavbarComponent, FormsModule, CreateGroupModalComponent, EditGroupModalComponent],
+  imports: [NgIf, NgFor, NgClass, NavbarComponent, FormsModule, CreateGroupModalComponent, EditGroupModalComponent, TranslatePipe],
   templateUrl: './search-groups.component.html',
   styleUrl: './search-groups.component.scss'
 })

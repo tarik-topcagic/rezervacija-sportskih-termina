@@ -1,25 +1,22 @@
 <app-navbar></app-navbar>
 <div class="banner-container">
     <div class="banner-overlay"></div>
-    <img src="images/image-asset.jpg" class="banner-image" alt="Banner">
+    <img src="images/image-asset.jpg" class="banner-image" [alt]="'appTitle' | translate">
 </div>
 <div class="container d-flex justify-content-center gap-4 flex-wrap cards-container">
     <div class="card text-center shadow-lg" style="width: 22rem;">
-        <img src="images/user.png" class="card-img-top mx-auto mt-3" style="width: 250px;" alt="User Avatar">
+        <img src="images/user.png" class="card-img-top mx-auto mt-3" style="width: 250px;" [alt]="'users' | translate">
         <div class="card-body">
-            <p class="card-text">Pronađite korisnike lako i brzo</p>
-            <a routerLink="/pretraga-korisnika" class="btn btn-primary">Pretraži korisnike</a>
+            <p class="card-text">{{ 'findUsers' | translate }}</p>
+            <a routerLink="/pretraga-korisnika" class="btn btn-primary">{{ 'searchUsers' | translate }}</a>
         </div>
     </div>
     
     <div class="card text-center shadow-lg" style="width: 22rem;">
-        <img src="images/tennis-court.png" class="card-img-top mx-auto mt-3" style="width: 250px;" alt="Tennis Court">
+        <img src="images/tennis-court.png" class="card-img-top mx-auto mt-3" style="width: 250px;" [alt]="'sportsFields' | translate">
         <div class="card-body">
-            <p class="card-text">Pronađite sportske termine lako i brzo</p>
-            <a routerLink="/search-events" class="btn btn-primary">Pretraži sportske terene</a>
+            <p class="card-text">{{ 'sportsFields' | translate }}</p>
+            <a routerLink="/search-events" class="btn btn-primary">{{ 'sportsFields' | translate }}</a>
         </div>
     </div>
 </div>
-
-
-
