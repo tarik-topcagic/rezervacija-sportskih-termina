@@ -1,0 +1,243 @@
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.choose-group-modal {
+  width: min(620px, 100%);
+  max-height: min(760px, calc(100vh - 2rem));
+  overflow: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #fff;
+  color: #212529;
+  padding: 1.25rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+}
+
+.choose-group-header,
+.group-choice-row,
+.group-choice-info,
+.group-search {
+  display: flex;
+  align-items: center;
+}
+
+.choose-group-header {
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.selected-user-summary {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.75rem;
+}
+
+.selected-user-avatar {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.selected-user-fallback {
+  background: #e9ecef;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selected-user-fallback .bi {
+  font-size: 1.5rem;
+}
+
+.modal-label {
+  margin: 0 0 0.25rem;
+  color: #6c757d;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.choose-group-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.modal-icon-button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: #fff;
+  color: #495057;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-icon-button:hover {
+  background: #f1f3f5;
+}
+
+.group-search {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.group-search .form-control {
+  min-height: 42px;
+  padding-right: 2.5rem;
+}
+
+.group-search .bi {
+  position: absolute;
+  right: 0.9rem;
+  color: #6c757d;
+}
+
+.group-choice-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.group-choice-row {
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  background: #fbfcfd;
+  padding: 0.75rem;
+}
+
+.group-choice-info {
+  min-width: 0;
+  gap: 0.75rem;
+}
+
+.group-choice-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 50%;
+  background: #e9ecef;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.group-choice-info strong,
+.group-choice-info span {
+  display: block;
+}
+
+.group-choice-info strong {
+  color: #212529;
+}
+
+.group-choice-info span {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.modal-status {
+  padding: 1rem 0;
+  color: #6c757d;
+  text-align: center;
+}
+
+.pending-cancel-action:not(:disabled) {
+  cursor: pointer;
+}
+
+.pending-cancel-action:not(:disabled):hover {
+  color: #fff;
+  background: #dc3545;
+  border-color: #dc3545;
+}
+
+.join-request-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+:host-context(body.dark-mode) .choose-group-modal {
+  background: #1f1f1f;
+  border-color: #3a3a3a;
+  color: #f1f3f5;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+:host-context(body.dark-mode) .modal-label,
+:host-context(body.dark-mode) .group-choice-info span,
+:host-context(body.dark-mode) .modal-status {
+  color: #c5c8cc;
+}
+
+:host-context(body.dark-mode) .group-choice-row {
+  background: #1f1f1f;
+  border-color: #3a3a3a;
+}
+
+:host-context(body.dark-mode) .group-choice-info strong {
+  color: #f1f3f5;
+}
+
+:host-context(body.dark-mode) .group-choice-icon {
+  background: #2a2a2a;
+  color: #adb5bd;
+}
+
+:host-context(body.dark-mode) .selected-user-fallback {
+  background: #2a2a2a;
+  color: #adb5bd;
+}
+
+:host-context(body.dark-mode) .modal-icon-button {
+  background: #1f1f1f;
+  color: #f1f3f5;
+  border-color: #3a3a3a;
+}
+
+:host-context(body.dark-mode) .modal-icon-button:hover {
+  background: #2a2a2a;
+}
+
+:host-context(body.dark-mode) .group-search .form-control {
+  background: #121212;
+  color: #f1f3f5;
+  border-color: #3a3a3a;
+}
+
+:host-context(body.dark-mode) .group-search .form-control::placeholder,
+:host-context(body.dark-mode) .group-search .bi {
+  color: #adb5bd;
+}
+
+@media (max-width: 576px) {
+  .group-choice-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .group-choice-row .btn {
+    width: 100%;
+  }
+
+  .join-request-actions {
+    width: 100%;
+  }
+}

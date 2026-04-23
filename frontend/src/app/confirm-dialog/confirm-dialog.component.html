@@ -1,6 +1,17 @@
 <ng-container *ngIf="state$ | async as state">
   <div *ngIf="state.visible" class="confirm-backdrop">
     <div class="confirm-dialog" role="dialog" aria-modal="true">
+      <div *ngIf="state.previewName" class="confirm-preview">
+        <ng-container *ngIf="state.previewImageUrl && state.previewImageUrl !== 'default-profile.png'; else defaultPreviewImage">
+          <img [src]="state.previewImageUrl" [alt]="state.previewName" class="confirm-preview-image" />
+        </ng-container>
+        <ng-template #defaultPreviewImage>
+          <div class="confirm-preview-fallback">
+            <i class="bi bi-person"></i>
+          </div>
+        </ng-template>
+        <strong>{{ state.previewName }}</strong>
+      </div>
       <p class="mb-4">{{ state.messageKey | translate }}</p>
       <div class="d-flex justify-content-end gap-2">
         <button type="button" class="btn btn-secondary cancel-button" (click)="close(false)">

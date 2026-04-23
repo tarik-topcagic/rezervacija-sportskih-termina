@@ -155,6 +155,52 @@ namespace SportskiTerminiAPI.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("SportskiTerminiAPI.Models.AppNotification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActorUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MembershipId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("MembershipId");
+
+                    b.HasIndex("UserId", "IsRead", "CreatedAt");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("SportskiTerminiAPI.Models.AppUser", b =>
                 {
                     b.Property<string>("Id")
@@ -271,11 +317,22 @@ namespace SportskiTerminiAPI.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Grad")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("KategorijaSporta")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -298,10 +355,16 @@ namespace SportskiTerminiAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("GroupId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RespondedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
@@ -313,9 +376,10 @@ namespace SportskiTerminiAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GroupId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("GroupId", "UserId")
+                        .IsUnique();
 
                     b.ToTable("GroupMemberships");
                 });
@@ -371,6 +435,38 @@ namespace SportskiTerminiAPI.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SportskiTerminiAPI.Models.AppNotification", b =>
+                {
+                    b.HasOne("SportskiTerminiAPI.Models.AppUser", "ActorUser")
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SportskiTerminiAPI.Models.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SportskiTerminiAPI.Models.GroupMembership", "Membership")
+                        .WithMany()
+                        .HasForeignKey("MembershipId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SportskiTerminiAPI.Models.AppUser", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ActorUser");
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Membership");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SportskiTerminiAPI.Models.Group", b =>
                 {
                     b.HasOne("SportskiTerminiAPI.Models.AppUser", "Admin")
@@ -406,6 +502,8 @@ namespace SportskiTerminiAPI.Migrations
                     b.Navigation("GroupMemberships");
 
                     b.Navigation("Groups");
+
+                    b.Navigation("Notifications");
                 });
 
             modelBuilder.Entity("SportskiTerminiAPI.Models.Group", b =>

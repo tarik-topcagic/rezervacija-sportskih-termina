@@ -49,6 +49,20 @@
       </div>
     </div>
     <div class="mb-3">
+      <label for="groupCity" class="form-label">{{ 'groupCity' | translate }}</label>
+      <input id="groupCity" type="text" formControlName="grad" class="form-control" required>
+      <div *ngIf="editGroupForm.get('grad')?.touched && editGroupForm.get('grad')?.invalid" class="text-danger">
+        {{ 'requiredField' | translate }}
+      </div>
+    </div>
+    <div class="mb-3">
+      <label for="sportCategory" class="form-label">{{ 'sportCategory' | translate }}</label>
+      <input id="sportCategory" type="text" formControlName="kategorijaSporta" class="form-control" required>
+      <div *ngIf="editGroupForm.get('kategorijaSporta')?.touched && editGroupForm.get('kategorijaSporta')?.invalid" class="text-danger">
+        {{ 'requiredField' | translate }}
+      </div>
+    </div>
+    <div class="mb-3">
       <label for="groupDescription" class="form-label">{{ 'description' | translate }}</label>
       <textarea id="groupDescription" formControlName="description" class="form-control"></textarea>
     </div>

@@ -2,11 +2,41 @@ export interface Group {
   id: number;
   name: string;
   description: string;
+  grad: string;
+  kategorijaSporta: string;
   adminId: string;
   imageUrl: string;
   createdAt: Date;
+  dateCreated: Date;
   memberships?: GroupMembership[];
   membersCount?: number; 
+}
+
+export interface GroupDetails {
+  id: number;
+  name: string;
+  description: string;
+  grad: string;
+  kategorijaSporta: string;
+  imageUrl: string;
+  adminDisplayName: string;
+  currentUserId: string;
+  dateCreated: Date;
+  membersCount: number;
+  isAdmin: boolean;
+  isMember: boolean;
+  hasPendingJoinRequest: boolean;
+  hasPendingInvitation: boolean;
+  pendingInvitationMembershipId?: number | null;
+  members: GroupMember[];
+}
+
+export interface GroupMember {
+  userId: string;
+  username: string;
+  displayName: string;
+  profilePictureUrl: string | null;
+  isAdmin: boolean;
 }
 
 export interface GroupMembership {
@@ -14,11 +44,23 @@ export interface GroupMembership {
   groupId: number;
   userId: string;
   status: MembershipStatus;
+  username?: string;
+  fullName?: string;
+  createdAt?: Date;
   joinedAt: Date;
+  respondedAt?: Date | null;
+}
+
+export interface GroupMembershipState {
+  groupId: number;
+  userId: string;
+  membershipId: number;
+  status: MembershipStatus;
 }
 
 export enum MembershipStatus {
-  Pending = 0,
-  Invited = 1,
-  Accepted = 2
+  PendingJoinRequest = 'PendingJoinRequest',
+  PendingInvitation = 'PendingInvitation',
+  Accepted = 'Accepted',
+  Declined = 'Declined'
 }

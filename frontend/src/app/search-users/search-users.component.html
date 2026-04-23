@@ -50,9 +50,14 @@
                       <div class="icon-square" [title]="'viewProfile' | translate" (click)="viewProfile($event, user)">
                         <i class="bi bi-eye"></i>
                       </div>
-                      <div class="icon-square" [title]="'addToGroup' | translate">
-                        <i class="bi bi-people"></i>
-                      </div>
+                      <button
+                        type="button"
+                        class="icon-square"
+                        [title]="'addToGroup' | translate"
+                        (click)="openChooseGroupModal($event, user)"
+                      >
+                        <i class="bi bi-person-plus"></i>
+                      </button>
                       <div class="icon-square" [title]="'sendMessage' | translate">
                         <i class="bi bi-chat-dots"></i>
                       </div>
@@ -91,3 +96,9 @@
     </div>
   </div>
 </div>
+
+<app-choose-group-modal
+  *ngIf="selectedUserForGroupInvite"
+  [user]="selectedUserForGroupInvite"
+  (close)="closeChooseGroupModal()"
+></app-choose-group-modal>

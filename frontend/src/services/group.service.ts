@@ -1,14 +1,16 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Group } from '../app/interfaces/group.model';
+import { Observable, Subject, tap } from 'rxjs';
+import { Group, GroupDetails, GroupMembershipState } from '../app/interfaces/group.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GroupService {
   private apiUrl = environment.apiUrl + '/groups';
+  private membershipChangedSubject = new Subject<void>();
+  membershipChanged$ = this.membershipChangedSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
@@ -21,23 +23,51 @@ export class GroupService {
     return this.http.put(`${this.apiUrl}/${groupId}/update`, updateData);
   }
 
+  getGroupDetails(groupId: number): Observable<GroupDetails> {
+    return this.http.get<GroupDetails>(`${this.apiUrl}/${groupId}`);
+  }
+
   requestToJoin(groupId: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/${groupId}/join-request`, {});
   }
 
-  sendInvite(groupId: number, userId: number): Observable<any> {
+  sendInvite(groupId: number, userId: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/${groupId}/invite`, { userId });
+  }
+
+  cancelInvitation(groupId: number, userId: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${groupId}/invitations/${encodeURIComponent(userId)}`);
+  }
+
+  getGroupMemberships(groupId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${groupId}/memberships`);
+  }
+
+  removeMember(groupId: number, memberId: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${groupId}/members/${encodeURIComponent(memberId)}`).pipe(
+      tap(() => this.notifyMembershipChanged()),
+    );
+  }
+
+  cancelJoinRequest(groupId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${groupId}/join-request`);
   }
 
   respondInvite(membershipId: number, accept: boolean): Observable<any> {
     return this.http.post(`${this.apiUrl}/respond-invite`, {
       membershipId,
       accept,
-    });
+    }).pipe(
+      tap(() => {
+        if (accept) {
+          this.notifyMembershipChanged();
+        }
+      }),
+    );
   }
 
   respondJoinRequest(groupId: number, membershipId: number, accept: boolean): Observable<any> {
-    return this.http.post(`${this.apiUrl}/respond-request`, {
+    return this.http.post(`${this.apiUrl}/${groupId}/respond-request`, {
       membershipId,
       accept,
     });
@@ -45,6 +75,12 @@ export class GroupService {
 
   getMyGroups(): Observable<Group[]> {
     return this.http.get<Group[]>(`${this.apiUrl}/admin`);
+  }
+
+  getMembershipStatusForAdminGroups(userId: string): Observable<GroupMembershipState[]> {
+    return this.http.get<GroupMembershipState[]>(
+      `${this.apiUrl}/admin/membership-status/${encodeURIComponent(userId)}`,
+    );
   }
 
   getMemberGroups(): Observable<Group[]> {
@@ -68,5 +104,9 @@ export class GroupService {
 
   deleteGroupPicture(groupId: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${groupId}/delete-group-picture`);
+  }
+
+  notifyMembershipChanged(): void {
+    this.membershipChangedSubject.next();
   }
 }

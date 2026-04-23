@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Group } from '../interfaces/group.model';
 import { GroupService } from '../../services/group.service';
 import { NavbarComponent } from '../navbar/navbar.component';
@@ -8,6 +8,8 @@ import { AuthService } from '../../services/auth.service';
 import { CreateGroupModalComponent } from '../create-group-modal/create-group-modal.component';
 import { EditGroupModalComponent } from '../edit-group-modal/edit-group-modal.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-search-groups',
@@ -15,7 +17,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
   templateUrl: './search-groups.component.html',
   styleUrl: './search-groups.component.scss'
 })
-export class SearchGroupsComponent{
+export class SearchGroupsComponent implements OnDestroy {
   searchQuery: string = '';
   searchedGroups: Group[] = [];
   myGroups: Group[] = [];
@@ -29,14 +31,23 @@ export class SearchGroupsComponent{
   totalPages: number = 0;
   pagedGroups: any[] = [];
   totalPagesArray: number[] = [];
+  private membershipChangedSubscription?: Subscription;
 
-  constructor(private groupService: GroupService, private authService: AuthService) {
+  constructor(private groupService: GroupService, private authService: AuthService, private router: Router) {
+    this.membershipChangedSubscription = this.groupService.membershipChanged$.subscribe(() => {
+      this.getMemberGroups();
+      this.searchGroups();
+    });
   }
 
   ngOnInit(): void {
     this.searchGroups();
     this.getMyGroups();
     this.getMemberGroups();
+  }
+
+  ngOnDestroy(): void {
+    this.membershipChangedSubscription?.unsubscribe();
   }
 
   searchGroups(): void {
@@ -118,6 +129,10 @@ export class SearchGroupsComponent{
   openEditGroupModal(group: Group): void {
     this.selectedGroupToEdit = group;
     this.showEditGroupModal = true;
+  }
+
+  viewGroup(group: Group): void {
+    this.router.navigate(['/grupe', group.id]);
   }
 
   closeEditGroupModal(): void {

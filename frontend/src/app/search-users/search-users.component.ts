@@ -6,24 +6,31 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 import { UserService } from '../../services/user.service';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { User } from '../interfaces/user';
+import { ChooseGroupModalComponent } from '../choose-group-modal/choose-group-modal.component';
 
 @Component({
   selector: 'app-search-users',
-  imports: [NgFor, NgIf, NavbarComponent, FormsModule, TranslatePipe],
+  imports: [NgFor, NgIf, NavbarComponent, FormsModule, TranslatePipe, ChooseGroupModalComponent],
   templateUrl: './search-users.component.html',
   styleUrl: './search-users.component.scss'
 })
 export class SearchUsersComponent {
   searchQuery: string = '';
-  users: any[] = [];
+  users: User[] = [];
   currentUsername: string = '';
+  selectedUserForGroupInvite: User | null = null;
 
-  pagedUsers: any[] = [];
+  pagedUsers: User[] = [];
   currentPage: number = 1;
   itemsPerPage: number = 6;
   totalPages: number = 0;
 
-  constructor(private userService: UserService, private router: Router, private authService: AuthService) {
+  constructor(
+    private userService: UserService,
+    private router: Router,
+    private authService: AuthService,
+  ) {
     const currentUser = this.authService.currentUserValue;
     if (currentUser) {
       this.currentUsername = currentUser.username;
@@ -101,5 +108,19 @@ export class SearchUsersComponent {
     if (user.username === this.currentUsername) {
       this.router.navigate(['/postavke-profila']);
     }
+  }
+
+  openChooseGroupModal(event: Event, user: User): void {
+    event.stopPropagation();
+
+    if (!user.id) {
+      return;
+    }
+
+    this.selectedUserForGroupInvite = user;
+  }
+
+  closeChooseGroupModal(): void {
+    this.selectedUserForGroupInvite = null;
   }
 }

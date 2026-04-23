@@ -68,9 +68,25 @@
   padding: 6px;
   border-radius: 4px;
   cursor: pointer;
+  border: 0;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 34px;
 }
 
-.icon-square:hover {
+.icon-square:hover:not(:disabled) {
   background-color: #1a8fc7;
   transition: 0.3s ease;
+}
+
+.icon-square:disabled {
+  cursor: default;
+  opacity: 0.9;
+}
+
+.icon-square.pending {
+  background-color: #6c757d;
 }

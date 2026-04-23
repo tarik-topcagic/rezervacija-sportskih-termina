@@ -32,6 +32,8 @@ export class EditGroupModalComponent implements OnInit {
   ) {
     this.editGroupForm = this.fb.group({
       name: ['', Validators.required],
+      grad: ['', Validators.required],
+      kategorijaSporta: ['', Validators.required],
       description: ['']
     });
   }
@@ -39,6 +41,8 @@ export class EditGroupModalComponent implements OnInit {
   ngOnInit(): void {
     this.editGroupForm.patchValue({
       name: this.group.name,
+      grad: this.group.grad,
+      kategorijaSporta: this.group.kategorijaSporta,
       description: this.group.description
     });
 
@@ -76,6 +80,8 @@ export class EditGroupModalComponent implements OnInit {
     const data = {
       Name: this.editGroupForm.value.name,
       Description: this.editGroupForm.value.description,
+      Grad: this.editGroupForm.value.grad,
+      KategorijaSporta: this.editGroupForm.value.kategorijaSporta,
       GroupPictureUrl: this.previewUrl ? this.previewUrl : ""
     };
   

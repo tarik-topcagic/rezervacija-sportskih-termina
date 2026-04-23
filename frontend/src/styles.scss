@@ -1,4 +1,9 @@
 /* You can add global styles to this file, and also import other style files */
+:root {
+    --app-modal-backdrop-bg: rgba(15, 23, 42, 0.56);
+    --app-modal-backdrop-blur: blur(4px);
+}
+
 html, body {
     margin: 0;
     padding: 0;
@@ -8,9 +13,23 @@ body:not(.home-page):not(.register-page):not(.login-page) {
     padding-top: 56px;
 }
 
+body.bottom-groups-visible {
+    padding-bottom: 64px;
+}
+
 body.dark-mode {
     background-color: #121212;
     color: #f1f3f5;
+    --app-modal-backdrop-bg: rgba(0, 0, 0, 0.68);
+}
+
+.modal-backdrop,
+.modal-backdrop-custom,
+.confirm-backdrop {
+    background: var(--app-modal-backdrop-bg) !important;
+    background-color: var(--app-modal-backdrop-bg) !important;
+    backdrop-filter: var(--app-modal-backdrop-blur);
+    -webkit-backdrop-filter: var(--app-modal-backdrop-blur);
 }
 
 body.dark-mode .card,
@@ -41,10 +60,6 @@ body.dark-mode .modal-content {
     border: 1px solid #3a3a3a;
 }
 
-body.dark-mode .modal-backdrop {
-    background: rgba(0, 0, 0, 0.65) !important;
-}
-
 body.dark-mode .bg-light {
     background-color: #2a2a2a !important;
 }
@@ -71,6 +86,49 @@ body.dark-mode .cancel-button.btn.btn-secondary:focus {
     background-color: #bb2d3b !important;
     border-color: #b02a37 !important;
     color: #ffffff !important;
+}
+
+.decline-action.btn {
+    --bs-btn-color: #6c757d;
+    --bs-btn-border-color: #6c757d;
+    --bs-btn-bg: transparent;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: #6c757d;
+    --bs-btn-hover-border-color: #6c757d;
+    --bs-btn-active-color: #ffffff;
+    --bs-btn-active-bg: #5c636a;
+    --bs-btn-active-border-color: #565e64;
+    --bs-btn-disabled-color: #6c757d;
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: #6c757d;
+}
+
+.decline-action.btn:not(:disabled):hover,
+.decline-action.btn:not(:disabled):focus {
+    color: #ffffff !important;
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+}
+
+body.dark-mode .decline-action.btn {
+    --bs-btn-color: #c5c8cc;
+    --bs-btn-border-color: #3a3a3a;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: #4b4f54;
+    --bs-btn-hover-border-color: #5a5f65;
+    --bs-btn-active-color: #ffffff;
+    --bs-btn-active-bg: #3f4449;
+    --bs-btn-active-border-color: #4f555b;
+    --bs-btn-disabled-color: #8d9297;
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: #3a3a3a;
+}
+
+body.dark-mode .decline-action.btn:not(:disabled):hover,
+body.dark-mode .decline-action.btn:not(:disabled):focus {
+    color: #ffffff !important;
+    background-color: #4b4f54 !important;
+    border-color: #5a5f65 !important;
 }
   
   

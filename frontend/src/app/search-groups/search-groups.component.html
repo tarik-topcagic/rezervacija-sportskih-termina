@@ -35,21 +35,21 @@
                 <div class="overlay">
                   <div class="overlay-icons">
                     <ng-container *ngIf="isMyGroup(group)">
-                      <div class="icon-square" [title]="'viewGroup' | translate">
+                      <div class="icon-square" [title]="'viewGroup' | translate" (click)="viewGroup(group)">
                         <i class="bi bi-eye"></i>
                       </div>
-                      <div class="icon-square" [title]="'editGroup' | translate">
+                      <div class="icon-square" [title]="'editGroup' | translate" (click)="openEditGroupModal(group)">
                         <i class="bi bi-pencil"></i>
                       </div>
                     </ng-container>
                     <ng-container *ngIf="!isMyGroup(group) && isMemberGroup(group)">
-                      <div class="icon-square" [title]="'viewGroup' | translate">
+                      <div class="icon-square" [title]="'viewGroup' | translate" (click)="viewGroup(group)">
                         <i class="bi bi-eye"></i>
                       </div>
                     </ng-container>
                     <ng-container *ngIf="!isMyGroup(group) && !isMemberGroup(group)">
-                      <div class="icon-square" [title]="'requestJoinGroup' | translate">
-                        <i class="bi bi-person-plus"></i>
+                      <div class="icon-square" [title]="'viewGroup' | translate" (click)="viewGroup(group)">
+                        <i class="bi bi-eye"></i>
                       </div>
                     </ng-container>
                   </div>
@@ -108,7 +108,7 @@
                 </ng-template>
                 <div class="overlay">
                   <div class="overlay-icons">
-                    <div class="icon-square" [title]="'viewGroup' | translate">
+                    <div class="icon-square" [title]="'viewGroup' | translate" (click)="viewGroup(group)">
                       <i class="bi bi-eye"></i>
                     </div>
                     <div class="icon-square" [title]="'editGroup' | translate" (click)="openEditGroupModal(group)">
@@ -153,7 +153,7 @@
                   </ng-template>
                   <div class="overlay">
                     <div class="overlay-icons">
-                      <div class="icon-square" [title]="'viewGroup' | translate">
+                      <div class="icon-square" [title]="'viewGroup' | translate" (click)="viewGroup(group)">
                         <i class="bi bi-eye"></i>
                       </div>
                     </div>

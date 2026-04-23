@@ -1,0 +1,121 @@
+.bottom-group-navbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1025;
+  padding: 0.45rem 0.75rem;
+  background: var(--bs-primary);
+  color: #fff;
+  box-shadow: 0 -10px 26px rgba(0, 0, 0, 0.18);
+  animation: rise-from-bottom 240ms ease-out both;
+}
+
+.bottom-group-scroller {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: grab;
+  touch-action: pan-x;
+  user-select: none;
+}
+
+.bottom-group-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.bottom-group-scroller.dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
+}
+
+.bottom-group-item {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: min(220px, 70vw);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.65rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.bottom-group-item:hover,
+.bottom-group-item:focus-visible {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+  outline: none;
+}
+
+.bottom-group-item:active {
+  transform: translateY(1px);
+}
+
+.bottom-group-image,
+.bottom-group-fallback {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+}
+
+.bottom-group-image {
+  object-fit: cover;
+}
+
+.bottom-group-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--bs-primary);
+  font-size: 1rem;
+}
+
+.bottom-group-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:host-context(body.dark-mode) .bottom-group-navbar {
+  background: var(--bs-primary);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.48);
+}
+
+@keyframes rise-from-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 576px) {
+  .bottom-group-navbar {
+    padding: 0.45rem 0.55rem;
+  }
+
+  .bottom-group-item {
+    max-width: 76vw;
+    padding-inline: 0.55rem;
+  }
+}

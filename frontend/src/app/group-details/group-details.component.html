@@ -1,0 +1,352 @@
+<app-navbar></app-navbar>
+
+<main class="group-details-page">
+  <div class="container">
+    <a class="back-link" routerLink="/grupe">
+      <i class="bi bi-arrow-left"></i>
+      {{ 'backToGroups' | translate }}
+    </a>
+
+    <div *ngIf="isLoading" class="status-message">
+      {{ 'loading' | translate }}
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+      {{ errorMessage }}
+    </div>
+
+    <section *ngIf="group && !isLoading" class="details-shell">
+      <div class="details-header">
+        <div class="title-block">
+          <div class="group-image-container">
+            <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultGroupImage">
+              <img [src]="group.imageUrl" [alt]="group.name" class="group-image" />
+            </ng-container>
+            <ng-template #defaultGroupImage>
+              <div class="default-placeholder">
+                <i class="bi bi-people"></i>
+              </div>
+            </ng-template>
+          </div>
+          <div>
+            <p class="section-label">{{ 'groupDetails' | translate }}</p>
+            <h1>{{ group.name }}</h1>
+          </div>
+        </div>
+        <div class="actions">
+          <div *ngIf="group.isMember && !group.isAdmin" class="member-status-dropdown">
+            <button type="button" class="btn btn-outline-primary member-status-button" (click)="toggleMemberMenu()">
+              {{ 'memberOfGroup' | translate }}
+              <i class="bi bi-caret-down-fill"></i>
+            </button>
+            <div *ngIf="isMemberMenuOpen" class="member-status-menu">
+              <button type="button" class="member-status-menu-item" (click)="leaveGroup()">
+                <i class="bi bi-box-arrow-right"></i>
+                {{ 'leaveGroup' | translate }}
+              </button>
+            </div>
+          </div>
+          <button *ngIf="group.isAdmin" type="button" class="btn btn-outline-primary" (click)="openEditGroupModal()">
+            <i class="bi bi-pencil"></i>
+            {{ 'editGroup' | translate }}
+          </button>
+          <button
+            *ngIf="group.isAdmin"
+            type="button"
+            class="btn btn-primary"
+            (click)="openInviteMembersModal()"
+          >
+            <i class="bi bi-person-plus"></i>
+            {{ 'addMembers' | translate }}
+          </button>
+          <ng-container *ngIf="!group.isAdmin && !group.isMember && group.hasPendingInvitation">
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="isRespondingToInvitation"
+              (click)="acceptInvitation()"
+            >
+              <i class="bi bi-check-circle"></i>
+              {{ 'acceptInvitation' | translate }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary decline-action"
+              [disabled]="isRespondingToInvitation"
+              (click)="declineInvitation()"
+            >
+              <i class="bi bi-x-circle"></i>
+              {{ 'declineInvitation' | translate }}
+            </button>
+          </ng-container>
+          <button
+            *ngIf="!group.isAdmin && !group.isMember && !group.hasPendingInvitation && !group.hasPendingJoinRequest"
+            type="button"
+            class="btn btn-primary"
+            [disabled]="isRequestingAccess"
+            (click)="requestAccess()"
+          >
+            <i class="bi bi-door-open"></i>
+            {{ (isRequestingAccess ? 'requestingAccess' : 'requestAccess') | translate }}
+          </button>
+          <button
+            *ngIf="!group.isAdmin && !group.isMember && group.hasPendingJoinRequest"
+            type="button"
+            class="btn btn-outline-secondary pending-cancel-action"
+            [disabled]="isCancelingAccessRequest"
+            [title]="'cancelJoinRequest' | translate"
+            (click)="cancelAccessRequest()"
+          >
+            <i class="bi bi-x-circle"></i>
+            {{ (isCancelingAccessRequest ? 'canceling' : 'pending') | translate }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="successMessage" class="alert alert-success">
+        {{ successMessage }}
+      </div>
+
+      <div class="details-grid">
+        <div class="detail-item">
+          <span>{{ 'groupName' | translate }}</span>
+          <strong>{{ group.name }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'groupCity' | translate }}</span>
+          <strong>{{ group.grad }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'sportCategory' | translate }}</span>
+          <strong>{{ group.kategorijaSporta }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'groupAdmin' | translate }}</span>
+          <strong>{{ group.adminDisplayName }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'dateCreated' | translate }}</span>
+          <strong>{{ group.dateCreated | date:'dd.MM.yyyy.' }}</strong>
+        </div>
+        <button
+          *ngIf="group.isMember; else readonlyMembersCount"
+          type="button"
+          class="detail-item detail-button"
+          [title]="'groupMembers' | translate"
+          (click)="openMembersModal()"
+        >
+          <span>{{ 'membersCountLabel' | translate }}</span>
+          <strong>{{ group.membersCount }}</strong>
+        </button>
+        <ng-template #readonlyMembersCount>
+          <div class="detail-item">
+            <span>{{ 'membersCountLabel' | translate }}</span>
+            <strong>{{ group.membersCount }}</strong>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="description-section">
+        <span>{{ 'description' | translate }}</span>
+        <p>{{ group.description }}</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div
+  *ngIf="showMembersModal && group"
+  class="modal-backdrop-custom"
+  role="presentation"
+  (click)="closeMembersModal()"
+>
+  <section
+    class="invite-modal members-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'groupMembers' | translate"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="invite-modal-header">
+      <div>
+        <p class="section-label">{{ 'groupDetails' | translate }}</p>
+        <h2>{{ 'groupMembers' | translate }}</h2>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        [title]="'cancel' | translate"
+        (click)="closeMembersModal()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="members-admin-summary">
+      <span>{{ 'groupAdmin' | translate }}</span>
+      <strong>{{ group.adminDisplayName }}</strong>
+    </div>
+
+    <div class="invite-user-list members-list">
+      <div class="invite-user-row member-row" *ngFor="let member of group.members">
+        <div class="invite-user-info">
+          <ng-container *ngIf="member.profilePictureUrl && member.profilePictureUrl !== 'default-profile.png'; else memberDefaultAvatar">
+            <img [src]="member.profilePictureUrl" [alt]="member.displayName" class="invite-avatar" />
+          </ng-container>
+          <ng-template #memberDefaultAvatar>
+            <div class="invite-avatar default-avatar">
+              <i class="bi bi-person"></i>
+            </div>
+          </ng-template>
+          <div>
+            <strong>{{ member.displayName || member.username }}</strong>
+            <span *ngIf="member.isAdmin">{{ 'groupAdmin' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="member-actions">
+          <button type="button" class="btn btn-sm btn-primary" (click)="viewMemberProfile(member)">
+            <i class="bi bi-eye"></i>
+            {{ 'viewUserProfile' | translate }}
+          </button>
+          <button *ngIf="!isCurrentUser(member)" type="button" class="btn btn-sm btn-outline-secondary" disabled>
+            <i class="bi bi-chat-dots"></i>
+            {{ 'message' | translate }}
+          </button>
+          <button
+            *ngIf="canRemoveMember(member)"
+            type="button"
+            class="btn btn-sm btn-danger"
+            [disabled]="isRemovingMember(member)"
+            (click)="removeMember(member)"
+          >
+            <i class="bi bi-person-dash"></i>
+            {{ 'removeFromGroup' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<app-edit-group-modal
+  *ngIf="showEditGroupModal && selectedGroupToEdit"
+  [group]="selectedGroupToEdit"
+  (close)="closeEditGroupModal()"
+  (groupUpdated)="onGroupUpdated($event)"
+></app-edit-group-modal>
+
+<div
+  *ngIf="showInviteMembersModal && group"
+  class="modal-backdrop-custom"
+  role="presentation"
+  (click)="closeInviteMembersModal()"
+>
+  <section
+    class="invite-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'addMembers' | translate"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="invite-modal-header">
+      <div>
+        <p class="section-label">{{ 'groupDetails' | translate }}</p>
+        <h2>{{ 'addMembers' | translate }}</h2>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        [title]="'cancel' | translate"
+        (click)="closeInviteMembersModal()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="invite-search">
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="inviteSearchQuery"
+        [placeholder]="'enterNameOrUsername' | translate"
+        (keyup.enter)="searchInviteUsers()"
+      />
+      <button type="button" class="btn btn-primary" (click)="searchInviteUsers()">
+        <i class="bi bi-search"></i>
+        {{ 'search' | translate }}
+      </button>
+    </div>
+
+    <div *ngIf="inviteModalMessage" class="alert alert-success">
+      {{ inviteModalMessage }}
+    </div>
+    <div *ngIf="inviteModalError" class="alert alert-danger">
+      {{ inviteModalError }}
+    </div>
+
+    <div *ngIf="isLoadingInviteUsers" class="status-message compact">
+      {{ 'loading' | translate }}
+    </div>
+
+    <div *ngIf="!isLoadingInviteUsers && inviteUsers.length" class="invite-user-list">
+      <div class="invite-user-row" *ngFor="let user of inviteUsers">
+        <div class="invite-user-info">
+          <ng-container *ngIf="user.profilePictureUrl && user.profilePictureUrl !== 'default-profile.png'; else inviteDefaultAvatar">
+            <img [src]="user.profilePictureUrl" [alt]="user.fullName" class="invite-avatar" />
+          </ng-container>
+          <ng-template #inviteDefaultAvatar>
+            <div class="invite-avatar default-avatar">
+              <i class="bi bi-person"></i>
+            </div>
+          </ng-template>
+          <div>
+            <strong>{{ user.fullName || user.username }}</strong>
+            <span>{{ user.username }}</span>
+          </div>
+        </div>
+
+        <div *ngIf="isPendingJoinRequest(user); else inviteAction" class="join-request-actions">
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            [disabled]="isRespondingJoinRequest(user)"
+            (click)="acceptJoinRequest(user)"
+          >
+            <i class="bi bi-check-circle"></i>
+            {{ 'accept' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary decline-action"
+            [disabled]="isRespondingJoinRequest(user)"
+            (click)="declineJoinRequest(user)"
+          >
+            <i class="bi bi-x-circle"></i>
+            {{ 'decline' | translate }}
+          </button>
+        </div>
+
+        <ng-template #inviteAction>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="!isInvitationBlocked(user)"
+            [class.btn-outline-secondary]="isInvitationBlocked(user)"
+            [class.pending-cancel-action]="canCancelPendingConnection(user)"
+            [disabled]="isInviteActionDisabled(user)"
+            [title]="getInviteActionTitle(user) | translate"
+            (click)="handleInviteAction(user)"
+          >
+            <i class="bi {{ getInviteActionIcon(user) }}"></i>
+            {{ getInviteLabel(user) | translate }}
+          </button>
+        </ng-template>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoadingInviteUsers && !inviteUsers.length" class="status-message compact">
+      {{ 'noUsersFound' | translate }}
+    </div>
+  </section>
+</div>

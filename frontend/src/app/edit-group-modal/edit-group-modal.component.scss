@@ -4,9 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.45);
   z-index: 1040;
-  backdrop-filter: blur(2px);
 }
 
 .modal-content {
@@ -37,10 +35,6 @@
   background-color: #e9ecef;
   color: #495057;
   border: 1px solid #ced4da;
-}
-
-:host-context(body.dark-mode) .modal-backdrop {
-  background: rgba(0, 0, 0, 0.72);
 }
 
 :host-context(body.dark-mode) .modal-content {

@@ -37,6 +37,7 @@ namespace SportskiTerminiAPI.Repositories
         public async Task<Group?> GetGroupByIdAsync(int groupId)
         {
             return await _context.Groups
+                .Include(g => g.Admin)
                 .Include(g => g.Memberships)
                 .ThenInclude(m => m.User)
                 .FirstOrDefaultAsync(g => g.Id == groupId);
@@ -59,7 +60,18 @@ namespace SportskiTerminiAPI.Repositories
 
         public async Task<GroupMembership?> GetMembershipByIdAsync(int membershipId)
         {
-            return await _context.GroupMemberships.FirstOrDefaultAsync(m => m.Id == membershipId);
+            return await _context.GroupMemberships
+                .Include(m => m.User)
+                .Include(m => m.group)
+                .ThenInclude(g => g.Admin)
+                .FirstOrDefaultAsync(m => m.Id == membershipId);
+        }
+
+        public async Task<GroupMembership?> GetMembershipAsync(int groupId, string userId)
+        {
+            return await _context.GroupMemberships
+                .Include(m => m.User)
+                .FirstOrDefaultAsync(m => m.GroupId == groupId && m.UserId == userId);
         }
 
         public async Task<IEnumerable<GroupMembership>> GetMembershipsForGroupAsync(int groupId)
@@ -70,19 +82,32 @@ namespace SportskiTerminiAPI.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<GroupMembership>> GetMembershipsForUserAsync(string userId)
+        {
+            return await _context.GroupMemberships
+                .Where(m => m.UserId == userId)
+                .Include(m => m.User)
+                .Include(m => m.group)
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<GroupDto>> GetPublicGroupsAsync(string userId)
         {
             return await _context.Groups
                 .Include(g => g.Memberships)
-                .Where(g => g.AdminId != userId && !g.Memberships.Any(m => m.UserId == userId))
+                .Where(g => g.AdminId != userId && !g.Memberships.Any(m => m.UserId == userId && m.Status != MembershipStatus.Declined))
                 .Select(g => new GroupDto
                 {
                     Id = g.Id,
                     Name = g.Name,
                     Description = g.Description,
+                    Grad = g.Grad,
+                    KategorijaSporta = g.KategorijaSporta,
                     AdminId = g.AdminId,
+                    DateCreated = g.DateCreated,
                     ImageUrl = g.ImageUrl,
-                    MembersCount = g.Memberships.Count()
+                    MembersCount = g.Memberships.Count(m => m.Status == MembershipStatus.Accepted)
+                        + (g.Memberships.Any(m => m.UserId == g.AdminId && m.Status == MembershipStatus.Accepted) ? 0 : 1)
                 })
                 .ToListAsync();
         }
@@ -101,15 +126,19 @@ namespace SportskiTerminiAPI.Repositories
         {
             return await _context.Groups
                 .Include(g => g.Memberships)
-                .Where(g => (g.Name.Contains(query) || g.Description.Contains(query)))
+                .Where(g => g.Name.Contains(query) || g.Description.Contains(query) || g.Grad.Contains(query) || g.KategorijaSporta.Contains(query))
                 .Select(g => new GroupDto
                 {
                     Id = g.Id,
                     Name = g.Name,
                     Description = g.Description,
+                    Grad = g.Grad,
+                    KategorijaSporta = g.KategorijaSporta,
                     AdminId = g.AdminId,
+                    DateCreated = g.DateCreated,
                     ImageUrl = g.ImageUrl,
-                    MembersCount = g.Memberships.Count()
+                    MembersCount = g.Memberships.Count(m => m.Status == MembershipStatus.Accepted)
+                        + (g.Memberships.Any(m => m.UserId == g.AdminId && m.Status == MembershipStatus.Accepted) ? 0 : 1)
                 })
                 .ToListAsync();
         }

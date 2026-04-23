@@ -4,7 +4,14 @@ import { BehaviorSubject } from 'rxjs';
 export interface ConfirmDialogState {
   visible: boolean;
   messageKey: string;
+  previewName?: string;
+  previewImageUrl?: string | null;
   resolve?: (confirmed: boolean) => void;
+}
+
+export interface ConfirmDialogOptions {
+  previewName?: string;
+  previewImageUrl?: string | null;
 }
 
 @Injectable({
@@ -18,11 +25,13 @@ export class ConfirmDialogService {
 
   state$ = this.stateSubject.asObservable();
 
-  confirm(messageKey: string): Promise<boolean> {
+  confirm(messageKey: string, options: ConfirmDialogOptions = {}): Promise<boolean> {
     return new Promise((resolve) => {
       this.stateSubject.next({
         visible: true,
         messageKey,
+        previewName: options.previewName,
+        previewImageUrl: options.previewImageUrl,
         resolve,
       });
     });
@@ -34,6 +43,8 @@ export class ConfirmDialogService {
     this.stateSubject.next({
       visible: false,
       messageKey: '',
+      previewName: undefined,
+      previewImageUrl: undefined,
     });
   }
 }

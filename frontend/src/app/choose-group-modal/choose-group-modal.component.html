@@ -1,0 +1,119 @@
+<div
+  *ngIf="user"
+  class="modal-backdrop-custom"
+  role="presentation"
+  (click)="closeModal()"
+>
+  <section
+    class="choose-group-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'chooseGroup' | translate"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="choose-group-header">
+      <div class="selected-user-summary">
+        <ng-container *ngIf="user.profilePictureUrl && user.profilePictureUrl !== 'default-profile.png'; else selectedUserFallback">
+          <img
+            [src]="user.profilePictureUrl"
+            [alt]="user.fullName || user.username"
+            class="selected-user-avatar"
+          />
+        </ng-container>
+        <ng-template #selectedUserFallback>
+          <div class="selected-user-avatar selected-user-fallback">
+            <i class="bi bi-person"></i>
+          </div>
+        </ng-template>
+        <div>
+          <p class="modal-label">{{ 'addToGroup' | translate }}</p>
+          <h3>{{ user.fullName || user.username }}</h3>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="modal-icon-button"
+        [title]="'cancel' | translate"
+        (click)="closeModal()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="group-search">
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="groupSearchQuery"
+        [placeholder]="'searchGroupsTitle' | translate"
+      />
+      <i class="bi bi-search"></i>
+    </div>
+
+    <div *ngIf="inviteSuccessMessage" class="alert alert-success">
+      {{ inviteSuccessMessage }}
+    </div>
+    <div *ngIf="inviteErrorMessage" class="alert alert-danger">
+      {{ inviteErrorMessage }}
+    </div>
+
+    <div *ngIf="isLoadingGroups" class="modal-status">
+      {{ 'loading' | translate }}
+    </div>
+
+    <div *ngIf="!isLoadingGroups && filteredAdminGroups.length" class="group-choice-list">
+      <div class="group-choice-row" *ngFor="let group of filteredAdminGroups">
+        <div class="group-choice-info">
+          <div class="group-choice-icon">
+            <i class="bi bi-people"></i>
+          </div>
+          <div>
+            <strong>{{ group.name }}</strong>
+            <span>{{ group.grad }} - {{ group.kategorijaSporta }}</span>
+          </div>
+        </div>
+
+        <div *ngIf="canRespondToJoinRequest(group); else groupInviteAction" class="join-request-actions">
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            [disabled]="isRespondingJoinRequest(group)"
+            (click)="acceptJoinRequest(group)"
+          >
+            <i class="bi bi-check-circle"></i>
+            {{ 'accept' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary decline-action"
+            [disabled]="isRespondingJoinRequest(group)"
+            (click)="declineJoinRequest(group)"
+          >
+            <i class="bi bi-x-circle"></i>
+            {{ 'decline' | translate }}
+          </button>
+        </div>
+
+        <ng-template #groupInviteAction>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="!isGroupConnected(group)"
+            [class.btn-outline-secondary]="isGroupConnected(group)"
+            [class.pending-cancel-action]="canCancelGroupInvitation(group)"
+            [disabled]="isGroupInviteDisabled(group)"
+            [title]="getGroupInviteTitle(group) | translate"
+            (click)="handleGroupInviteAction(group)"
+          >
+            <i class="bi {{ getGroupInviteIcon(group) }}"></i>
+            {{ getGroupInviteLabel(group) | translate }}
+          </button>
+        </ng-template>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoadingGroups && !filteredAdminGroups.length" class="modal-status">
+      {{ 'noAdminGroups' | translate }}
+    </div>
+  </section>
+</div>

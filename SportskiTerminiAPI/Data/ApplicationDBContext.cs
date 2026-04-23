@@ -14,6 +14,7 @@ namespace SportskiTerminiAPI.Data
         public DbSet<Grad> Gradovi { get; set; }
         public DbSet<Group> Groups { get; set; }
         public DbSet<GroupMembership> GroupMemberships { get; set; }
+        public DbSet<AppNotification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -35,7 +36,38 @@ namespace SportskiTerminiAPI.Data
                 .HasOne(gm => gm.group)
                 .WithMany(g => g.Memberships)
                 .HasForeignKey(gm => gm.GroupId)
-                .OnDelete(DeleteBehavior.Restrict); 
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupMembership>()
+                .HasIndex(gm => new { gm.GroupId, gm.UserId })
+                .IsUnique();
+
+            modelBuilder.Entity<AppNotification>()
+                .HasOne(n => n.User)
+                .WithMany(u => u.Notifications)
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AppNotification>()
+                .HasOne(n => n.ActorUser)
+                .WithMany()
+                .HasForeignKey(n => n.ActorUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AppNotification>()
+                .HasOne(n => n.Group)
+                .WithMany()
+                .HasForeignKey(n => n.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AppNotification>()
+                .HasOne(n => n.Membership)
+                .WithMany()
+                .HasForeignKey(n => n.MembershipId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<AppNotification>()
+                .HasIndex(n => new { n.UserId, n.IsRead, n.CreatedAt });
         }
     }
 }

@@ -37,6 +37,7 @@ namespace SportskiTerminiAPI.Controllers
 
             var profileDto = new UserProfileDto()
             {
+                Id = user.Id,
                 Username = user.UserName,
                 FullName = user.FullName,
                 PhoneNumber = user.PhoneNumber,
@@ -45,6 +46,27 @@ namespace SportskiTerminiAPI.Controllers
             };
 
             return Ok(profileDto);
+        }
+
+        [HttpGet("{username}")]
+        public async Task<IActionResult> GetUserProfileByUsername(string username)
+        {
+            var normalizedUsername = _userManager.NormalizeName(username.Trim());
+            var user = await _userManager.Users
+                .SingleOrDefaultAsync(appUser => appUser.NormalizedUserName == normalizedUsername);
+
+            if (user == null)
+                return NotFound();
+
+            return Ok(new UserProfileDto
+            {
+                Id = user.Id,
+                Username = user.UserName,
+                FullName = user.FullName,
+                PhoneNumber = user.PhoneNumber,
+                ProfilePictureUrl = user.ProfilePictureUrl,
+                Location = user.Location
+            });
         }
 
         [HttpGet("settings")]
@@ -174,6 +196,7 @@ namespace SportskiTerminiAPI.Controllers
 
                 var allUserDtos = filteredUsers.Select(user => new UserProfileDto
                 {
+                    Id = user.Id,
                     FullName = user.FullName,
                     Username = user.UserName,
                     ProfilePictureUrl = user.ProfilePictureUrl,
@@ -191,6 +214,7 @@ namespace SportskiTerminiAPI.Controllers
 
             var userDtos = filteredSearchUsers.Select(user => new UserProfileDto
             {
+                Id = user.Id,
                 FullName = user.FullName,
                 Username = user.UserName,
                 ProfilePictureUrl = user.ProfilePictureUrl,

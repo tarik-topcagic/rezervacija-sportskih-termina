@@ -3,10 +3,11 @@ import { Router, RouterModule } from '@angular/router';
 import { RouterOutlet } from '@angular/router';
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
 import { LanguageService } from '../services/language.service';
+import { BottomGroupNavbarComponent } from './bottom-group-navbar/bottom-group-navbar.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterModule, RouterOutlet, ConfirmDialogComponent],
+  imports: [RouterModule, RouterOutlet, ConfirmDialogComponent, BottomGroupNavbarComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

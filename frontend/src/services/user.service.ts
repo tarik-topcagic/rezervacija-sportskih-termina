@@ -59,11 +59,15 @@ export class UserService {
     return this.http.delete('api/user/delete-profile-picture');
   }
 
-  searchUsers(query: string = ''): Observable<any[]> {
+  getUserProfileByUsername(username: string): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/${encodeURIComponent(username)}`);
+  }
+
+  searchUsers(query: string = ''): Observable<User[]> {
     let url = `${this.apiUrl}/get-users`;
     if (query.trim()) {
       url += `?query=${encodeURIComponent(query.trim())}`;
     }
-    return this.http.get<any[]>(url);
+    return this.http.get<User[]>(url);
   }
 }

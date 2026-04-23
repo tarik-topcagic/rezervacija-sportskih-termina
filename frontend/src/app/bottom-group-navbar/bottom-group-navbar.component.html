@@ -1,0 +1,28 @@
+<nav *ngIf="groups.length" class="bottom-group-navbar" aria-label="Group navigation">
+  <div
+    #groupScroller
+    class="bottom-group-scroller"
+    [class.dragging]="isDragging"
+    (pointerdown)="startDrag($event)"
+    (pointermove)="moveDrag($event)"
+    (pointerup)="endDrag($event)"
+    (pointercancel)="endDrag($event)"
+  >
+    <a
+      *ngFor="let group of groups; trackBy: trackByGroupId"
+      class="bottom-group-item"
+      [routerLink]="['/grupe', group.id]"
+      (click)="handleGroupClick($event)"
+    >
+      <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultGroupImage">
+        <img [src]="group.imageUrl" [alt]="group.name" class="bottom-group-image" draggable="false" />
+      </ng-container>
+      <ng-template #defaultGroupImage>
+        <span class="bottom-group-fallback">
+          <i class="bi bi-people"></i>
+        </span>
+      </ng-template>
+      <span class="bottom-group-name">{{ group.name }}</span>
+    </a>
+  </div>
+</nav>

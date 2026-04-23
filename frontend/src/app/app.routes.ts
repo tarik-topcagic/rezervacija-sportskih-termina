@@ -11,6 +11,8 @@ import { SearchUsersComponent } from './search-users/search-users.component';
 import { UserProfileComponent } from './user-profile/user-profile.component';
 import { SearchGroupsComponent } from './search-groups/search-groups.component';
 import { SettingsComponent } from './settings/settings.component';
+import { GroupDetailsComponent } from './group-details/group-details.component';
+import { NotificationsComponent } from './notifications/notifications.component';
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
@@ -23,5 +25,7 @@ export const routes: Routes = [
     { path: 'pretraga-korisnika', component: SearchUsersComponent, canActivate: [AuthGuard] },
     { path: 'korisnicki-profil/:username', component: UserProfileComponent, canActivate: [AuthGuard] },
     { path: 'grupe', component: SearchGroupsComponent, canActivate: [AuthGuard] },
+    { path: 'grupe/:id', component: GroupDetailsComponent, canActivate: [AuthGuard] },
+    { path: 'obavijesti', component: NotificationsComponent, canActivate: [AuthGuard] },
     { path: '**', redirectTo: '' }
 ];

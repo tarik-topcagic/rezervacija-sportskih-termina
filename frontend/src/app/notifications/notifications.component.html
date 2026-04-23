@@ -1,0 +1,117 @@
+<app-navbar></app-navbar>
+
+<main class="notifications-page">
+  <div class="container">
+    <section class="notifications-shell">
+      <div class="notifications-title">
+        <p class="section-label">{{ 'notifications' | translate }}</p>
+        <h1>{{ 'notifications' | translate }}</h1>
+      </div>
+
+      <div *ngIf="isLoading" class="status-message">
+        {{ 'loading' | translate }}
+      </div>
+
+      <div *ngIf="!isLoading && !notifications.length" class="status-message">
+        {{ 'noNotifications' | translate }}
+      </div>
+
+      <div *ngIf="!isLoading && notifications.length" class="notifications-list">
+        <article
+          class="notification-card"
+          *ngFor="let notification of notifications"
+          [class.unread]="!notification.isRead"
+          (click)="openNotification(notification)"
+        >
+          <div class="notification-icon">
+            <i
+              class="bi"
+              [ngClass]="{
+                'bi-envelope-plus': notification.type === notificationType.GroupInvitationReceived,
+                'bi-check-circle': notification.type === notificationType.GroupInvitationAccepted,
+                'bi-person-check': notification.type === notificationType.GroupJoinRequestReceived,
+                'bi-door-open': notification.type === notificationType.GroupJoinRequestAccepted
+              }"
+            ></i>
+          </div>
+
+          <div class="notification-content">
+            <p>{{ getNotificationText(notification) }}</p>
+            <span class="notification-time">{{ getNotificationAge(notification) }}</span>
+
+            <div
+              *ngIf="canRespondToInvitation(notification)"
+              class="notification-actions"
+              (click)="$event.stopPropagation()"
+            >
+              <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                [disabled]="isResponding(notification)"
+                (click)="acceptInvitation(notification, $event)"
+              >
+                {{ 'accept' | translate }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary decline-action"
+                [disabled]="isResponding(notification)"
+                (click)="declineInvitation(notification, $event)"
+              >
+                {{ 'decline' | translate }}
+              </button>
+            </div>
+
+            <div
+              *ngIf="canRespondToJoinRequest(notification)"
+              class="notification-actions"
+              (click)="$event.stopPropagation()"
+            >
+              <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                [disabled]="isResponding(notification)"
+                (click)="acceptJoinRequest(notification, $event)"
+              >
+                {{ 'acceptJoinRequest' | translate }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary decline-action"
+                [disabled]="isResponding(notification)"
+                (click)="declineJoinRequest(notification, $event)"
+              >
+                {{ 'declineJoinRequest' | translate }}
+              </button>
+            </div>
+
+            <span
+              *ngIf="notification.type === notificationType.GroupInvitationReceived && notification.invitationStatus === membershipStatus.Accepted"
+              class="notification-state"
+            >
+              {{ 'invitationAccepted' | translate }}
+            </span>
+            <span
+              *ngIf="notification.type === notificationType.GroupInvitationReceived && notification.invitationStatus === membershipStatus.Declined"
+              class="notification-state"
+            >
+              {{ 'invitationDeclined' | translate }}
+            </span>
+            <span
+              *ngIf="notification.membershipStatus === membershipStatus.Accepted && notification.type === notificationType.GroupJoinRequestReceived"
+              class="notification-state"
+            >
+              {{ 'joinRequestAccepted' | translate }}
+            </span>
+            <span
+              *ngIf="notification.membershipStatus === membershipStatus.Declined && notification.type === notificationType.GroupJoinRequestReceived"
+              class="notification-state"
+            >
+              {{ 'joinRequestDeclined' | translate }}
+            </span>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+</main>

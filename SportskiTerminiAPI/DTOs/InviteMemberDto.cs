@@ -1,7 +1,10 @@
-﻿namespace SportskiTerminiAPI.DTOs
+using System.ComponentModel.DataAnnotations;
+
+namespace SportskiTerminiAPI.DTOs
 {
     public class InviteMemberDto
     {
-        public string UserId { get; set; }
+        [Required]
+        public string UserId { get; set; } = string.Empty;
     }
 }
