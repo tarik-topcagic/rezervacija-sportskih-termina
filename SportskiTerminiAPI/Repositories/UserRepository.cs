@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
@@ -8,6 +8,7 @@ namespace SportskiTerminiAPI.Repositories
     public class UserRepository : IUserRepository
     {
         private readonly UserManager<AppUser> _userManager;
+
         public UserRepository(UserManager<AppUser> userManager)
         {
             _userManager = userManager;
@@ -23,6 +24,18 @@ namespace SportskiTerminiAPI.Repositories
             return await _userManager.FindByIdAsync(id);
         }
 
+        public async Task<AppUser?> GetUserByNormalizedUsernameAsync(string normalizedUsername)
+        {
+            return await _userManager.Users
+                .SingleOrDefaultAsync(user => user.NormalizedUserName == normalizedUsername);
+        }
+
+        public async Task<bool> UsernameExistsAsync(string normalizedUsername, string excludedUserId)
+        {
+            return await _userManager.Users
+                .AnyAsync(user => user.Id != excludedUserId && user.NormalizedUserName == normalizedUsername);
+        }
+
         public async Task<List<AppUser>> SearchUsersAsync(string? searchTerm)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
@@ -32,17 +45,20 @@ namespace SportskiTerminiAPI.Repositories
 
             searchTerm = searchTerm.ToLower();
 
-            var users = await _userManager.Users
+            return await _userManager.Users
                 .Where(u => u.UserName.ToLower().Contains(searchTerm) ||
-                       u.FullName.ToLower().Contains(searchTerm))
+                            u.FullName.ToLower().Contains(searchTerm))
                 .ToListAsync();
-
-            return users;
         }
 
         public async Task<IdentityResult> UpdateUserAsync(AppUser user)
         {
             return await _userManager.UpdateAsync(user);
+        }
+
+        public async Task<IdentityResult> UpdateSecurityStampAsync(AppUser user)
+        {
+            return await _userManager.UpdateSecurityStampAsync(user);
         }
     }
 }

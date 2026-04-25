@@ -102,9 +102,20 @@ namespace SportskiTerminiAPI
             });
 
             builder.Services.AddScoped<ITokenService, TokenService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
+            builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+            builder.Services.AddScoped<IGradService, GradService>();
             builder.Services.AddScoped<IGradRepository, GradRepository>();
             builder.Services.AddScoped<IGroupRepository, GroupRepository>();
+            builder.Services.AddScoped<IGroupService, GroupService>();
+            builder.Services.AddScoped<IGroupMembershipService, GroupMembershipService>();
+            builder.Services.AddScoped<IGroupImageService, GroupImageService>();
+            builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
+            builder.Services.AddScoped<IGroupNotificationService, GroupNotificationService>();
 
             var app = builder.Build();
 

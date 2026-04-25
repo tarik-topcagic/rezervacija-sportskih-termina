@@ -25,6 +25,7 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
   profileImageUrl: string | null = null;
   notifications: AppNotification[] = [];
   unreadNotificationsCount = 0;
+  highlightedNotificationIds = new Set<number>();
   respondingInvitationIds = new Set<number>();
   respondingJoinRequestIds = new Set<number>();
   notificationType = AppNotificationType;
@@ -111,13 +112,15 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
     this.closeProfileDropdown();
 
     if (this.isNotificationsOpen) {
-      this.loadNotifications();
-      this.markNotificationsAsRead();
+      this.loadNotifications(true);
+    } else {
+      this.highlightedNotificationIds.clear();
     }
   }
 
   closeNotifications(): void {
     this.isNotificationsOpen = false;
+    this.highlightedNotificationIds.clear();
   }
 
   private closeProfileDropdown(): void {
@@ -137,6 +140,7 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.isNotificationsOpen && !target?.closest('.notifications-wrapper')) {
       this.isNotificationsOpen = false;
+      this.highlightedNotificationIds.clear();
     }
   }
 
@@ -214,6 +218,10 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
         || this.respondingJoinRequestIds.has(notification.membershipId));
   }
 
+  isHighlightedNotification(notification: AppNotification): boolean {
+    return this.highlightedNotificationIds.has(notification.id);
+  }
+
   getUserProfileImage() {
     this.userService.getMyProfile().subscribe({
       next: (user) => {
@@ -230,11 +238,23 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private loadNotifications(): void {
+  private loadNotifications(captureUnreadHighlights = false): void {
     this.notificationService.getNotifications().subscribe({
       next: (notifications) => {
+        if (captureUnreadHighlights) {
+          this.highlightedNotificationIds = new Set(
+            notifications
+              .filter((notification) => !notification.isRead)
+              .map((notification) => notification.id),
+          );
+        }
+
         this.notifications = notifications;
         this.publishMembershipChangesFromNotifications(notifications);
+
+        if (captureUnreadHighlights) {
+          this.markNotificationsAsRead();
+        }
       },
       error: (error) => {
         console.error('Error loading notifications:', error);
@@ -280,7 +300,7 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.respondingInvitationIds.add(notification.membershipId);
 
-    this.groupService.respondInvite(notification.membershipId, accept).subscribe({
+    this.groupService.respondInvite(notification.membershipId, accept, notification.groupId ?? undefined).subscribe({
       next: () => {
         this.respondingInvitationIds.delete(notification.membershipId!);
         notification.invitationStatus = accept ? MembershipStatus.Accepted : MembershipStatus.Declined;

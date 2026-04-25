@@ -10,7 +10,9 @@ import { Group, GroupDetails, GroupMembershipState } from '../app/interfaces/gro
 export class GroupService {
   private apiUrl = environment.apiUrl + '/groups';
   private membershipChangedSubject = new Subject<void>();
+  private groupDetailsRefreshSubject = new Subject<number>();
   membershipChanged$ = this.membershipChangedSubject.asObservable();
+  groupDetailsRefresh$ = this.groupDetailsRefreshSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
@@ -53,12 +55,16 @@ export class GroupService {
     return this.http.delete(`${this.apiUrl}/${groupId}/join-request`);
   }
 
-  respondInvite(membershipId: number, accept: boolean): Observable<any> {
+  respondInvite(membershipId: number, accept: boolean, groupId?: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/respond-invite`, {
       membershipId,
       accept,
     }).pipe(
       tap(() => {
+        if (groupId) {
+          this.notifyGroupDetailsRefresh(groupId);
+        }
+
         if (accept) {
           this.notifyMembershipChanged();
         }
@@ -70,7 +76,9 @@ export class GroupService {
     return this.http.post(`${this.apiUrl}/${groupId}/respond-request`, {
       membershipId,
       accept,
-    });
+    }).pipe(
+      tap(() => this.notifyGroupDetailsRefresh(groupId)),
+    );
   }
 
   getMyGroups(): Observable<Group[]> {
@@ -108,5 +116,9 @@ export class GroupService {
 
   notifyMembershipChanged(): void {
     this.membershipChangedSubject.next();
+  }
+
+  notifyGroupDetailsRefresh(groupId: number): void {
+    this.groupDetailsRefreshSubject.next(groupId);
   }
 }

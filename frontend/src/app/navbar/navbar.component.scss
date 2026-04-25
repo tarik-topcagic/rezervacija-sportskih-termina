@@ -129,6 +129,11 @@
     background: #eef7ff;
   }
 
+  .notification-item.new-notification {
+    background: linear-gradient(90deg, rgba(47, 164, 231, 0.14), rgba(47, 164, 231, 0.04));
+    box-shadow: inset 3px 0 0 #2fa4e7;
+  }
+
   .notification-icon {
     width: 34px;
     height: 34px;
@@ -198,6 +203,11 @@
 
   :host-context(body.dark-mode) .notification-item.unread {
     background: #182434;
+  }
+
+  :host-context(body.dark-mode) .notification-item.new-notification {
+    background: linear-gradient(90deg, rgba(142, 200, 240, 0.16), rgba(142, 200, 240, 0.05));
+    box-shadow: inset 3px 0 0 #8ec8f0;
   }
 
   :host-context(body.dark-mode) .notification-icon {

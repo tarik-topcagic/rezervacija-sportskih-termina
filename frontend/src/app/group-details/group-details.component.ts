@@ -44,6 +44,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   errorMessage = '';
   successMessage = '';
   private routeSubscription?: Subscription;
+  private groupDetailsRefreshSubscription?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
@@ -66,10 +67,17 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       this.resetViewStateForRouteChange();
       this.loadGroup(groupId);
     });
+
+    this.groupDetailsRefreshSubscription = this.groupService.groupDetailsRefresh$.subscribe((groupId) => {
+      if (this.group?.id === groupId) {
+        this.loadGroup(groupId);
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
+    this.groupDetailsRefreshSubscription?.unsubscribe();
   }
 
   requestAccess(): void {
@@ -245,6 +253,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
               membersCount: Math.max(0, this.group.membersCount - 1),
             }
           : null;
+        this.closeMembersModal();
         this.successMessage = this.languageService.translate('memberRemovedFromGroup');
       },
       (error) => {
@@ -576,7 +585,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.groupService.respondInvite(this.group.pendingInvitationMembershipId, accept).subscribe(
+    this.groupService.respondInvite(this.group.pendingInvitationMembershipId, accept, this.group.id).subscribe(
       () => {
         this.isRespondingToInvitation = false;
         this.successMessage = this.languageService.translate(accept ? 'invitationAccepted' : 'invitationDeclined');

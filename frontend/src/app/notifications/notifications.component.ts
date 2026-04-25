@@ -186,7 +186,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
 
     this.respondingInvitationIds.add(notification.membershipId);
 
-    this.groupService.respondInvite(notification.membershipId, accept).subscribe({
+    this.groupService.respondInvite(notification.membershipId, accept, notification.groupId ?? undefined).subscribe({
       next: () => {
         this.respondingInvitationIds.delete(notification.membershipId!);
         notification.invitationStatus = accept ? MembershipStatus.Accepted : MembershipStatus.Declined;

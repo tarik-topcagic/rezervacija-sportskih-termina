@@ -1,9 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SportskiTerminiAPI.Data;
+using Microsoft.AspNetCore.Mvc;
 using SportskiTerminiAPI.DTOs;
 using SportskiTerminiAPI.Interfaces;
-using SportskiTerminiAPI.Models;
 
 namespace SportskiTerminiAPI.Controllers
 {
@@ -11,35 +8,24 @@ namespace SportskiTerminiAPI.Controllers
     [ApiController]
     public class GradController : ControllerBase
     {
-        private readonly IGradRepository _gradRepository;
+        private readonly IGradService _gradService;
 
-        public GradController(IGradRepository gradRepository)
+        public GradController(IGradService gradService)
         {
-            _gradRepository = gradRepository;
+            _gradService = gradService;
         }
 
         [HttpPost("add-grad")]
         public async Task<IActionResult> DodajGrad([FromBody] GradDto gradDto)
         {
-            if (gradDto == null || string.IsNullOrWhiteSpace(gradDto.Naziv) || string.IsNullOrWhiteSpace(gradDto.Kanton))
-            {
-                return BadRequest("Naziv and Kanton are required fields.");
-            }
-
-            var noviGrad = new Grad
-            {
-                Naziv = gradDto.Naziv,
-                Kanton = gradDto.Kanton
-            };
-
-            var dodaniGrad = await _gradRepository.AddGradAsync(noviGrad);
-            return Ok(dodaniGrad);
+            var result = await _gradService.AddGradAsync(gradDto);
+            return StatusCode(result.StatusCode, result.Payload);
         }
 
         [HttpGet("get-gradovi")]
         public async Task<IActionResult> GetGradovi()
         {
-            var gradovi = await _gradRepository.GetAllGradoviAsync();
+            var gradovi = await _gradService.GetAllGradoviAsync();
             return Ok(gradovi);
         }
     }

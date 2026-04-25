@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SportskiTerminiAPI.Data;
-using SportskiTerminiAPI.DTOs;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
 
@@ -91,24 +90,11 @@ namespace SportskiTerminiAPI.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<GroupDto>> GetPublicGroupsAsync(string userId)
+        public async Task<IEnumerable<Group>> GetPublicGroupsAsync(string userId)
         {
             return await _context.Groups
                 .Include(g => g.Memberships)
                 .Where(g => g.AdminId != userId && !g.Memberships.Any(m => m.UserId == userId && m.Status != MembershipStatus.Declined))
-                .Select(g => new GroupDto
-                {
-                    Id = g.Id,
-                    Name = g.Name,
-                    Description = g.Description,
-                    Grad = g.Grad,
-                    KategorijaSporta = g.KategorijaSporta,
-                    AdminId = g.AdminId,
-                    DateCreated = g.DateCreated,
-                    ImageUrl = g.ImageUrl,
-                    MembersCount = g.Memberships.Count(m => m.Status == MembershipStatus.Accepted)
-                        + (g.Memberships.Any(m => m.UserId == g.AdminId && m.Status == MembershipStatus.Accepted) ? 0 : 1)
-                })
                 .ToListAsync();
         }
 
@@ -122,24 +108,12 @@ namespace SportskiTerminiAPI.Repositories
             }
         }
 
-        public async Task<IEnumerable<GroupDto>> SearchGroupsAsync(string query, string userId)
+        public async Task<IEnumerable<Group>> SearchGroupsAsync(string query)
         {
             return await _context.Groups
                 .Include(g => g.Memberships)
+                .ThenInclude(m => m.User)
                 .Where(g => g.Name.Contains(query) || g.Description.Contains(query) || g.Grad.Contains(query) || g.KategorijaSporta.Contains(query))
-                .Select(g => new GroupDto
-                {
-                    Id = g.Id,
-                    Name = g.Name,
-                    Description = g.Description,
-                    Grad = g.Grad,
-                    KategorijaSporta = g.KategorijaSporta,
-                    AdminId = g.AdminId,
-                    DateCreated = g.DateCreated,
-                    ImageUrl = g.ImageUrl,
-                    MembersCount = g.Memberships.Count(m => m.Status == MembershipStatus.Accepted)
-                        + (g.Memberships.Any(m => m.UserId == g.AdminId && m.Status == MembershipStatus.Accepted) ? 0 : 1)
-                })
                 .ToListAsync();
         }
 

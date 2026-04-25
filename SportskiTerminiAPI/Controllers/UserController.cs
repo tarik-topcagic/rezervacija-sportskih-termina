@@ -1,10 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SportskiTerminiAPI.DTOs;
 using SportskiTerminiAPI.Interfaces;
-using SportskiTerminiAPI.Models;
 using System.Security.Claims;
 
 namespace SportskiTerminiAPI.Controllers
@@ -14,14 +10,11 @@ namespace SportskiTerminiAPI.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IUserRepository _userRepository;
-        private readonly UserManager<AppUser> _userManager;
-        private readonly ITokenService _tokenService;
-        public UserController(IUserRepository userRepository, UserManager<AppUser> userManager, ITokenService tokenService)
+        private readonly IUserService _userService;
+
+        public UserController(IUserService userService)
         {
-            _userRepository = userRepository;
-            _userManager = userManager;
-            _tokenService = tokenService;
+            _userService = userService;
         }
 
         [HttpGet("my-profile")]
@@ -31,258 +24,30 @@ namespace SportskiTerminiAPI.Controllers
             if (userId == null)
                 return Unauthorized();
 
-            var user = await _userRepository.GetUserByIdAsync(userId);
-            if (user == null) 
+            var user = await _userService.GetMyProfileAsync(userId);
+            if (user == null)
                 return NotFound();
 
-            var profileDto = new UserProfileDto()
-            {
-                Id = user.Id,
-                Username = user.UserName,
-                FullName = user.FullName,
-                PhoneNumber = user.PhoneNumber,
-                ProfilePictureUrl = user.ProfilePictureUrl,
-                Location = user.Location
-            };
-
-            return Ok(profileDto);
+            return Ok(user);
         }
 
         [HttpGet("{username}")]
         public async Task<IActionResult> GetUserProfileByUsername(string username)
         {
-            var normalizedUsername = _userManager.NormalizeName(username.Trim());
-            var user = await _userManager.Users
-                .SingleOrDefaultAsync(appUser => appUser.NormalizedUserName == normalizedUsername);
-
+            var user = await _userService.GetUserProfileByUsernameAsync(username);
             if (user == null)
                 return NotFound();
 
-            return Ok(new UserProfileDto
-            {
-                Id = user.Id,
-                Username = user.UserName,
-                FullName = user.FullName,
-                PhoneNumber = user.PhoneNumber,
-                ProfilePictureUrl = user.ProfilePictureUrl,
-                Location = user.Location
-            });
-        }
-
-        [HttpGet("settings")]
-        public async Task<IActionResult> GetSettings()
-        {
-            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return Unauthorized();
-
-            var user = await _userRepository.GetUserByIdAsync(userId);
-            if (user == null)
-                return NotFound();
-
-            return Ok(new UserSettingsDto
-            {
-                Username = user.UserName ?? string.Empty,
-                Email = user.Email ?? string.Empty,
-                PhoneNumber = user.PhoneNumber ?? string.Empty,
-                EmailNotificationsEnabled = user.EmailNotificationsEnabled
-            });
-        }
-
-        [HttpPut("settings/email-notifications")]
-        public async Task<IActionResult> UpdateEmailNotifications([FromBody] UpdateEmailNotificationsDto dto)
-        {
-            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return Unauthorized();
-
-            var user = await _userRepository.GetUserByIdAsync(userId);
-            if (user == null)
-                return NotFound();
-
-            user.EmailNotificationsEnabled = dto.EmailNotificationsEnabled;
-
-            var result = await _userRepository.UpdateUserAsync(user);
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
-
-            return Ok(new { message = "Postavke obavijesti su sačuvane." });
-        }
-
-        [HttpPut("settings/username")]
-        public async Task<IActionResult> UpdateUsername([FromBody] UpdateUsernameDto dto)
-        {
-            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return Unauthorized();
-
-            var newUsername = dto.Username.Trim();
-            if (string.IsNullOrWhiteSpace(newUsername))
-                return BadRequest(new { field = "username", message = "Korisničko ime je obavezno." });
-
-            var user = await _userRepository.GetUserByIdAsync(userId);
-            if (user == null)
-                return NotFound();
-
-            if (string.Equals(user.UserName, newUsername, StringComparison.Ordinal))
-            {
-                var currentToken = await _tokenService.GenerateJwtToken(user);
-                return Ok(new { token = currentToken, username = user.UserName, fullName = user.FullName });
-            }
-
-            var normalizedUsername = _userManager.NormalizeName(newUsername);
-            var usernameExists = await _userManager.Users
-                .AnyAsync(existingUser => existingUser.Id != user.Id && existingUser.NormalizedUserName == normalizedUsername);
-
-            if (usernameExists)
-                return BadRequest(new { field = "username", message = "Korisničko ime je već u upotrebi" });
-
-            user.UserName = newUsername;
-            user.NormalizedUserName = _userManager.NormalizeName(newUsername);
-            var updateResult = await _userManager.UpdateAsync(user);
-            if (!updateResult.Succeeded)
-                return BadRequest(updateResult.Errors);
-
-            var stampResult = await _userManager.UpdateSecurityStampAsync(user);
-            if (!stampResult.Succeeded)
-                return BadRequest(stampResult.Errors);
-
-            var updatedUser = await _userManager.FindByIdAsync(user.Id);
-            if (updatedUser == null)
-                return NotFound();
-
-            var token = await _tokenService.GenerateJwtToken(updatedUser);
-
-            return Ok(new
-            {
-                token,
-                username = updatedUser.UserName,
-                fullName = updatedUser.FullName
-            });
-        }
-
-        [HttpPut("update-user")]
-        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto updateProfileDto)
-        {
-            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return Unauthorized();
-
-            var user = await _userRepository.GetUserByIdAsync(userId);
-            if (user == null)
-                return NotFound();
-
-            user.FullName = updateProfileDto.FullName;
-            user.ProfilePictureUrl = updateProfileDto.ProfilePictureUrl ?? "default-profile.png";
-            user.PhoneNumber = updateProfileDto.PhoneNumber;
-            user.Location = updateProfileDto.Location;
-
-            var result = await _userRepository.UpdateUserAsync(user);
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
-
-            return Ok(result);
+            return Ok(user);
         }
 
         [HttpGet("get-users")]
         public async Task<IActionResult> SearchUsers([FromQuery] string? query)
         {
             var currentUserId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var users = await _userService.SearchUsersAsync(query, currentUserId);
 
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                var allUsers = await _userRepository.GetAllUsersAsync();
-                var filteredUsers = allUsers.Where(u => u.Id != currentUserId).ToList();
-
-                var allUserDtos = filteredUsers.Select(user => new UserProfileDto
-                {
-                    Id = user.Id,
-                    FullName = user.FullName,
-                    Username = user.UserName,
-                    ProfilePictureUrl = user.ProfilePictureUrl,
-                    Location = user.Location
-                });
-
-                return Ok(allUserDtos);
-            }
-
-            var users = await _userRepository.SearchUsersAsync(query);
-            var filteredSearchUsers = users.Where(user => user.Id != currentUserId || 
-                (user.Id == currentUserId && ((user.UserName != null && user.UserName.ToLower().Contains(query)) ||
-                (user.FullName != null && user.FullName.ToLower().Contains(query))))
-                ).ToList();
-
-            var userDtos = filteredSearchUsers.Select(user => new UserProfileDto
-            {
-                Id = user.Id,
-                FullName = user.FullName,
-                Username = user.UserName,
-                ProfilePictureUrl = user.ProfilePictureUrl,
-                Location = user.Location
-            });
-
-            return Ok(userDtos);
-        }
-
-        [HttpPost("upload-profile-picture")]
-        [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadProfilePicture([FromForm] UpdateProfilePictureDto updateProfilePictureDto)
-        {
-            if (updateProfilePictureDto.File == null || updateProfilePictureDto.File.Length == 0)
-                return BadRequest("Nije odabrana slika.");
-
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "profilna");
-            if (!Directory.Exists(uploadsFolder))
-                Directory.CreateDirectory(uploadsFolder);
-
-            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(updateProfilePictureDto.File.FileName);
-            var filePath = Path.Combine(uploadsFolder, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await updateProfilePictureDto.File.CopyToAsync(stream);
-            }
-
-            var imageUrl = $"{Request.Scheme}://{Request.Host}/uploads/profilna/{fileName}";
-
-            return Ok(new { imageUrl });
-        }
-
-        [HttpDelete("delete-profile-picture")]
-        public async Task<IActionResult> DeleteProfilePicture()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null) 
-                return Unauthorized();
-
-            var user = await _userRepository.GetUserByIdAsync(userId);
-            if (user == null) 
-                return NotFound();
-
-            if (!string.IsNullOrEmpty(user.ProfilePictureUrl) &&
-                user.ProfilePictureUrl.ToLower() != "default-profile.png")
-            {
-                var uri = new Uri(user.ProfilePictureUrl);
-                var fileName = Path.GetFileName(uri.AbsolutePath);
-                var filePath = Path.Combine
-                (
-                    Directory.GetCurrentDirectory(),
-                    "wwwroot",
-                    "uploads",
-                    "profilna",
-                    fileName
-                );
-
-                if (System.IO.File.Exists(filePath))
-                {
-                    System.IO.File.Delete(filePath);
-                }
-            }
-
-            user.ProfilePictureUrl = "default-profile.png";
-            var result = await _userRepository.UpdateUserAsync(user);
-
-            return result.Succeeded ? Ok() : BadRequest(result.Errors);
+            return Ok(users);
         }
     }
 }

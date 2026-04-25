@@ -80,6 +80,7 @@
                 class="notification-item"
                 *ngFor="let notification of notifications"
                 [class.unread]="!notification.isRead"
+                [class.new-notification]="isHighlightedNotification(notification)"
                 (click)="openNotification(notification)"
               >
                 <div class="notification-icon">
