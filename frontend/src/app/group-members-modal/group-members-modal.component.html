@@ -1,0 +1,73 @@
+<div
+  class="modal-backdrop-custom"
+  role="presentation"
+  (click)="closeModal()"
+>
+  <section
+    class="invite-modal members-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'groupMembers' | translate"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="invite-modal-header">
+      <div>
+        <p class="section-label">{{ 'groupDetails' | translate }}</p>
+        <h2>{{ 'groupMembers' | translate }}</h2>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        [title]="'cancel' | translate"
+        (click)="closeModal()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="members-admin-summary">
+      <span>{{ 'groupAdmin' | translate }}</span>
+      <strong>{{ group.adminDisplayName }}</strong>
+    </div>
+
+    <div class="invite-user-list members-list">
+      <div class="invite-user-row member-row" *ngFor="let member of group.members">
+        <div class="invite-user-info">
+          <ng-container *ngIf="member.profilePictureUrl && member.profilePictureUrl !== 'default-profile.png'; else memberDefaultAvatar">
+            <img [src]="member.profilePictureUrl" [alt]="member.displayName" class="invite-avatar" />
+          </ng-container>
+          <ng-template #memberDefaultAvatar>
+            <div class="invite-avatar default-avatar">
+              <i class="bi bi-person"></i>
+            </div>
+          </ng-template>
+          <div>
+            <strong>{{ member.displayName || member.username }}</strong>
+            <span *ngIf="member.isAdmin">{{ 'groupAdmin' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="member-actions">
+          <button type="button" class="btn btn-sm btn-primary" (click)="viewMemberProfile(member)">
+            <i class="bi bi-eye"></i>
+            {{ 'viewUserProfile' | translate }}
+          </button>
+          <button *ngIf="!isCurrentUser(member)" type="button" class="btn btn-sm btn-outline-secondary" disabled>
+            <i class="bi bi-chat-dots"></i>
+            {{ 'message' | translate }}
+          </button>
+          <button
+            *ngIf="canRemoveMember(member)"
+            type="button"
+            class="btn btn-sm btn-danger"
+            [disabled]="isRemovingMember(member)"
+            (click)="removeMember(member)"
+          >
+            <i class="bi bi-person-dash"></i>
+            {{ 'removeFromGroup' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

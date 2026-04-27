@@ -10,6 +10,7 @@ import { EditGroupModalComponent } from '../edit-group-modal/edit-group-modal.co
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { paginate } from '../helpers/pagination.helper';
 
 @Component({
   selector: 'app-search-groups',
@@ -62,13 +63,14 @@ export class SearchGroupsComponent implements OnDestroy {
 
   setupPagination(): void {
     this.currentPage = 1;
-    this.totalPages = Math.ceil(this.searchedGroups.length / this.pageSize);
     this.setPagedGroups();
   }
 
   setPagedGroups(): void {
-    const start = (this.currentPage - 1) * this.pageSize;
-    this.pagedGroups = this.searchedGroups.slice(start, start + this.pageSize);
+    const pagination = paginate(this.searchedGroups, this.currentPage, this.pageSize);
+    this.pagedGroups = pagination.pagedItems;
+    this.totalPages = pagination.totalPages;
+    this.totalPagesArray = pagination.totalPagesArray;
   }
 
   previousPage(event: Event): void {
@@ -94,7 +96,7 @@ export class SearchGroupsComponent implements OnDestroy {
   }
 
   getTotalPagesArray(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+    return this.totalPagesArray;
   }
 
   getMyGroups(): void {

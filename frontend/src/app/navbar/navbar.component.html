@@ -5,19 +5,7 @@
     </a>
 
     <div class="mobile-navbar-actions d-lg-none">
-      <a
-        *ngIf="username"
-        class="mobile-notification-button"
-        routerLink="/obavijesti"
-        routerLinkActive="active"
-        [attr.aria-label]="'notifications' | translate"
-        [title]="'notifications' | translate"
-      >
-        <i class="bi bi-bell"></i>
-        <span *ngIf="unreadNotificationsCount" class="notification-badge">
-          {{ unreadNotificationsCount }}
-        </span>
-      </a>
+      <app-notification-dropdown *ngIf="username" mode="mobile"></app-notification-dropdown>
 
       <button
         class="navbar-toggler"
@@ -57,126 +45,11 @@
       </ul>
 
       <div class="ms-auto text-white navbar-actions" style="font-weight: 500" *ngIf="username">
-        <div class="notifications-wrapper d-none d-lg-block">
-          <button
-            type="button"
-            class="notification-button"
-            [title]="'notifications' | translate"
-            (click)="toggleNotifications($event)"
-          >
-            <i class="bi bi-bell"></i>
-            <span *ngIf="unreadNotificationsCount" class="notification-badge">
-              {{ unreadNotificationsCount }}
-            </span>
-          </button>
-
-          <div *ngIf="isNotificationsOpen" class="notifications-menu">
-            <div class="notifications-header">
-              <strong>{{ 'notifications' | translate }}</strong>
-            </div>
-
-            <div *ngIf="notifications.length; else emptyNotifications" class="notifications-list">
-              <div
-                class="notification-item"
-                *ngFor="let notification of notifications"
-                [class.unread]="!notification.isRead"
-                [class.new-notification]="isHighlightedNotification(notification)"
-                (click)="openNotification(notification)"
-              >
-                <div class="notification-icon">
-                  <i
-                    class="bi"
-                    [ngClass]="{
-                      'bi-envelope-plus': notification.type === notificationType.GroupInvitationReceived,
-                      'bi-check-circle': notification.type === notificationType.GroupInvitationAccepted,
-                      'bi-person-check': notification.type === notificationType.GroupJoinRequestReceived,
-                      'bi-door-open': notification.type === notificationType.GroupJoinRequestAccepted
-                    }"
-                  ></i>
-                </div>
-                <div class="notification-body">
-                  <p>{{ getNotificationText(notification) }}</p>
-                  <span class="notification-time">{{ getNotificationAge(notification) }}</span>
-
-                  <div
-                    *ngIf="canRespondToInvitation(notification)"
-                    class="notification-actions"
-                    (click)="$event.stopPropagation()"
-                  >
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-primary"
-                      [disabled]="isResponding(notification)"
-                      (click)="acceptInvitation(notification, $event)"
-                    >
-                      {{ 'accept' | translate }}
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-secondary decline-action"
-                      [disabled]="isResponding(notification)"
-                      (click)="declineInvitation(notification, $event)"
-                    >
-                      {{ 'decline' | translate }}
-                    </button>
-                  </div>
-
-                  <div
-                    *ngIf="canRespondToJoinRequest(notification)"
-                    class="notification-actions"
-                    (click)="$event.stopPropagation()"
-                  >
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-primary"
-                      [disabled]="isResponding(notification)"
-                      (click)="acceptJoinRequest(notification, $event)"
-                    >
-                      {{ 'acceptJoinRequest' | translate }}
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-secondary decline-action"
-                      [disabled]="isResponding(notification)"
-                      (click)="declineJoinRequest(notification, $event)"
-                    >
-                      {{ 'declineJoinRequest' | translate }}
-                    </button>
-                  </div>
-
-                  <span
-                    *ngIf="notification.type === notificationType.GroupInvitationReceived && notification.invitationStatus === membershipStatus.Accepted"
-                    class="notification-state"
-                  >
-                    {{ 'invitationAccepted' | translate }}
-                  </span>
-                  <span
-                    *ngIf="notification.type === notificationType.GroupInvitationReceived && notification.invitationStatus === membershipStatus.Declined"
-                    class="notification-state"
-                  >
-                    {{ 'invitationDeclined' | translate }}
-                  </span>
-                  <span
-                    *ngIf="notification.membershipStatus === membershipStatus.Accepted && notification.type === notificationType.GroupJoinRequestReceived"
-                    class="notification-state"
-                  >
-                    {{ 'joinRequestAccepted' | translate }}
-                  </span>
-                  <span
-                    *ngIf="notification.membershipStatus === membershipStatus.Declined && notification.type === notificationType.GroupJoinRequestReceived"
-                    class="notification-state"
-                  >
-                    {{ 'joinRequestDeclined' | translate }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <ng-template #emptyNotifications>
-              <div class="notifications-empty">{{ 'noNotifications' | translate }}</div>
-            </ng-template>
-          </div>
-        </div>
+        <app-notification-dropdown
+          class="d-none d-lg-block"
+          mode="desktop"
+          (opened)="closeProfileDropdown()"
+        ></app-notification-dropdown>
 
         <div class="dropdown d-none d-lg-block">
           <a
@@ -185,7 +58,6 @@
             role="button"
             data-bs-toggle="dropdown"
             aria-expanded="false"
-            (click)="closeNotifications()"
           >
             <span class="ms-2">{{ 'welcome' | translate }}, {{ username }}</span>
             <ng-container *ngIf="profileImageUrl; else defaultIcon">

@@ -6,6 +6,14 @@ import { User } from '../interfaces/user';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { GroupService } from '../../services/group.service';
 import { LanguageService } from '../../services/language.service';
+import {
+  getMembershipInviteIcon,
+  getMembershipInviteLabel,
+  hasActiveMembershipConnection,
+  isAcceptedMember,
+  isPendingInvitation,
+  isPendingJoinRequest,
+} from '../helpers/membership-ui.helper';
 
 @Component({
   selector: 'app-choose-group-modal',
@@ -77,42 +85,21 @@ export class ChooseGroupModalComponent implements OnChanges {
   }
 
   getGroupInviteLabel(group: Group): string {
-    if (this.isCancelingGroupInvitation(group)) {
-      return 'canceling';
-    }
-
-    if (this.isInvitingGroup(group)) {
-      return 'sendingInvitation';
-    }
-
-    const status = this.getGroupStatus(group);
-    if (status === MembershipStatus.Accepted) {
-      return 'member';
-    }
-
-    if (status === MembershipStatus.PendingInvitation || status === MembershipStatus.PendingJoinRequest) {
-      return 'pending';
-    }
-
-    return 'inviteUser';
+    return getMembershipInviteLabel(
+      this.getGroupStatus(group),
+      this.isInvitingGroup(group),
+      this.isCancelingGroupInvitation(group),
+      this.isCancelingGroupInvitation(group) ? 'canceling' : 'sendingInvitation',
+    );
   }
 
   getGroupInviteIcon(group: Group): string {
-    const status = this.getGroupStatus(group);
-
-    if (status === MembershipStatus.PendingInvitation) {
-      return 'bi-x-circle';
-    }
-
-    if (status === MembershipStatus.PendingJoinRequest) {
-      return 'bi-clock';
-    }
-
-    if (status === MembershipStatus.Accepted) {
-      return 'bi-check-circle';
-    }
-
-    return 'bi-person-plus';
+    return getMembershipInviteIcon(this.getGroupStatus(group), {
+      pendingInvitationIcon: 'bi-x-circle',
+      pendingJoinRequestIcon: 'bi-clock',
+      acceptedIcon: 'bi-check-circle',
+      defaultIcon: 'bi-person-plus',
+    });
   }
 
   isInvitingGroup(group: Group): boolean {
@@ -136,22 +123,18 @@ export class ChooseGroupModalComponent implements OnChanges {
   }
 
   isGroupConnected(group: Group): boolean {
-    const status = this.getGroupStatus(group);
-
-    return status === MembershipStatus.PendingInvitation
-      || status === MembershipStatus.PendingJoinRequest
-      || status === MembershipStatus.Accepted;
+    return hasActiveMembershipConnection(this.getGroupStatus(group));
   }
 
   canCancelGroupInvitation(group: Group): boolean {
-    return this.getGroupStatus(group) === MembershipStatus.PendingInvitation
+    return isPendingInvitation(this.getGroupStatus(group))
       && !this.isInvitingGroup(group)
       && !this.isCancelingGroupInvitation(group)
       && !this.isRespondingJoinRequest(group);
   }
 
   canRespondToJoinRequest(group: Group): boolean {
-    return this.getGroupStatus(group) === MembershipStatus.PendingJoinRequest
+    return isPendingJoinRequest(this.getGroupStatus(group))
       && !!this.groupMembershipIds.get(group.id)
       && !this.isInvitingGroup(group)
       && !this.isCancelingGroupInvitation(group)
@@ -256,11 +239,11 @@ export class ChooseGroupModalComponent implements OnChanges {
   }
 
   private isPendingJoinRequestForGroup(group: Group): boolean {
-    return this.getGroupStatus(group) === MembershipStatus.PendingJoinRequest;
+    return isPendingJoinRequest(this.getGroupStatus(group));
   }
 
   private isAcceptedMemberForGroup(group: Group): boolean {
-    return this.getGroupStatus(group) === MembershipStatus.Accepted;
+    return isAcceptedMember(this.getGroupStatus(group));
   }
 
   private loadAdminGroupsForUser(userId: string): void {

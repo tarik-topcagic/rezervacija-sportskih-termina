@@ -1,9 +1,9 @@
-<div class="d-flex justify-content-center align-items-center min-vh-100">
-  <div class="container text-center">
+<div class="auth-page d-flex justify-content-center align-items-center min-vh-100">
+  <div class="container text-center auth-container">
     <h2 class="my-4">{{ 'register' | translate }}</h2>
-    <form (ngSubmit)="register(registerForm)" #registerForm="ngForm" novalidate>
+    <form (ngSubmit)="register(registerForm)" #registerForm="ngForm" class="auth-form" novalidate>
       <div class="mb-3 d-flex flex-column align-items-center">
-        <div class="w-50 text-start">
+        <div class="auth-form-field text-start">
           <label for="fullName" class="form-label">{{ 'fullName' | translate }}</label>
           <input type="text" class="form-control" id="fullName" [(ngModel)]="registerModel.fullName" name="fullName" required #fullName="ngModel" style="padding: 10px;" />
           <div *ngIf="fullName.invalid && fullName.touched" class="text-danger">{{ 'requiredField' | translate }}</div>
@@ -11,7 +11,7 @@
       </div>
 
       <div class="mb-3 d-flex flex-column align-items-center">
-        <div class="w-50 text-start">
+        <div class="auth-form-field text-start">
           <label for="email" class="form-label">{{ 'email' | translate }}</label>
           <input type="email" class="form-control" id="email" [(ngModel)]="registerModel.email" (ngModelChange)="clearEmailTakenError()" name="email" required email #email="ngModel" style="padding: 10px;" />
           <div *ngIf="email.invalid && email.touched" class="text-danger">
@@ -22,7 +22,7 @@
       </div>
 
       <div class="mb-3 d-flex flex-column align-items-center">
-        <div class="w-50 text-start">
+        <div class="auth-form-field text-start">
           <label for="phoneNumber" class="form-label">{{ 'phoneNumber' | translate }}</label>
           <input type="text" class="form-control" placeholder="+387XXXXXXXX" id="phoneNumber" [(ngModel)]="registerModel.phoneNumber" (ngModelChange)="clearPhoneNumberTakenError()" name="phoneNumber" required pattern="^\+387[0-9]{8,9}$" #phoneNumber="ngModel" style="padding: 10px;" />
           <div *ngIf="phoneNumber.invalid && phoneNumber.touched" class="text-danger">
@@ -33,7 +33,7 @@
       </div>
 
       <div class="mb-3 d-flex flex-column align-items-center">
-        <div class="w-50 text-start">
+        <div class="auth-form-field text-start">
           <label for="username" class="form-label">{{ 'username' | translate }}</label>
           <input type="text" class="form-control" id="username" [(ngModel)]="registerModel.username" (ngModelChange)="validateUsername()" name="username" required minlength="4" pattern="^[^\s]*$" #username="ngModel" style="padding: 10px;" />
           <div *ngIf="username.touched && !usernameSpaceError && !usernameTakenError">
@@ -46,7 +46,7 @@
       </div>
 
       <div class="mb-3 d-flex flex-column align-items-center">
-        <div class="w-50 text-start">
+        <div class="auth-form-field text-start">
           <label for="password" class="form-label">{{ 'password' | translate }}</label>
           <div class="input-group">
             <input [type]="passwordVisible ? 'text' : 'password'" class="form-control" id="password" [(ngModel)]="registerModel.password" (ngModelChange)="validatePassword()" name="password" required minlength="6" #password="ngModel" style="padding: 10px;" />
@@ -66,7 +66,7 @@
 
       <button type="submit" class="btn btn-primary" [disabled]="registerForm.invalid || passwordStrengthError || usernameTakenError || emailTakenError || phoneNumberTakenError">{{ 'register' | translate }}</button>
     </form>
-    <div class="mt-5">
+    <div class="mt-5 auth-footer">
       <p>{{ 'haveProfile' | translate }} <a routerLink="/prijava" class="link-primary" style="cursor: pointer;">{{ 'login' | translate }}</a></p>
     </div>
   </div>

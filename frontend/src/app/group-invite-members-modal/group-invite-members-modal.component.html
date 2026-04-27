@@ -1,0 +1,113 @@
+<div
+  class="modal-backdrop-custom"
+  role="presentation"
+  (click)="closeModal()"
+>
+  <section
+    class="invite-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'addMembers' | translate"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="invite-modal-header">
+      <div>
+        <p class="section-label">{{ 'groupDetails' | translate }}</p>
+        <h2>{{ 'addMembers' | translate }}</h2>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        [title]="'cancel' | translate"
+        (click)="closeModal()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="invite-search">
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="inviteSearchQuery"
+        [placeholder]="'enterNameOrUsername' | translate"
+        (keyup.enter)="searchInviteUsers()"
+      />
+      <button type="button" class="btn btn-primary" (click)="searchInviteUsers()">
+        <i class="bi bi-search"></i>
+        {{ 'search' | translate }}
+      </button>
+    </div>
+
+    <div *ngIf="inviteModalMessage" class="alert alert-success">
+      {{ inviteModalMessage }}
+    </div>
+    <div *ngIf="inviteModalError" class="alert alert-danger">
+      {{ inviteModalError }}
+    </div>
+
+    <div *ngIf="isLoadingInviteUsers" class="status-message compact">
+      {{ 'loading' | translate }}
+    </div>
+
+    <div *ngIf="!isLoadingInviteUsers && inviteUsers.length" class="invite-user-list">
+      <div class="invite-user-row" *ngFor="let user of inviteUsers">
+        <div class="invite-user-info">
+          <ng-container *ngIf="user.profilePictureUrl && user.profilePictureUrl !== 'default-profile.png'; else inviteDefaultAvatar">
+            <img [src]="user.profilePictureUrl" [alt]="user.fullName" class="invite-avatar" />
+          </ng-container>
+          <ng-template #inviteDefaultAvatar>
+            <div class="invite-avatar default-avatar">
+              <i class="bi bi-person"></i>
+            </div>
+          </ng-template>
+          <div>
+            <strong>{{ user.fullName || user.username }}</strong>
+            <span>{{ user.username }}</span>
+          </div>
+        </div>
+
+        <div *ngIf="isPendingJoinRequest(user); else inviteAction" class="join-request-actions">
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            [disabled]="isRespondingJoinRequest(user)"
+            (click)="acceptJoinRequest(user)"
+          >
+            <i class="bi bi-check-circle"></i>
+            {{ 'accept' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary decline-action"
+            [disabled]="isRespondingJoinRequest(user)"
+            (click)="declineJoinRequest(user)"
+          >
+            <i class="bi bi-x-circle"></i>
+            {{ 'decline' | translate }}
+          </button>
+        </div>
+
+        <ng-template #inviteAction>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="!isInvitationBlocked(user)"
+            [class.btn-outline-secondary]="isInvitationBlocked(user)"
+            [class.pending-cancel-action]="canCancelPendingConnection(user)"
+            [disabled]="isInviteActionDisabled(user)"
+            [title]="getInviteActionTitle(user) | translate"
+            (click)="handleInviteAction(user)"
+          >
+            <i class="bi {{ getInviteActionIcon(user) }}"></i>
+            {{ getInviteLabel(user) | translate }}
+          </button>
+        </ng-template>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoadingInviteUsers && !inviteUsers.length" class="status-message compact">
+      {{ 'noUsersFound' | translate }}
+    </div>
+  </section>
+</div>

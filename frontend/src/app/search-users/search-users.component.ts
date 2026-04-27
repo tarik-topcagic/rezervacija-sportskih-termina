@@ -8,6 +8,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { User } from '../interfaces/user';
 import { ChooseGroupModalComponent } from '../choose-group-modal/choose-group-modal.component';
+import { paginate } from '../helpers/pagination.helper';
 
 @Component({
   selector: 'app-search-users',
@@ -25,6 +26,7 @@ export class SearchUsersComponent {
   currentPage: number = 1;
   itemsPerPage: number = 6;
   totalPages: number = 0;
+  totalPagesArray: number[] = [];
 
   constructor(
     private userService: UserService,
@@ -55,13 +57,14 @@ export class SearchUsersComponent {
 
   setupPagination(): void {
     this.currentPage = 1;
-    this.totalPages = Math.ceil(this.users.length / this.itemsPerPage);
     this.setPagedUsers();
   }
 
   setPagedUsers(): void {
-    const start = (this.currentPage - 1) * this.itemsPerPage;
-    this.pagedUsers = this.users.slice(start, start + this.itemsPerPage);
+    const pagination = paginate(this.users, this.currentPage, this.itemsPerPage);
+    this.pagedUsers = pagination.pagedItems;
+    this.totalPages = pagination.totalPages;
+    this.totalPagesArray = pagination.totalPagesArray;
   }
 
   previousPage(event: Event): void {
@@ -84,10 +87,6 @@ export class SearchUsersComponent {
     event.preventDefault();
     this.currentPage = page;
     this.setPagedUsers();
-  }
-
-  get totalPagesArray(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
   }
 
   goToProfile(user: any): void {
