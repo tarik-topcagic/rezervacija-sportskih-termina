@@ -1,0 +1,51 @@
+<app-navbar></app-navbar>
+
+<main class="messages-page">
+  <div class="container">
+    <section class="messages-shell">
+      <div class="messages-title">
+        <p class="section-label">{{ 'messages' | translate }}</p>
+        <h1>{{ 'messages' | translate }}</h1>
+      </div>
+
+      <div *ngIf="isLoading" class="status-message">
+        {{ 'loading' | translate }}
+      </div>
+
+      <div *ngIf="!isLoading && !messages.length" class="status-message">
+        {{ 'noMessageNotifications' | translate }}
+      </div>
+
+      <div *ngIf="!isLoading && messages.length" class="messages-list">
+        <article
+          class="message-card"
+          *ngFor="let message of messages"
+          [class.unread]="hasUnreadMessages(message)"
+          (click)="openMessage(message)"
+        >
+          <div class="message-avatar">
+            <ng-container *ngIf="message.groupImageUrl && message.groupImageUrl !== 'default-group.png'; else defaultGroupAvatar">
+              <img [src]="message.groupImageUrl" [alt]="message.groupName" class="avatar-image" />
+            </ng-container>
+            <ng-template #defaultGroupAvatar>
+              <div class="default-avatar">
+                <i class="bi bi-people"></i>
+              </div>
+            </ng-template>
+          </div>
+
+          <div class="message-content">
+            <div class="message-topline">
+              <strong class="group-name">{{ message.groupName }}</strong>
+              <span *ngIf="message.unreadCount" class="message-unread-count">{{ message.unreadCount }}</span>
+            </div>
+
+            <p class="sender-name">{{ message.senderName }}</p>
+            <p class="message-preview">{{ message.latestMessagePreview }}</p>
+            <span class="message-time">{{ getMessageAge(message) }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+</main>

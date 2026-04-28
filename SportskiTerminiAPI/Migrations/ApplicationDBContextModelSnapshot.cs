@@ -384,6 +384,65 @@ namespace SportskiTerminiAPI.Migrations
                     b.ToTable("GroupMemberships");
                 });
 
+            modelBuilder.Entity("SportskiTerminiAPI.Models.GroupChatReadState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId", "UserId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("GroupChatReadStates");
+                });
+
+            modelBuilder.Entity("SportskiTerminiAPI.Models.GroupMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MessageText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SenderUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SenderUserId");
+
+                    b.HasIndex("GroupId", "CreatedAt");
+
+                    b.ToTable("GroupMessages");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -497,9 +556,49 @@ namespace SportskiTerminiAPI.Migrations
                     b.Navigation("group");
                 });
 
+            modelBuilder.Entity("SportskiTerminiAPI.Models.GroupChatReadState", b =>
+                {
+                    b.HasOne("SportskiTerminiAPI.Models.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportskiTerminiAPI.Models.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SportskiTerminiAPI.Models.GroupMessage", b =>
+                {
+                    b.HasOne("SportskiTerminiAPI.Models.Group", "Group")
+                        .WithMany("GroupMessages")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportskiTerminiAPI.Models.AppUser", "SenderUser")
+                        .WithMany("GroupMessages")
+                        .HasForeignKey("SenderUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("SenderUser");
+                });
+
             modelBuilder.Entity("SportskiTerminiAPI.Models.AppUser", b =>
                 {
                     b.Navigation("GroupMemberships");
+
+                    b.Navigation("GroupMessages");
 
                     b.Navigation("Groups");
 
@@ -508,6 +607,8 @@ namespace SportskiTerminiAPI.Migrations
 
             modelBuilder.Entity("SportskiTerminiAPI.Models.Group", b =>
                 {
+                    b.Navigation("GroupMessages");
+
                     b.Navigation("Memberships");
                 });
 #pragma warning restore 612, 618

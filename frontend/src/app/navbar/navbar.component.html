@@ -6,6 +6,7 @@
 
     <div class="mobile-navbar-actions d-lg-none">
       <app-notification-dropdown *ngIf="username" mode="mobile"></app-notification-dropdown>
+      <app-message-dropdown *ngIf="username" mode="mobile"></app-message-dropdown>
 
       <button
         class="navbar-toggler"
@@ -50,6 +51,11 @@
           mode="desktop"
           (opened)="closeProfileDropdown()"
         ></app-notification-dropdown>
+        <app-message-dropdown
+          class="d-none d-lg-block"
+          mode="desktop"
+          (opened)="closeProfileDropdown()"
+        ></app-message-dropdown>
 
         <div class="dropdown d-none d-lg-block">
           <a

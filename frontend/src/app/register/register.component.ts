@@ -112,9 +112,3 @@ export class RegisterComponent implements OnInit, OnDestroy {
     document.body.classList.remove('register-page');
   }
 }
-
-
-
-
-
-

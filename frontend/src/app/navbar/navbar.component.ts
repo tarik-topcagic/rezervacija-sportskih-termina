@@ -6,10 +6,11 @@ import { UserService } from '../../services/user.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { Subscription } from 'rxjs';
 import { NotificationDropdownComponent } from '../notification-dropdown/notification-dropdown.component';
+import { MessageDropdownComponent } from '../message-dropdown/message-dropdown.component';
 
 @Component({
   selector: 'app-navbar',
-  imports: [NgIf, NgClass, RouterModule, TranslatePipe, NotificationDropdownComponent],
+  imports: [NgIf, NgClass, RouterModule, TranslatePipe, NotificationDropdownComponent, MessageDropdownComponent],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.scss'],
 })

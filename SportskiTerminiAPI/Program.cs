@@ -110,7 +110,10 @@ namespace SportskiTerminiAPI
             builder.Services.AddScoped<IGradService, GradService>();
             builder.Services.AddScoped<IGradRepository, GradRepository>();
             builder.Services.AddScoped<IGroupRepository, GroupRepository>();
+            builder.Services.AddScoped<IGroupChatRepository, GroupChatRepository>();
             builder.Services.AddScoped<IGroupService, GroupService>();
+            builder.Services.AddScoped<IGroupChatService, GroupChatService>();
+            builder.Services.AddScoped<IGroupChatNotificationService, GroupChatNotificationService>();
             builder.Services.AddScoped<IGroupMembershipService, GroupMembershipService>();
             builder.Services.AddScoped<IGroupImageService, GroupImageService>();
             builder.Services.AddScoped<INotificationRepository, NotificationRepository>();

@@ -14,6 +14,8 @@ namespace SportskiTerminiAPI.Data
         public DbSet<Grad> Gradovi { get; set; }
         public DbSet<Group> Groups { get; set; }
         public DbSet<GroupMembership> GroupMemberships { get; set; }
+        public DbSet<GroupMessage> GroupMessages { get; set; }
+        public DbSet<GroupChatReadState> GroupChatReadStates { get; set; }
         public DbSet<AppNotification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -40,6 +42,37 @@ namespace SportskiTerminiAPI.Data
 
             modelBuilder.Entity<GroupMembership>()
                 .HasIndex(gm => new { gm.GroupId, gm.UserId })
+                .IsUnique();
+
+            modelBuilder.Entity<GroupMessage>()
+                .HasOne(message => message.Group)
+                .WithMany(group => group.GroupMessages)
+                .HasForeignKey(message => message.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupMessage>()
+                .HasOne(message => message.SenderUser)
+                .WithMany(user => user.GroupMessages)
+                .HasForeignKey(message => message.SenderUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupMessage>()
+                .HasIndex(message => new { message.GroupId, message.CreatedAt });
+
+            modelBuilder.Entity<GroupChatReadState>()
+                .HasOne(readState => readState.Group)
+                .WithMany()
+                .HasForeignKey(readState => readState.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupChatReadState>()
+                .HasOne(readState => readState.User)
+                .WithMany()
+                .HasForeignKey(readState => readState.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupChatReadState>()
+                .HasIndex(readState => new { readState.GroupId, readState.UserId })
                 .IsUnique();
 
             modelBuilder.Entity<AppNotification>()

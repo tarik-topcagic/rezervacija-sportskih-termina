@@ -515,3 +515,35 @@ h2 {
     flex: 1 1 100%;
   }
 }
+
+@media (min-width: 577px) and (max-width: 767.98px) {
+  .details-header {
+    align-items: flex-start;
+  }
+
+  .title-block {
+    flex: 1 1 auto;
+  }
+
+  .actions {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
+  .chat-group-action {
+    order: 1;
+  }
+
+  .edit-group-action {
+    order: 2;
+  }
+
+  .add-members-action {
+    order: 3;
+  }
+}

@@ -46,14 +46,29 @@
               </button>
             </div>
           </div>
-          <button *ngIf="group.isAdmin" type="button" class="btn btn-outline-primary" (click)="openEditGroupModal()">
+          <button
+            *ngIf="group.isAdmin"
+            type="button"
+            class="btn btn-outline-primary edit-group-action"
+            (click)="openEditGroupModal()"
+          >
             <i class="bi bi-pencil"></i>
             {{ 'editGroup' | translate }}
           </button>
           <button
+            *ngIf="group.isMember"
+            type="button"
+            class="btn btn-outline-primary chat-group-action"
+            [routerLink]="['/grupe', group.id, 'chat']"
+            fragment="chat-composer-anchor"
+          >
+            <i class="bi bi-chat-dots"></i>
+            {{ 'groupChat' | translate }}
+          </button>
+          <button
             *ngIf="group.isAdmin"
             type="button"
-            class="btn btn-primary"
+            class="btn btn-primary add-members-action"
             (click)="openInviteMembersModal()"
           >
             <i class="bi bi-person-plus"></i>

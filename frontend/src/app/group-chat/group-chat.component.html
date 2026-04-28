@@ -1,0 +1,98 @@
+<app-navbar></app-navbar>
+
+<main class="group-chat-page">
+  <div class="chat-window">
+    <div *ngIf="isLoading" class="chat-state status-message">
+      {{ 'loading' | translate }}
+    </div>
+
+    <div *ngIf="errorMessage" class="chat-state alert alert-danger">
+      {{ errorMessage }}
+    </div>
+
+    <section *ngIf="group && !isLoading" class="chat-shell">
+      <header class="chat-header">
+        <a class="back-link" [routerLink]="['/grupe', group.id]">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+
+        <div class="group-summary">
+          <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultGroupAvatar">
+            <img [src]="group.imageUrl" [alt]="group.name" class="group-image" />
+          </ng-container>
+          <ng-template #defaultGroupAvatar>
+            <div class="group-image default-group-avatar">
+              <i class="bi bi-people"></i>
+            </div>
+          </ng-template>
+
+          <div class="group-summary-text">
+            <p class="section-label">{{ 'groupChat' | translate }}</p>
+            <h1>{{ group.name }}</h1>
+          </div>
+        </div>
+      </header>
+
+      <div #messagesContainer class="messages-panel" (scroll)="onMessagesScroll()">
+        <div *ngIf="!messages.length" class="empty-state">
+          {{ 'noGroupMessages' | translate }}
+        </div>
+
+        <div
+          *ngFor="let message of messages"
+          class="message-row"
+          [ngClass]="{ 'own-message': isOwnMessage(message) }"
+        >
+          <div class="message-avatar">
+            <ng-container *ngIf="message.senderProfilePictureUrl && message.senderProfilePictureUrl !== 'default-profile.png'; else defaultAvatar">
+              <img [src]="message.senderProfilePictureUrl" [alt]="message.senderFullName" class="avatar-image" />
+            </ng-container>
+            <ng-template #defaultAvatar>
+              <div class="default-avatar">
+                <i class="bi bi-person"></i>
+              </div>
+            </ng-template>
+          </div>
+
+          <div class="message-bubble">
+            <div class="message-meta">
+              <strong>{{ message.senderFullName }}</strong>
+              <span>{{ message.createdAt | date:'dd.MM.yyyy. HH:mm' }}</span>
+            </div>
+            <p>{{ message.messageText }}</p>
+          </div>
+        </div>
+
+        <button
+          *ngIf="showScrollToBottomButton"
+          type="button"
+          class="scroll-to-latest-button"
+          (click)="scrollMessagesToLatest()"
+          [attr.aria-label]="'groupChat' | translate"
+          title="Najnovija poruka"
+        >
+          <i class="bi bi-arrow-down"></i>
+        </button>
+      </div>
+
+      <form class="chat-composer" (ngSubmit)="sendMessage()">
+        <div class="input-group">
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="messageText"
+            name="messageText"
+            [placeholder]="'writeMessage' | translate"
+            maxlength="1000"
+          />
+          <button type="submit" class="btn btn-primary" [disabled]="!canSendMessage()">
+            <i class="bi bi-send"></i>
+            <span class="send-button-label">
+              {{ (isSending ? 'sending' : 'send') | translate }}
+            </span>
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>

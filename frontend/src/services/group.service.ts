@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { environment } from '../environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, Subject, tap } from 'rxjs';
-import { Group, GroupDetails, GroupMembershipState } from '../app/interfaces/group.model';
+import { Group, GroupChatMessage, GroupDetails, GroupMembershipState } from '../app/interfaces/group.model';
 
 @Injectable({
   providedIn: 'root',
@@ -112,6 +112,14 @@ export class GroupService {
 
   deleteGroupPicture(groupId: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${groupId}/delete-group-picture`);
+  }
+
+  getGroupMessages(groupId: number): Observable<GroupChatMessage[]> {
+    return this.http.get<GroupChatMessage[]>(`${this.apiUrl}/${groupId}/messages`);
+  }
+
+  sendGroupMessage(groupId: number, messageText: string): Observable<GroupChatMessage> {
+    return this.http.post<GroupChatMessage>(`${this.apiUrl}/${groupId}/messages`, { messageText });
   }
 
   notifyMembershipChanged(): void {

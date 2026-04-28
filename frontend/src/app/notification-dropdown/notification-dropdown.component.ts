@@ -41,6 +41,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
   private processedMembershipNotificationIds = new Set<number>();
   private readonly desktopMediaQuery = window.matchMedia('(min-width: 992px)');
   private readonly onViewportChange = () => this.syncViewportActivity();
+  private readonly onMessageDropdownOpened = () => this.closeNotifications();
   private isActiveForViewport = false;
 
   constructor(
@@ -74,6 +75,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     });
 
     this.desktopMediaQuery.addEventListener('change', this.onViewportChange);
+    window.addEventListener('app-message-dropdown-opened', this.onMessageDropdownOpened);
     this.syncViewportActivity();
   }
 
@@ -81,6 +83,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     this.currentUserSubscription?.unsubscribe();
     this.unreadCountSubscription?.unsubscribe();
     this.desktopMediaQuery.removeEventListener('change', this.onViewportChange);
+    window.removeEventListener('app-message-dropdown-opened', this.onMessageDropdownOpened);
     this.stopTimers();
   }
 
@@ -94,6 +97,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
 
     if (this.isNotificationsOpen) {
       this.opened.emit();
+      window.dispatchEvent(new CustomEvent('app-notification-dropdown-opened'));
       this.loadNotifications(true);
       return;
     }

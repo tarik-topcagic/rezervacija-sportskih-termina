@@ -12,6 +12,7 @@
         public DateTime DateCreated { get; set; } = DateTime.UtcNow;
         public string ImageUrl { get; set; } = "default-group.png"; 
         public virtual AppUser Admin {  get; set; }
-        public virtual ICollection<GroupMembership> Memberships { get; set; }
+        public virtual ICollection<GroupMembership> Memberships { get; set; } = new List<GroupMembership>();
+        public virtual ICollection<GroupMessage> GroupMessages { get; set; } = new List<GroupMessage>();
     }
 }

@@ -39,6 +39,17 @@ export interface GroupMember {
   isAdmin: boolean;
 }
 
+export interface GroupChatMessage {
+  id: number;
+  groupId: number;
+  senderUserId: string;
+  senderUsername: string;
+  senderFullName: string;
+  senderProfilePictureUrl: string | null;
+  messageText: string;
+  createdAt: Date;
+}
+
 export interface GroupMembership {
   id: number;
   groupId: number;
