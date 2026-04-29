@@ -9,6 +9,7 @@ import { AuthService } from '../../services/auth.service';
 import { User } from '../interfaces/user';
 import { ChooseGroupModalComponent } from '../choose-group-modal/choose-group-modal.component';
 import { paginate } from '../helpers/pagination.helper';
+import { PrivateChatService } from '../../services/private-chat.service';
 
 @Component({
   selector: 'app-search-users',
@@ -32,6 +33,7 @@ export class SearchUsersComponent {
     private userService: UserService,
     private router: Router,
     private authService: AuthService,
+    private privateChatService: PrivateChatService,
   ) {
     const currentUser = this.authService.currentUserValue;
     if (currentUser) {
@@ -117,6 +119,45 @@ export class SearchUsersComponent {
     }
 
     this.selectedUserForGroupInvite = user;
+  }
+
+  openPrivateChat(event: Event, user: User): void {
+    event.stopPropagation();
+
+    if (user.id) {
+      this.openConversationByUserId(user.id);
+      return;
+    }
+
+    if (!user.username) {
+      console.error('Cannot open private chat from user search because user id and username are missing.');
+      return;
+    }
+
+    this.userService.getUserProfileByUsername(user.username).subscribe({
+      next: (resolvedUser) => {
+        if (!resolvedUser.id) {
+          console.error('Cannot open private chat from user search because resolved user id is missing.');
+          return;
+        }
+
+        this.openConversationByUserId(resolvedUser.id);
+      },
+      error: (error) => {
+        console.error('Error resolving target user before opening private chat from user search:', error);
+      },
+    });
+  }
+
+  private openConversationByUserId(userId: string): void {
+    this.privateChatService.getOrCreateConversation(userId).subscribe({
+      next: (conversation) => {
+        this.router.navigate(['/poruke/privatno', conversation.id]);
+      },
+      error: (error) => {
+        console.error('Error opening private chat from user search:', error);
+      },
+    });
   }
 
   closeChooseGroupModal(): void {

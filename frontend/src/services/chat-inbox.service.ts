@@ -1,0 +1,71 @@
+import { Injectable } from '@angular/core';
+import { forkJoin, map, Observable } from 'rxjs';
+import { ChatInboxItem } from '../app/interfaces/chat-inbox-item.model';
+import { GroupChatNotification } from '../app/interfaces/group-chat-notification.model';
+import { PrivateChatNotification } from '../app/interfaces/private-chat-notification.model';
+import { GroupChatNotificationService } from './group-chat-notification.service';
+import { PrivateChatNotificationService } from './private-chat-notification.service';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class ChatInboxService {
+  constructor(
+    private groupChatNotificationService: GroupChatNotificationService,
+    private privateChatNotificationService: PrivateChatNotificationService,
+  ) {}
+
+  getInboxItems(): Observable<ChatInboxItem[]> {
+    return forkJoin({
+      groupItems: this.groupChatNotificationService.getChatNotifications(),
+      privateItems: this.privateChatNotificationService.getChatNotifications(),
+    }).pipe(
+      map(({ groupItems, privateItems }) => {
+        return [
+          ...groupItems.map((message) => this.toGroupInboxItem(message)),
+          ...privateItems.map((message) => this.toPrivateInboxItem(message)),
+        ].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+      }),
+    );
+  }
+
+  getUnreadCount(): Observable<number> {
+    return forkJoin({
+      groupUnread: this.groupChatNotificationService.getUnreadCount(),
+      privateUnread: this.privateChatNotificationService.getUnreadCount(),
+    }).pipe(
+      map(({ groupUnread, privateUnread }) => groupUnread.count + privateUnread.count),
+    );
+  }
+
+  private toGroupInboxItem(message: GroupChatNotification): ChatInboxItem {
+    return {
+      type: 'group',
+      id: message.groupId,
+      title: message.groupName,
+      subtitle: message.senderName,
+      preview: message.latestMessagePreview,
+      createdAt: message.createdAt,
+      unreadCount: message.unreadCount,
+      isRead: message.isRead,
+      imageUrl: message.groupImageUrl,
+      fallbackIcon: 'bi-people',
+      groupId: message.groupId,
+    };
+  }
+
+  private toPrivateInboxItem(message: PrivateChatNotification): ChatInboxItem {
+    return {
+      type: 'private',
+      id: message.conversationId,
+      title: message.otherFullName || message.otherUsername,
+      preview: message.latestMessagePreview,
+      createdAt: message.createdAt,
+      unreadCount: message.unreadCount,
+      isRead: message.isRead,
+      imageUrl: message.otherProfilePictureUrl,
+      fallbackIcon: 'bi-person',
+      conversationId: message.conversationId,
+    };
+  }
+}

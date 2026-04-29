@@ -16,6 +16,9 @@ namespace SportskiTerminiAPI.Data
         public DbSet<GroupMembership> GroupMemberships { get; set; }
         public DbSet<GroupMessage> GroupMessages { get; set; }
         public DbSet<GroupChatReadState> GroupChatReadStates { get; set; }
+        public DbSet<PrivateConversation> PrivateConversations { get; set; }
+        public DbSet<PrivateMessage> PrivateMessages { get; set; }
+        public DbSet<PrivateChatReadState> PrivateChatReadStates { get; set; }
         public DbSet<AppNotification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -73,6 +76,53 @@ namespace SportskiTerminiAPI.Data
 
             modelBuilder.Entity<GroupChatReadState>()
                 .HasIndex(readState => new { readState.GroupId, readState.UserId })
+                .IsUnique();
+
+            modelBuilder.Entity<PrivateConversation>()
+                .HasOne(conversation => conversation.UserOne)
+                .WithMany(user => user.PrivateConversationsAsUserOne)
+                .HasForeignKey(conversation => conversation.UserOneId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PrivateConversation>()
+                .HasOne(conversation => conversation.UserTwo)
+                .WithMany(user => user.PrivateConversationsAsUserTwo)
+                .HasForeignKey(conversation => conversation.UserTwoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PrivateConversation>()
+                .HasIndex(conversation => new { conversation.UserOneId, conversation.UserTwoId })
+                .IsUnique();
+
+            modelBuilder.Entity<PrivateMessage>()
+                .HasOne(message => message.Conversation)
+                .WithMany(conversation => conversation.PrivateMessages)
+                .HasForeignKey(message => message.ConversationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PrivateMessage>()
+                .HasOne(message => message.SenderUser)
+                .WithMany(user => user.PrivateMessages)
+                .HasForeignKey(message => message.SenderUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PrivateMessage>()
+                .HasIndex(message => new { message.ConversationId, message.CreatedAt });
+
+            modelBuilder.Entity<PrivateChatReadState>()
+                .HasOne(readState => readState.Conversation)
+                .WithMany()
+                .HasForeignKey(readState => readState.ConversationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PrivateChatReadState>()
+                .HasOne(readState => readState.User)
+                .WithMany(user => user.PrivateChatReadStates)
+                .HasForeignKey(readState => readState.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PrivateChatReadState>()
+                .HasIndex(readState => new { readState.ConversationId, readState.UserId })
                 .IsUnique();
 
             modelBuilder.Entity<AppNotification>()

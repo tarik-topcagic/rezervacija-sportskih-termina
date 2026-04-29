@@ -24,24 +24,24 @@
           (click)="openMessage(message)"
         >
           <div class="message-avatar">
-            <ng-container *ngIf="message.groupImageUrl && message.groupImageUrl !== 'default-group.png'; else defaultGroupAvatar">
-              <img [src]="message.groupImageUrl" [alt]="message.groupName" class="avatar-image" />
+            <ng-container *ngIf="message.imageUrl && message.imageUrl !== 'default-group.png' && message.imageUrl !== 'default-profile.png'; else defaultGroupAvatar">
+              <img [src]="message.imageUrl" [alt]="message.title" class="avatar-image" />
             </ng-container>
             <ng-template #defaultGroupAvatar>
               <div class="default-avatar">
-                <i class="bi bi-people"></i>
+                <i class="bi" [ngClass]="message.fallbackIcon"></i>
               </div>
             </ng-template>
           </div>
 
           <div class="message-content">
             <div class="message-topline">
-              <strong class="group-name">{{ message.groupName }}</strong>
+              <strong class="group-name">{{ message.title }}</strong>
               <span *ngIf="message.unreadCount" class="message-unread-count">{{ message.unreadCount }}</span>
             </div>
 
-            <p class="sender-name">{{ message.senderName }}</p>
-            <p class="message-preview">{{ message.latestMessagePreview }}</p>
+            <p *ngIf="message.subtitle" class="sender-name">{{ message.subtitle }}</p>
+            <p class="message-preview">{{ message.preview }}</p>
             <span class="message-time">{{ getMessageAge(message) }}</span>
           </div>
         </article>

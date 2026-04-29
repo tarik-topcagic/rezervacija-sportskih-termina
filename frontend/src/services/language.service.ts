@@ -1747,6 +1747,36 @@ export class LanguageService {
       fr: 'Aucun message recent',
       it: 'Nessun messaggio recente',
     },
+    noPrivateMessages: {
+      en: 'No messages yet',
+      de: 'Noch keine Nachrichten',
+      bs: 'Još nema poruka',
+      hr: 'Još nema poruka',
+      sr: 'Još nema poruka',
+      es: 'Aun no hay mensajes',
+      fr: 'Pas encore de messages',
+      it: 'Ancora nessun messaggio',
+    },
+    privateChatLoadError: {
+      en: 'Error loading private chat.',
+      de: 'Fehler beim Laden des privaten Chats.',
+      bs: 'Greška pri učitavanju privatnog chata.',
+      hr: 'Greška pri učitavanju privatnog chata.',
+      sr: 'Greška pri učitavanju privatnog chata.',
+      es: 'Error al cargar chat privado.',
+      fr: 'Erreur lors du chargement du chat prive.',
+      it: 'Errore durante caricamento chat privato.',
+    },
+    privateChatSendError: {
+      en: 'Error sending private message.',
+      de: 'Fehler beim Senden der privaten Nachricht.',
+      bs: 'Greška pri slanju privatne poruke.',
+      hr: 'Greška pri slanju privatne poruke.',
+      sr: 'Greška pri slanju privatne poruke.',
+      es: 'Error al enviar mensaje privado.',
+      fr: 'Erreur lors de envoi du message prive.',
+      it: 'Errore durante invio del messaggio privato.',
+    },
   };
 
   get currentLanguage(): LanguageCode {

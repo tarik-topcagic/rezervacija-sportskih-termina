@@ -1,0 +1,19 @@
+using SportskiTerminiAPI.Models;
+using SportskiTerminiAPI.DTOs;
+
+namespace SportskiTerminiAPI.Interfaces
+{
+    public interface IPrivateChatRepository
+    {
+        Task<AppUser?> GetUserByIdAsync(string userId);
+        Task<PrivateConversation?> GetConversationByIdAsync(int conversationId);
+        Task<PrivateConversation?> GetConversationBetweenUsersAsync(string userOneId, string userTwoId);
+        Task<PrivateConversation> CreateConversationAsync(PrivateConversation conversation);
+        Task<IReadOnlyList<PrivateConversation>> GetConversationsForUserAsync(string userId);
+        Task<IReadOnlyList<PrivateMessage>> GetMessagesForConversationAsync(int conversationId);
+        Task<PrivateMessage> CreateMessageAsync(PrivateMessage message);
+        Task<IReadOnlyList<PrivateChatNotificationDto>> GetChatNotificationsAsync(string userId, int take);
+        Task<int> GetUnreadChatMessagesCountAsync(string userId);
+        Task MarkConversationAsReadAsync(string userId, int conversationId, DateTime readAt);
+    }
+}

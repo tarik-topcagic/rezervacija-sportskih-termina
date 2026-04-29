@@ -3,25 +3,25 @@ import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } fr
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { GroupService } from '../../services/group.service';
-import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
 import { LanguageService } from '../../services/language.service';
+import { PrivateChatService } from '../../services/private-chat.service';
+import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
 import { scrollToBottom, shouldShowScrollButton } from '../helpers/chat-ui.helper';
-import { GroupChatMessage, GroupDetails } from '../interfaces/group.model';
+import { PrivateConversation, PrivateMessage } from '../interfaces/private-chat.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
-  selector: 'app-group-chat',
+  selector: 'app-private-chat',
   imports: [DatePipe, NgIf, NgFor, NgClass, FormsModule, RouterLink, NavbarComponent, TranslatePipe],
-  templateUrl: './group-chat.component.html',
-  styleUrl: './group-chat.component.scss',
+  templateUrl: './private-chat.component.html',
+  styleUrl: './private-chat.component.scss',
 })
-export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
+export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
 
-  group: GroupDetails | null = null;
-  messages: GroupChatMessage[] = [];
+  conversation: PrivateConversation | null = null;
+  messages: PrivateMessage[] = [];
   messageText = '';
   isLoading = true;
   isSending = false;
@@ -32,22 +32,22 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private groupService: GroupService,
-    private groupChatNotificationService: GroupChatNotificationService,
+    private privateChatService: PrivateChatService,
+    private privateChatNotificationService: PrivateChatNotificationService,
     private languageService: LanguageService,
   ) {}
 
   ngOnInit(): void {
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
-      const groupId = Number(params.get('id'));
+      const conversationId = Number(params.get('conversationId'));
 
-      if (!groupId) {
-        this.router.navigate(['/grupe']);
+      if (!conversationId) {
+        this.router.navigate(['/poruke']);
         return;
       }
 
       this.resetViewState();
-      this.loadChat(groupId);
+      this.loadChat(conversationId);
     });
   }
 
@@ -61,14 +61,14 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
   sendMessage(): void {
     const trimmedMessage = this.messageText.trim();
-    if (!this.group?.id || !trimmedMessage || this.isSending) {
+    if (!this.conversation?.id || !trimmedMessage || this.isSending) {
       return;
     }
 
     this.isSending = true;
     this.errorMessage = '';
 
-    this.groupService.sendGroupMessage(this.group.id, trimmedMessage).subscribe({
+    this.privateChatService.sendMessageToConversation(this.conversation.id, trimmedMessage).subscribe({
       next: (message) => {
         this.messages = [...this.messages, message];
         this.messageText = '';
@@ -77,18 +77,18 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (error) => {
         this.isSending = false;
-        this.errorMessage = this.languageService.translate('groupChatSendError');
-        console.error('Error sending group chat message:', error);
+        this.errorMessage = this.languageService.translate('privateChatSendError');
+        console.error('Error sending private chat message:', error);
       },
     });
   }
 
-  isOwnMessage(message: GroupChatMessage): boolean {
-    return message.senderUserId === this.group?.currentUserId;
+  isOwnMessage(message: PrivateMessage): boolean {
+    return message.senderUserId !== this.conversation?.otherUserId;
   }
 
   canSendMessage(): boolean {
-    return !!this.group?.isMember && !!this.messageText.trim() && !this.isSending;
+    return !!this.conversation?.id && !!this.messageText.trim() && !this.isSending;
   }
 
   onMessagesScroll(): void {
@@ -99,52 +99,65 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.scrollMessagesToBottom('smooth');
   }
 
-  private loadChat(groupId: number): void {
+  private loadChat(conversationId: number): void {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.groupService.getGroupDetails(groupId).subscribe({
-      next: (group) => {
-        if (!group.isMember) {
-          this.router.navigate(['/grupe', groupId]);
+    this.privateChatService.getConversations().subscribe({
+      next: (conversations) => {
+        const conversation = conversations.find((item) => item.id === conversationId);
+
+        if (!conversation) {
+          this.router.navigate(['/poruke']);
           return;
         }
 
-        this.group = group;
-        this.loadMessages(groupId);
+        this.conversation = conversation;
+        this.loadMessages(conversationId);
       },
       error: (error) => {
         this.isLoading = false;
-        this.errorMessage = this.languageService.translate('groupChatLoadError');
-        console.error('Error loading group chat details:', error);
+        this.errorMessage = this.languageService.translate('privateChatLoadError');
+        console.error('Error loading private chat conversation:', error);
       },
     });
   }
 
-  private loadMessages(groupId: number): void {
-    this.groupService.getGroupMessages(groupId).subscribe({
+  private loadMessages(conversationId: number): void {
+    this.privateChatService.getMessages(conversationId).subscribe({
       next: (messages) => {
         this.messages = messages;
         this.isLoading = false;
+        this.markConversationAsRead(conversationId);
         this.scrollMessagesToBottom();
-        this.markCurrentGroupChatAsRead(groupId);
       },
       error: (error) => {
         this.isLoading = false;
-        this.errorMessage = this.languageService.translate('groupChatLoadError');
-        console.error('Error loading group chat messages:', error);
+        this.errorMessage = this.languageService.translate('privateChatLoadError');
+        console.error('Error loading private chat messages:', error);
       },
     });
   }
 
   private resetViewState(): void {
-    this.group = null;
+    this.conversation = null;
     this.messages = [];
     this.messageText = '';
     this.isLoading = true;
     this.isSending = false;
     this.showScrollToBottomButton = false;
     this.errorMessage = '';
+  }
+
+  private markConversationAsRead(conversationId: number): void {
+    this.privateChatNotificationService.markConversationAsRead(conversationId).subscribe({
+      next: () => {
+        this.privateChatNotificationService.notifyUnreadCountChanged();
+      },
+      error: (error) => {
+        console.error('Error marking private conversation as read:', error);
+      },
+    });
   }
 
   private scrollMessagesToBottom(behavior: ScrollBehavior = 'auto'): void {
@@ -154,16 +167,5 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private syncScrollButtonVisibility(): void {
     this.showScrollToBottomButton = shouldShowScrollButton(() => this.messagesContainer?.nativeElement);
-  }
-
-  private markCurrentGroupChatAsRead(groupId: number): void {
-    this.groupChatNotificationService.markGroupAsRead(groupId).subscribe({
-      next: () => {
-        this.groupChatNotificationService.notifyUnreadCountChanged();
-      },
-      error: (error) => {
-        console.error('Error marking group chat as read:', error);
-      },
-    });
   }
 }

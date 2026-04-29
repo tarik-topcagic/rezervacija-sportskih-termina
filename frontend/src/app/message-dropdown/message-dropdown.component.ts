@@ -1,16 +1,18 @@
-import { NgFor, NgIf } from '@angular/common';
+import { NgClass, NgFor, NgIf } from '@angular/common';
 import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { ChatInboxService } from '../../services/chat-inbox.service';
 import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
 import { NotificationTimeService } from '../../services/notification-time.service';
-import { GroupChatNotification } from '../interfaces/group-chat-notification.model';
+import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
+import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-message-dropdown',
-  imports: [NgIf, NgFor, RouterModule, TranslatePipe],
+  imports: [NgIf, NgFor, NgClass, RouterModule, TranslatePipe],
   templateUrl: './message-dropdown.component.html',
   styleUrl: './message-dropdown.component.scss',
 })
@@ -20,13 +22,14 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
 
   username: string | null = null;
   isOpen = false;
-  messages: GroupChatNotification[] = [];
+  messages: ChatInboxItem[] = [];
   unreadCount = 0;
-  highlightedGroupIds = new Set<number>();
+  highlightedMessageKeys = new Set<string>();
   relativeTimeRefreshKey = 0;
 
   private currentUserSubscription?: Subscription;
   private unreadCountSubscription?: Subscription;
+  private privateUnreadCountSubscription?: Subscription;
   private readonly refreshIntervalMs = 30000;
   private readonly relativeTimeRefreshIntervalMs = 60000;
   private refreshIntervalId?: ReturnType<typeof setInterval>;
@@ -38,7 +41,9 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
 
   constructor(
     private authService: AuthService,
+    private chatInboxService: ChatInboxService,
     private groupChatNotificationService: GroupChatNotificationService,
+    private privateChatNotificationService: PrivateChatNotificationService,
     private notificationTimeService: NotificationTimeService,
     private router: Router,
   ) {}
@@ -65,6 +70,13 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
       }
     });
 
+    this.privateUnreadCountSubscription = this.privateChatNotificationService.unreadCountRefresh$.subscribe(() => {
+      if (this.username && this.isActiveForViewport) {
+        this.loadUnreadCount();
+        this.loadMessages();
+      }
+    });
+
     this.desktopMediaQuery.addEventListener('change', this.onViewportChange);
     window.addEventListener('app-notification-dropdown-opened', this.onNotificationDropdownOpened);
     this.syncViewportActivity();
@@ -73,6 +85,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.currentUserSubscription?.unsubscribe();
     this.unreadCountSubscription?.unsubscribe();
+    this.privateUnreadCountSubscription?.unsubscribe();
     this.desktopMediaQuery.removeEventListener('change', this.onViewportChange);
     window.removeEventListener('app-notification-dropdown-opened', this.onNotificationDropdownOpened);
     this.stopTimers();
@@ -95,35 +108,54 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.highlightedGroupIds.clear();
+    this.highlightedMessageKeys.clear();
   }
 
-  openMessage(message: GroupChatNotification): void {
-    this.groupChatNotificationService.markGroupAsRead(message.groupId).subscribe({
-      next: () => {
-        message.isRead = true;
-        message.unreadCount = 0;
-        this.groupChatNotificationService.notifyUnreadCountChanged();
-        this.router.navigate(['/grupe', message.groupId, 'chat']);
-        this.closeMessages();
-      },
-      error: () => {
-        this.router.navigate(['/grupe', message.groupId, 'chat']);
-        this.closeMessages();
-      },
-    });
+  openMessage(message: ChatInboxItem): void {
+    if (message.type === 'group' && message.groupId) {
+      this.groupChatNotificationService.markGroupAsRead(message.groupId).subscribe({
+        next: () => {
+          message.isRead = true;
+          message.unreadCount = 0;
+          this.groupChatNotificationService.notifyUnreadCountChanged();
+          this.router.navigate(['/grupe', message.groupId, 'chat']);
+          this.closeMessages();
+        },
+        error: () => {
+          this.router.navigate(['/grupe', message.groupId, 'chat']);
+          this.closeMessages();
+        },
+      });
+      return;
+    }
+
+    if (message.type === 'private' && message.conversationId) {
+      this.privateChatNotificationService.markConversationAsRead(message.conversationId).subscribe({
+        next: () => {
+          message.isRead = true;
+          message.unreadCount = 0;
+          this.privateChatNotificationService.notifyUnreadCountChanged();
+          this.router.navigate(['/poruke/privatno', message.conversationId]);
+          this.closeMessages();
+        },
+        error: () => {
+          this.router.navigate(['/poruke/privatno', message.conversationId]);
+          this.closeMessages();
+        },
+      });
+    }
   }
 
-  getMessageAge(message: GroupChatNotification): string {
+  getMessageAge(message: ChatInboxItem): string {
     return this.notificationTimeService.formatRelativeTime(message.createdAt);
   }
 
-  hasUnreadMessages(message: GroupChatNotification): boolean {
+  hasUnreadMessages(message: ChatInboxItem): boolean {
     return message.unreadCount > 0;
   }
 
-  isHighlightedMessage(message: GroupChatNotification): boolean {
-    return this.highlightedGroupIds.has(message.groupId);
+  isHighlightedMessage(message: ChatInboxItem): boolean {
+    return this.highlightedMessageKeys.has(this.getMessageKey(message));
   }
 
   @HostListener('document:click', ['$event'])
@@ -198,20 +230,20 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.groupChatNotificationService.getChatNotifications().subscribe({
+    this.chatInboxService.getInboxItems().subscribe({
       next: (messages) => {
         if (captureUnreadHighlights) {
-          this.highlightedGroupIds = new Set(
+          this.highlightedMessageKeys = new Set(
             messages
               .filter((message) => message.unreadCount > 0)
-              .map((message) => message.groupId),
+              .map((message) => this.getMessageKey(message)),
           );
         }
 
         this.messages = messages;
       },
       error: (error) => {
-        console.error('Error loading chat message notifications:', error);
+        console.error('Error loading chat inbox notifications:', error);
       },
     });
   }
@@ -221,25 +253,29 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.groupChatNotificationService.getUnreadCount().subscribe({
-      next: (response) => {
-        this.unreadCount = response.count;
+    this.chatInboxService.getUnreadCount().subscribe({
+      next: (count) => {
+        this.unreadCount = count;
       },
       error: (error) => {
-        console.error('Error loading unread chat message count:', error);
+        console.error('Error loading unread chat inbox count:', error);
       },
     });
   }
 
   private closeMessages(): void {
     this.isOpen = false;
-    this.highlightedGroupIds.clear();
+    this.highlightedMessageKeys.clear();
   }
 
   private resetState(): void {
     this.messages = [];
     this.unreadCount = 0;
-    this.highlightedGroupIds.clear();
+    this.highlightedMessageKeys.clear();
     this.closeMessages();
+  }
+
+  private getMessageKey(message: ChatInboxItem): string {
+    return `${message.type}:${message.id}`;
   }
 }

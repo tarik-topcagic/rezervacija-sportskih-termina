@@ -14,7 +14,6 @@ import { SettingsComponent } from './settings/settings.component';
 import { GroupDetailsComponent } from './group-details/group-details.component';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { GroupChatComponent } from './group-chat/group-chat.component';
-import { MessagesComponent } from './messages/messages.component';
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
@@ -30,6 +29,15 @@ export const routes: Routes = [
     { path: 'grupe/:id', component: GroupDetailsComponent, canActivate: [AuthGuard] },
     { path: 'grupe/:id/chat', component: GroupChatComponent, canActivate: [AuthGuard] },
     { path: 'obavijesti', component: NotificationsComponent, canActivate: [AuthGuard] },
-    { path: 'poruke', component: MessagesComponent, canActivate: [AuthGuard] },
+    {
+      path: 'poruke',
+      loadComponent: () => import('./messages/messages.component').then((module) => module.MessagesComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'poruke/privatno/:conversationId',
+      loadComponent: () => import('./private-chat/private-chat.component').then((module) => module.PrivateChatComponent),
+      canActivate: [AuthGuard],
+    },
     { path: '**', redirectTo: '' }
 ];

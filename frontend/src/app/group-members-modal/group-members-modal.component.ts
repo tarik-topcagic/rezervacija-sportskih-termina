@@ -6,6 +6,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 import { GroupService } from '../../services/group.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { LanguageService } from '../../services/language.service';
+import { PrivateChatService } from '../../services/private-chat.service';
 
 @Component({
   selector: 'app-group-members-modal',
@@ -26,6 +27,7 @@ export class GroupMembersModalComponent {
     private groupService: GroupService,
     private confirmDialogService: ConfirmDialogService,
     private languageService: LanguageService,
+    private privateChatService: PrivateChatService,
   ) {}
 
   closeModal(): void {
@@ -57,6 +59,23 @@ export class GroupMembersModalComponent {
 
   isCurrentUser(member: GroupMember): boolean {
     return !!this.group?.currentUserId && member.userId === this.group.currentUserId;
+  }
+
+  openPrivateChat(member: GroupMember): void {
+    if (this.isCurrentUser(member)) {
+      return;
+    }
+
+    this.privateChatService.getOrCreateConversation(member.userId).subscribe({
+      next: (conversation) => {
+        this.closeModal();
+        this.router.navigate(['/poruke/privatno', conversation.id]);
+      },
+      error: (error) => {
+        this.error.emit(this.languageService.translate('privateChatLoadError'));
+        console.error('Error opening private chat from group members modal:', error);
+      },
+    });
   }
 
   async removeMember(member: GroupMember): Promise<void> {

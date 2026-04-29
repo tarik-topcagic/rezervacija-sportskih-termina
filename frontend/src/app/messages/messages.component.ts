@@ -1,20 +1,22 @@
-import { NgFor, NgIf } from '@angular/common';
+import { NgClass, NgFor, NgIf } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { ChatInboxService } from '../../services/chat-inbox.service';
 import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
 import { NotificationTimeService } from '../../services/notification-time.service';
-import { GroupChatNotification } from '../interfaces/group-chat-notification.model';
+import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
+import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-messages',
-  imports: [NgFor, NgIf, NavbarComponent, TranslatePipe],
+  imports: [NgFor, NgIf, NgClass, NavbarComponent, TranslatePipe],
   templateUrl: './messages.component.html',
   styleUrl: './messages.component.scss',
 })
 export class MessagesComponent implements OnInit, OnDestroy {
-  messages: GroupChatNotification[] = [];
+  messages: ChatInboxItem[] = [];
   isLoading = true;
   relativeTimeRefreshKey = 0;
 
@@ -24,7 +26,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
   private relativeTimeRefreshIntervalId?: ReturnType<typeof setInterval>;
 
   constructor(
+    private chatInboxService: ChatInboxService,
     private groupChatNotificationService: GroupChatNotificationService,
+    private privateChatNotificationService: PrivateChatNotificationService,
     private notificationTimeService: NotificationTimeService,
     private router: Router,
   ) {}
@@ -51,25 +55,42 @@ export class MessagesComponent implements OnInit, OnDestroy {
     }
   }
 
-  openMessage(message: GroupChatNotification): void {
-    this.groupChatNotificationService.markGroupAsRead(message.groupId).subscribe({
-      next: () => {
-        message.isRead = true;
-        message.unreadCount = 0;
-        this.groupChatNotificationService.notifyUnreadCountChanged();
-        this.router.navigate(['/grupe', message.groupId, 'chat']);
-      },
-      error: () => {
-        this.router.navigate(['/grupe', message.groupId, 'chat']);
-      },
-    });
+  openMessage(message: ChatInboxItem): void {
+    if (message.type === 'group' && message.groupId) {
+      this.groupChatNotificationService.markGroupAsRead(message.groupId).subscribe({
+        next: () => {
+          message.isRead = true;
+          message.unreadCount = 0;
+          this.groupChatNotificationService.notifyUnreadCountChanged();
+          this.router.navigate(['/grupe', message.groupId, 'chat']);
+        },
+        error: () => {
+          this.router.navigate(['/grupe', message.groupId, 'chat']);
+        },
+      });
+      return;
+    }
+
+    if (message.type === 'private' && message.conversationId) {
+      this.privateChatNotificationService.markConversationAsRead(message.conversationId).subscribe({
+        next: () => {
+          message.isRead = true;
+          message.unreadCount = 0;
+          this.privateChatNotificationService.notifyUnreadCountChanged();
+          this.router.navigate(['/poruke/privatno', message.conversationId]);
+        },
+        error: () => {
+          this.router.navigate(['/poruke/privatno', message.conversationId]);
+        },
+      });
+    }
   }
 
-  getMessageAge(message: GroupChatNotification): string {
+  getMessageAge(message: ChatInboxItem): string {
     return this.notificationTimeService.formatRelativeTime(message.createdAt);
   }
 
-  hasUnreadMessages(message: GroupChatNotification): boolean {
+  hasUnreadMessages(message: ChatInboxItem): boolean {
     return message.unreadCount > 0;
   }
 
@@ -78,7 +99,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       this.isLoading = true;
     }
 
-    this.groupChatNotificationService.getChatNotifications().subscribe({
+    this.chatInboxService.getInboxItems().subscribe({
       next: (messages) => {
         this.messages = messages;
 
@@ -87,7 +108,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('Error loading chat message notifications:', error);
+        console.error('Error loading chat inbox notifications:', error);
 
         if (showLoading) {
           this.isLoading = false;
