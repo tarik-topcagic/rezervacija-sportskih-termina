@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using SportskiTerminiAPI.Hubs;
 using SportskiTerminiAPI.DTOs;
+using SportskiTerminiAPI.Helpers;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
 
@@ -34,7 +35,9 @@ namespace SportskiTerminiAPI.Services
             if (!IsConversationParticipant(conversation, userId))
                 return ServiceResult.Forbid("Only conversation participants can access private messages");
 
+            var seenChanges = await _privateChatRepository.MarkMessagesSeenForConversationAsync(conversationId, userId, DateTime.UtcNow);
             var messages = await _privateChatRepository.GetMessagesForConversationAsync(conversationId);
+            await BroadcastStatusUpdatesAsync(conversationId, seenChanges);
             return ServiceResult.Ok(messages.Select(ToPrivateMessageDto));
         }
 
@@ -81,20 +84,37 @@ namespace SportskiTerminiAPI.Services
                 .Group(ChatHub.GetConversationChannelName(conversation.Id.ToString()))
                 .SendAsync("ReceivePrivateMessage", messageDto);
 
-            await _hubContext.Clients
-                .Users(GetConversationNotificationRecipientUserIds(conversation, senderUserId, targetUserId))
-                .SendAsync("ReceiveMessageNotification", new ChatMessageNotificationDto
-                {
-                    Type = "private",
-                    GroupId = null,
-                    ConversationId = conversation.Id,
-                    SenderUserId = messageDto.SenderUserId,
-                    SenderName = messageDto.SenderFullName,
-                    Preview = messageDto.MessageText,
-                    CreatedAt = messageDto.CreatedAt
-                });
+            var notificationDto = new ChatMessageNotificationDto
+            {
+                Type = "private",
+                GroupId = null,
+                ConversationId = conversation.Id,
+                SenderUserId = messageDto.SenderUserId,
+                SenderName = messageDto.SenderFullName,
+                Preview = messageDto.MessageText,
+                CreatedAt = messageDto.CreatedAt
+            };
+
+            foreach (var recipientUserId in GetConversationNotificationRecipientUserIds(conversation, senderUserId, targetUserId))
+            {
+                await _hubContext.Clients
+                    .User(recipientUserId)
+                    .SendAsync("ReceiveMessageNotification", notificationDto);
+            }
 
             return ServiceResult.Ok(messageDto);
+        }
+
+        public async Task AcknowledgeMessageDeliveredAsync(string userId, int conversationId, int messageId)
+        {
+            var change = await _privateChatRepository.MarkMessageDeliveredAsync(conversationId, messageId, userId, DateTime.UtcNow);
+            await BroadcastStatusUpdateAsync(conversationId, change);
+        }
+
+        public async Task AcknowledgeMessageSeenAsync(string userId, int conversationId, int messageId)
+        {
+            var changes = await _privateChatRepository.MarkMessageSeenAsync(conversationId, messageId, userId, DateTime.UtcNow);
+            await BroadcastStatusUpdatesAsync(conversationId, changes);
         }
 
         public async Task<ServiceResult> CreateMessageForConversationAsync(string senderUserId, int conversationId, CreatePrivateMessageDto createPrivateMessageDto)
@@ -125,18 +145,23 @@ namespace SportskiTerminiAPI.Services
                 .Group(ChatHub.GetConversationChannelName(conversation.Id.ToString()))
                 .SendAsync("ReceivePrivateMessage", messageDto);
 
-            await _hubContext.Clients
-                .Users(GetConversationNotificationRecipientUserIds(conversation))
-                .SendAsync("ReceiveMessageNotification", new ChatMessageNotificationDto
-                {
-                    Type = "private",
-                    GroupId = null,
-                    ConversationId = conversation.Id,
-                    SenderUserId = messageDto.SenderUserId,
-                    SenderName = messageDto.SenderFullName,
-                    Preview = messageDto.MessageText,
-                    CreatedAt = messageDto.CreatedAt
-                });
+            var notificationDto = new ChatMessageNotificationDto
+            {
+                Type = "private",
+                GroupId = null,
+                ConversationId = conversation.Id,
+                SenderUserId = messageDto.SenderUserId,
+                SenderName = messageDto.SenderFullName,
+                Preview = messageDto.MessageText,
+                CreatedAt = messageDto.CreatedAt
+            };
+
+            foreach (var recipientUserId in GetConversationNotificationRecipientUserIds(conversation))
+            {
+                await _hubContext.Clients
+                    .User(recipientUserId)
+                    .SendAsync("ReceiveMessageNotification", notificationDto);
+            }
 
             return ServiceResult.Ok(messageDto);
         }
@@ -223,8 +248,37 @@ namespace SportskiTerminiAPI.Services
                     : message.SenderUser?.UserName ?? string.Empty,
                 SenderProfilePictureUrl = message.SenderUser?.ProfilePictureUrl ?? "default-profile.png",
                 MessageText = message.MessageText,
-                CreatedAt = message.CreatedAt
+                CreatedAt = BosniaTimeHelper.ToSarajevoOffset(message.CreatedAt),
+                DeliveredAt = message.DeliveredAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(message.DeliveredAt.Value) : null,
+                SeenAt = message.SeenAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(message.SeenAt.Value) : null
             };
+        }
+
+        private async Task BroadcastStatusUpdatesAsync(int conversationId, IReadOnlyList<MessageStatusChange> changes)
+        {
+            foreach (var change in changes)
+            {
+                await BroadcastStatusUpdateAsync(conversationId, change);
+            }
+        }
+
+        private async Task BroadcastStatusUpdateAsync(int conversationId, MessageStatusChange? change)
+        {
+            if (change == null)
+                return;
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetConversationChannelName(conversationId.ToString()))
+                .SendAsync("ReceiveMessageStatusUpdate", new ChatMessageStatusUpdateDto
+                {
+                    MessageId = change.MessageId,
+                    ChatType = "private",
+                    GroupId = null,
+                    ConversationId = conversationId,
+                    UserId = change.UserId,
+                    DeliveredAt = change.DeliveredAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(change.DeliveredAt.Value) : null,
+                    SeenAt = change.SeenAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(change.SeenAt.Value) : null
+                });
         }
     }
 }

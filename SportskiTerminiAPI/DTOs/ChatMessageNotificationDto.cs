@@ -8,6 +8,6 @@ namespace SportskiTerminiAPI.DTOs
         public string SenderUserId { get; set; } = string.Empty;
         public string SenderName { get; set; } = string.Empty;
         public string Preview { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
     }
 }

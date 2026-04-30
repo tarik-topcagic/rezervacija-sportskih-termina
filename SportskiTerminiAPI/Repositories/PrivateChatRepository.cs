@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SportskiTerminiAPI.Data;
 using SportskiTerminiAPI.DTOs;
+using SportskiTerminiAPI.Helpers;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
 
@@ -146,7 +147,7 @@ namespace SportskiTerminiAPI.Repositories
                         : otherUser?.UserName ?? string.Empty,
                     OtherProfilePictureUrl = otherUser?.ProfilePictureUrl ?? "default-profile.png",
                     LatestMessagePreview = latestMessage.MessageText,
-                    CreatedAt = ToUtcOffset(latestMessage.CreatedAt),
+                    CreatedAt = BosniaTimeHelper.ToSarajevoOffset(latestMessage.CreatedAt),
                     UnreadCount = unreadCount,
                     IsRead = unreadCount == 0
                 };
@@ -197,13 +198,177 @@ namespace SportskiTerminiAPI.Repositories
             await _context.SaveChangesAsync();
         }
 
-        private static DateTimeOffset ToUtcOffset(DateTime value)
+        public async Task<MessageStatusChange?> MarkMessageDeliveredAsync(int conversationId, int messageId, string userId, DateTime deliveredAt)
         {
-            var utcValue = value.Kind == DateTimeKind.Utc
-                ? value
-                : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+            var message = await _context.PrivateMessages
+                .Include(existingMessage => existingMessage.Conversation)
+                .FirstOrDefaultAsync(existingMessage =>
+                    existingMessage.Id == messageId
+                    && existingMessage.ConversationId == conversationId
+                    && existingMessage.SenderUserId != userId
+                    && (existingMessage.Conversation.UserOneId == userId || existingMessage.Conversation.UserTwoId == userId));
 
-            return new DateTimeOffset(utcValue);
+            if (message == null)
+                return null;
+
+            if (message.DeliveredAt.HasValue)
+            {
+                if (message.SeenAt.HasValue)
+                {
+                    return null;
+                }
+
+                return new MessageStatusChange
+                {
+                    MessageId = message.Id,
+                    UserId = userId,
+                    DeliveredAt = message.DeliveredAt,
+                    SeenAt = message.SeenAt
+                };
+            }
+
+            message.DeliveredAt = deliveredAt;
+            await _context.SaveChangesAsync();
+
+            return new MessageStatusChange
+            {
+                MessageId = message.Id,
+                UserId = userId,
+                DeliveredAt = message.DeliveredAt,
+                SeenAt = message.SeenAt
+            };
+        }
+
+        public async Task<IReadOnlyList<MessageStatusChange>> MarkMessageSeenAsync(int conversationId, int messageId, string userId, DateTime seenAt)
+        {
+            var messages = await _context.PrivateMessages
+                .Include(existingMessage => existingMessage.Conversation)
+                .Where(existingMessage =>
+                    existingMessage.ConversationId == conversationId
+                    && existingMessage.SenderUserId != userId
+                    && (existingMessage.Conversation.UserOneId == userId || existingMessage.Conversation.UserTwoId == userId))
+                .OrderBy(existingMessage => existingMessage.CreatedAt)
+                .ToListAsync();
+
+            var targetMessage = messages.FirstOrDefault(existingMessage =>
+                    existingMessage.Id == messageId
+                    && existingMessage.ConversationId == conversationId
+                    && existingMessage.SenderUserId != userId);
+
+            if (targetMessage == null)
+                return Array.Empty<MessageStatusChange>();
+
+            var changes = new List<MessageStatusChange>();
+
+            foreach (var message in messages)
+            {
+                var didChange = false;
+
+                if (message.Id == targetMessage.Id)
+                {
+                    if (!message.DeliveredAt.HasValue)
+                    {
+                        message.DeliveredAt = seenAt;
+                        didChange = true;
+                    }
+
+                    if (message.SeenAt != seenAt)
+                    {
+                        message.SeenAt = seenAt;
+                        didChange = true;
+                    }
+                }
+                else if (message.SeenAt.HasValue)
+                {
+                    message.SeenAt = null;
+                    didChange = true;
+                }
+
+                if (!didChange)
+                {
+                    continue;
+                }
+
+                changes.Add(new MessageStatusChange
+                {
+                    MessageId = message.Id,
+                    UserId = userId,
+                    DeliveredAt = message.DeliveredAt,
+                    SeenAt = message.SeenAt
+                });
+            }
+
+            if (changes.Count == 0)
+                return Array.Empty<MessageStatusChange>();
+
+            await _context.SaveChangesAsync();
+
+            return changes;
+        }
+
+        public async Task<IReadOnlyList<MessageStatusChange>> MarkMessagesSeenForConversationAsync(int conversationId, string userId, DateTime seenAt)
+        {
+            var messages = await _context.PrivateMessages
+                .Include(existingMessage => existingMessage.Conversation)
+                .Where(existingMessage =>
+                    existingMessage.ConversationId == conversationId
+                    && existingMessage.SenderUserId != userId
+                    && (existingMessage.Conversation.UserOneId == userId || existingMessage.Conversation.UserTwoId == userId))
+                .OrderBy(existingMessage => existingMessage.CreatedAt)
+                .ToListAsync();
+
+            if (messages.Count == 0)
+                return Array.Empty<MessageStatusChange>();
+
+            var latestIncomingMessageId = messages
+                .OrderByDescending(message => message.CreatedAt)
+                .Select(message => (int?)message.Id)
+                .FirstOrDefault();
+
+            var changes = new List<MessageStatusChange>();
+
+            foreach (var message in messages)
+            {
+                var didChange = false;
+
+                if (!message.DeliveredAt.HasValue)
+                {
+                    message.DeliveredAt = seenAt;
+                    didChange = true;
+                }
+
+                if (latestIncomingMessageId.HasValue
+                    && message.Id == latestIncomingMessageId.Value)
+                {
+                    if (message.SeenAt != seenAt)
+                    {
+                        message.SeenAt = seenAt;
+                        didChange = true;
+                    }
+                }
+                else if (message.SeenAt.HasValue)
+                {
+                    message.SeenAt = null;
+                    didChange = true;
+                }
+
+                if (!didChange)
+                {
+                    continue;
+                }
+
+                changes.Add(new MessageStatusChange
+                {
+                    MessageId = message.Id,
+                    UserId = userId,
+                    DeliveredAt = message.DeliveredAt,
+                    SeenAt = message.SeenAt
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return changes;
         }
     }
 }

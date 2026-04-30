@@ -9,5 +9,6 @@ namespace SportskiTerminiAPI.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public virtual Group Group { get; set; } = null!;
         public virtual AppUser SenderUser { get; set; } = null!;
+        public virtual ICollection<GroupMessageReceipt> Receipts { get; set; } = new List<GroupMessageReceipt>();
     }
 }

@@ -10,5 +10,7 @@ namespace SportskiTerminiAPI.Interfaces
         Task<ServiceResult> GetOrCreateConversationAsync(string currentUserId, string targetUserId);
         Task<ServiceResult> CreateMessageForUserAsync(string senderUserId, string targetUserId, CreatePrivateMessageDto createPrivateMessageDto);
         Task<ServiceResult> CreateMessageForConversationAsync(string senderUserId, int conversationId, CreatePrivateMessageDto createPrivateMessageDto);
+        Task AcknowledgeMessageDeliveredAsync(string userId, int conversationId, int messageId);
+        Task AcknowledgeMessageSeenAsync(string userId, int conversationId, int messageId);
     }
 }

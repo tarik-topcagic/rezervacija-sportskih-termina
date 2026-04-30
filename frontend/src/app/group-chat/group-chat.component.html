@@ -60,6 +60,31 @@
               <span>{{ message.createdAt | date:'dd.MM.yyyy. HH:mm' }}</span>
             </div>
             <p>{{ message.messageText }}</p>
+            <span *ngIf="shouldShowMessageStatus(message) && !shouldShowSeenByMembers(message)" class="message-status">
+              {{ getMessageStatusLabel(message) }}
+            </span>
+            <div *ngIf="shouldShowSeenByMembers(message)" class="message-status message-status-seen-by">
+              <span class="seen-by-label">{{ 'seenBy' | translate }}</span>
+              <div class="seen-by-avatars">
+                <ng-container *ngFor="let seenByUser of getSeenByAvatarItems(message)">
+                  <img
+                    *ngIf="seenByUser.profilePictureUrl && seenByUser.profilePictureUrl !== 'default-profile.png'; else defaultSeenByAvatar"
+                    [src]="seenByUser.profilePictureUrl"
+                    [alt]="seenByUser.name"
+                    [title]="seenByUser.name"
+                    class="seen-by-avatar-image"
+                  />
+                  <ng-template #defaultSeenByAvatar>
+                    <div class="seen-by-avatar-fallback" [title]="seenByUser.name">
+                      <i class="bi bi-person"></i>
+                    </div>
+                  </ng-template>
+                </ng-container>
+                <span *ngIf="getRemainingSeenByCount(message) > 0" class="seen-by-extra-count">
+                  +{{ getRemainingSeenByCount(message) }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 

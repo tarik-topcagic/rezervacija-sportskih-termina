@@ -181,6 +181,60 @@
   word-break: break-word;
 }
 
+.message-status {
+  display: block;
+  margin-top: 0.4rem;
+  color: #6c757d;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.message-status-seen-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.seen-by-label {
+  white-space: nowrap;
+}
+
+.seen-by-avatars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.seen-by-avatar-image,
+.seen-by-avatar-fallback,
+.seen-by-extra-count {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex: 0 0 20px;
+}
+
+.seen-by-avatar-image {
+  object-fit: cover;
+  border: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+.seen-by-avatar-fallback,
+.seen-by-extra-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9edf2;
+  color: #6c757d;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.seen-by-avatar-fallback .bi {
+  font-size: 0.72rem;
+}
+
 .scroll-to-latest-button {
   position: sticky;
   bottom: 0.5rem;
@@ -264,14 +318,21 @@
 :host-context(body.dark-mode) .status-message,
 :host-context(body.dark-mode) .section-label,
 :host-context(body.dark-mode) .message-meta span,
+:host-context(body.dark-mode) .message-status,
 :host-context(body.dark-mode) .empty-state {
   color: #c5c8cc;
 }
 
 :host-context(body.dark-mode) .default-group-avatar,
-:host-context(body.dark-mode) .default-avatar {
+:host-context(body.dark-mode) .default-avatar,
+:host-context(body.dark-mode) .seen-by-avatar-fallback,
+:host-context(body.dark-mode) .seen-by-extra-count {
   background: #2a2a2a;
   color: #d2d7de;
+}
+
+:host-context(body.dark-mode) .seen-by-avatar-image {
+  border-color: #3a3a3a;
 }
 
 :host-context(body.dark-mode) .messages-panel {

@@ -379,6 +379,8 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
         this.highlightedMessageKeys.add(this.getMessageKey(newMessage));
       }
 
+      void this.syncRealtimeRooms(this.messages);
+
       return;
     }
 

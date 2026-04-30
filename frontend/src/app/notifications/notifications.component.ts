@@ -1,15 +1,17 @@
 import { NgClass, NgFor, NgIf } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { GroupService } from '../../services/group.service';
 import { LanguageService } from '../../services/language.service';
 import { NotificationService } from '../../services/notification.service';
+import { SystemNotificationRealtimeService } from '../../services/system-notification-realtime.service';
 import { AppNotification, AppNotificationType } from '../interfaces/notification.model';
 import { MembershipStatus } from '../interfaces/group.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { NotificationTimeService } from '../../services/notification-time.service';
-import { createHighlightedSet } from '../helpers/dropdown-ui.helper';
+import { createHighlightedSet, prependIfNotExists } from '../helpers/dropdown-ui.helper';
 
 @Component({
   selector: 'app-notifications',
@@ -30,6 +32,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
   private notificationRefreshIntervalId?: ReturnType<typeof setInterval>;
   private relativeTimeRefreshIntervalId?: ReturnType<typeof setInterval>;
   private processedMembershipNotificationIds = new Set<number>();
+  private realtimeNotificationSubscription?: Subscription;
   relativeTimeRefreshKey = 0;
 
   constructor(
@@ -37,11 +40,18 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     private groupService: GroupService,
     private languageService: LanguageService,
     private notificationTimeService: NotificationTimeService,
+    private systemNotificationRealtimeService: SystemNotificationRealtimeService,
     private router: Router,
   ) {}
 
   ngOnInit(): void {
+    void this.systemNotificationRealtimeService.connect();
     this.loadNotifications();
+
+    this.realtimeNotificationSubscription = this.systemNotificationRealtimeService.incomingSystemNotifications$.subscribe((notification) => {
+      this.applyRealtimeNotification(notification);
+    });
+
     this.notificationRefreshIntervalId = setInterval(() => {
       this.loadNotifications(false);
     }, this.notificationRefreshIntervalMs);
@@ -51,6 +61,8 @@ export class NotificationsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.realtimeNotificationSubscription?.unsubscribe();
+
     if (this.notificationRefreshIntervalId) {
       clearInterval(this.notificationRefreshIntervalId);
     }
@@ -58,6 +70,8 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     if (this.relativeTimeRefreshIntervalId) {
       clearInterval(this.relativeTimeRefreshIntervalId);
     }
+
+    void this.systemNotificationRealtimeService.disconnect();
   }
 
   openNotification(notification: AppNotification): void {
@@ -256,5 +270,22 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       this.processedMembershipNotificationIds.add(notification.id);
       this.groupService.notifyMembershipChanged();
     }
+  }
+
+  private applyRealtimeNotification(notification: AppNotification): void {
+    const nextNotifications = prependIfNotExists(
+      this.notifications,
+      notification,
+      (existingNotification) => existingNotification.id === notification.id,
+    );
+
+    if (nextNotifications === this.notifications) {
+      return;
+    }
+
+    this.notifications = nextNotifications;
+    this.highlightedNotificationIds.add(notification.id);
+    this.publishMembershipChangesFromNotifications([notification]);
+    this.notificationService.notifyUnreadCountChanged();
   }
 }

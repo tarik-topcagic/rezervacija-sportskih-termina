@@ -15,6 +15,7 @@ namespace SportskiTerminiAPI.Data
         public DbSet<Group> Groups { get; set; }
         public DbSet<GroupMembership> GroupMemberships { get; set; }
         public DbSet<GroupMessage> GroupMessages { get; set; }
+        public DbSet<GroupMessageReceipt> GroupMessageReceipts { get; set; }
         public DbSet<GroupChatReadState> GroupChatReadStates { get; set; }
         public DbSet<PrivateConversation> PrivateConversations { get; set; }
         public DbSet<PrivateMessage> PrivateMessages { get; set; }
@@ -61,6 +62,22 @@ namespace SportskiTerminiAPI.Data
 
             modelBuilder.Entity<GroupMessage>()
                 .HasIndex(message => new { message.GroupId, message.CreatedAt });
+
+            modelBuilder.Entity<GroupMessageReceipt>()
+                .HasOne(receipt => receipt.GroupMessage)
+                .WithMany(message => message.Receipts)
+                .HasForeignKey(receipt => receipt.GroupMessageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupMessageReceipt>()
+                .HasOne(receipt => receipt.User)
+                .WithMany(user => user.GroupMessageReceipts)
+                .HasForeignKey(receipt => receipt.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupMessageReceipt>()
+                .HasIndex(receipt => new { receipt.GroupMessageId, receipt.UserId })
+                .IsUnique();
 
             modelBuilder.Entity<GroupChatReadState>()
                 .HasOne(readState => readState.Group)

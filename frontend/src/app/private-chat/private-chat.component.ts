@@ -7,7 +7,13 @@ import { ChatRealtimeService } from '../../services/chat-realtime.service';
 import { LanguageService } from '../../services/language.service';
 import { PrivateChatService } from '../../services/private-chat.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
+import {
+  appendMessageIfNotExists,
+  applyStatusUpdateToMessages,
+  mergeStatusUpdates as mergePendingStatusUpdates,
+} from '../helpers/chat-status.helper';
 import { scrollToBottom, shouldShowScrollButton } from '../helpers/chat-ui.helper';
+import { ChatMessageStatusUpdate } from '../interfaces/chat-message-status-update.model';
 import { PrivateConversation, PrivateMessage } from '../interfaces/private-chat.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
@@ -30,7 +36,9 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   errorMessage = '';
   private routeSubscription?: Subscription;
   private realtimeMessageSubscription?: Subscription;
+  private realtimeStatusSubscription?: Subscription;
   private connectedConversationId: number | null = null;
+  private pendingStatusUpdates = new Map<number, ChatMessageStatusUpdate>();
 
   constructor(
     private route: ActivatedRoute,
@@ -48,6 +56,10 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
       this.handleIncomingRealtimeMessage(message);
     });
 
+    this.realtimeStatusSubscription = this.chatRealtimeService.incomingMessageStatusUpdates$.subscribe((update) => {
+      this.handleStatusUpdate(update);
+    });
+
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
       const conversationId = Number(params.get('conversationId'));
 
@@ -57,8 +69,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.resetViewState();
-      this.loadChat(conversationId);
-      void this.setupRealtime(conversationId);
+      void this.initializeConversation(conversationId);
     });
   }
 
@@ -69,6 +80,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
     this.realtimeMessageSubscription?.unsubscribe();
+    this.realtimeStatusSubscription?.unsubscribe();
     if (this.connectedConversationId !== null) {
       void this.chatRealtimeService.leaveConversation(this.connectedConversationId);
     }
@@ -86,7 +98,14 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.privateChatService.sendMessageToConversation(this.conversation.id, trimmedMessage).subscribe({
       next: (message) => {
-        if (!this.appendMessageIfNotExists(message)) {
+        const appendResult = appendMessageIfNotExists(
+          this.messages,
+          message,
+          this.pendingStatusUpdates,
+        );
+        this.messages = appendResult.messages;
+
+        if (!appendResult.appended) {
           this.messageText = '';
           this.isSending = false;
           return;
@@ -120,6 +139,22 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.scrollMessagesToBottom('smooth');
   }
 
+  shouldShowOwnMessageStatus(message: PrivateMessage): boolean {
+    return this.isOwnMessage(message) && this.getLatestOwnMessageId() === message.id;
+  }
+
+  getMessageStatusLabel(message: PrivateMessage): string {
+    if (message.seenAt) {
+      return this.languageService.translate('seen');
+    }
+
+    if (message.deliveredAt) {
+      return this.languageService.translate('delivered');
+    }
+
+    return this.languageService.translate('sent');
+  }
+
   private loadChat(conversationId: number): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -151,6 +186,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
         this.isLoading = false;
         this.markConversationAsRead(conversationId);
         this.scrollMessagesToBottom();
+        this.acknowledgeLoadedMessages();
       },
       error: (error) => {
         this.isLoading = false;
@@ -168,6 +204,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSending = false;
     this.showScrollToBottomButton = false;
     this.errorMessage = '';
+    this.pendingStatusUpdates.clear();
   }
 
   private markConversationAsRead(conversationId: number): void {
@@ -190,26 +227,97 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     await this.chatRealtimeService.joinConversation(conversationId);
   }
 
+  private async initializeConversation(conversationId: number): Promise<void> {
+    await this.setupRealtime(conversationId);
+    this.loadChat(conversationId);
+  }
+
   private handleIncomingRealtimeMessage(message: PrivateMessage): void {
     if (!this.conversation?.id || message.conversationId !== this.conversation.id) {
       return;
     }
 
-    if (!this.appendMessageIfNotExists(message)) {
+    const appendResult = appendMessageIfNotExists(
+      this.messages,
+      message,
+      this.pendingStatusUpdates,
+    );
+    this.messages = appendResult.messages;
+
+    if (!appendResult.appended) {
       return;
     }
 
     this.scrollMessagesToBottom('smooth');
     this.markConversationAsRead(message.conversationId);
+    this.acknowledgeIncomingMessage(message);
   }
 
-  private appendMessageIfNotExists(message: PrivateMessage): boolean {
-    if (this.messages.some((existingMessage) => existingMessage.id === message.id)) {
-      return false;
+  private handleStatusUpdate(update: ChatMessageStatusUpdate): void {
+    if (update.chatType !== 'private'
+      || !this.conversation?.id
+      || update.conversationId !== this.conversation.id) {
+      return;
     }
 
-    this.messages = [...this.messages, message];
-    return true;
+    const updateResult = applyStatusUpdateToMessages(
+      this.messages,
+      update,
+    );
+    this.messages = updateResult.messages;
+
+    if (!updateResult.didUpdateExistingMessage) {
+      this.pendingStatusUpdates.set(update.messageId, this.mergeStatusUpdates(
+        this.pendingStatusUpdates.get(update.messageId),
+        update,
+      ));
+    }
+  }
+
+  private acknowledgeIncomingMessage(message: PrivateMessage): void {
+    if (!this.conversation?.id || this.isOwnMessage(message)) {
+      return;
+    }
+
+    void this.chatRealtimeService.acknowledgePrivateMessageDelivered(this.conversation.id, message.id);
+    void this.chatRealtimeService.acknowledgePrivateMessageSeen(this.conversation.id, message.id);
+  }
+
+  private acknowledgeLoadedMessages(): void {
+    if (!this.conversation?.id) {
+      return;
+    }
+
+    const latestIncomingMessageId = [...this.messages]
+      .reverse()
+      .find((message) => !this.isOwnMessage(message))?.id;
+
+    for (const message of this.messages) {
+      if (this.isOwnMessage(message)) {
+        continue;
+      }
+
+      void this.chatRealtimeService.acknowledgePrivateMessageDelivered(this.conversation.id, message.id);
+
+      if (latestIncomingMessageId === message.id) {
+        void this.chatRealtimeService.acknowledgePrivateMessageSeen(this.conversation.id, message.id);
+      }
+    }
+  }
+
+  private mergeStatusUpdates(
+    currentUpdate: ChatMessageStatusUpdate | undefined,
+    nextUpdate: ChatMessageStatusUpdate,
+  ): ChatMessageStatusUpdate {
+    return mergePendingStatusUpdates(currentUpdate, nextUpdate);
+  }
+
+  private getLatestOwnMessageId(): number | null {
+    const latestOwnMessage = [...this.messages]
+      .reverse()
+      .find((message) => this.isOwnMessage(message));
+
+    return latestOwnMessage?.id ?? null;
   }
 
   private scrollMessagesToBottom(behavior: ScrollBehavior = 'auto'): void {

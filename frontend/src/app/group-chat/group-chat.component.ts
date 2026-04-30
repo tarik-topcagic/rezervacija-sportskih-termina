@@ -7,7 +7,13 @@ import { ChatRealtimeService } from '../../services/chat-realtime.service';
 import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
 import { GroupService } from '../../services/group.service';
 import { LanguageService } from '../../services/language.service';
+import {
+  appendMessageIfNotExists,
+  applyStatusUpdateToMessages,
+  mergeStatusUpdates as mergePendingStatusUpdates,
+} from '../helpers/chat-status.helper';
 import { scrollToBottom, shouldShowScrollButton } from '../helpers/chat-ui.helper';
+import { ChatMessageStatusUpdate } from '../interfaces/chat-message-status-update.model';
 import { GroupChatMessage, GroupDetails } from '../interfaces/group.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
@@ -30,7 +36,9 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   errorMessage = '';
   private routeSubscription?: Subscription;
   private realtimeMessageSubscription?: Subscription;
+  private realtimeStatusSubscription?: Subscription;
   private connectedGroupId: number | null = null;
+  private pendingStatusUpdates = new Map<number, ChatMessageStatusUpdate>();
 
   constructor(
     private route: ActivatedRoute,
@@ -48,6 +56,10 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       this.handleIncomingRealtimeMessage(message);
     });
 
+    this.realtimeStatusSubscription = this.chatRealtimeService.incomingMessageStatusUpdates$.subscribe((update) => {
+      this.handleStatusUpdate(update);
+    });
+
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
       const groupId = Number(params.get('id'));
 
@@ -57,8 +69,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.resetViewState();
-      this.loadChat(groupId);
-      void this.setupRealtime(groupId);
+      void this.initializeGroupChat(groupId);
     });
   }
 
@@ -69,6 +80,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
     this.realtimeMessageSubscription?.unsubscribe();
+    this.realtimeStatusSubscription?.unsubscribe();
     if (this.connectedGroupId !== null) {
       void this.chatRealtimeService.leaveGroup(this.connectedGroupId);
     }
@@ -86,7 +98,15 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.groupService.sendGroupMessage(this.group.id, trimmedMessage).subscribe({
       next: (message) => {
-        if (!this.appendMessageIfNotExists(message)) {
+        const appendResult = appendMessageIfNotExists(
+          this.messages,
+          message,
+          this.pendingStatusUpdates,
+          this.mapSeenByStatusFields,
+        );
+        this.messages = appendResult.messages;
+
+        if (!appendResult.appended) {
           this.messageText = '';
           this.isSending = false;
           return;
@@ -120,6 +140,27 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.scrollMessagesToBottom('smooth');
   }
 
+  shouldShowMessageStatus(message: GroupChatMessage): boolean {
+    if (!this.isLatestChatMessage(message)) {
+      return false;
+    }
+
+    return this.shouldShowSeenByMembers(message)
+      || this.isOwnMessage(message);
+  }
+
+  getMessageStatusLabel(message: GroupChatMessage): string {
+    if (message.seenAt) {
+      return this.languageService.translate('seen');
+    }
+
+    if (message.deliveredAt) {
+      return this.languageService.translate('delivered');
+    }
+
+    return this.languageService.translate('sent');
+  }
+
   private loadChat(groupId: number): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -149,6 +190,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
         this.isLoading = false;
         this.scrollMessagesToBottom();
         this.markCurrentGroupChatAsRead(groupId);
+        this.acknowledgeLoadedMessages();
       },
       error: (error) => {
         this.isLoading = false;
@@ -166,6 +208,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSending = false;
     this.showScrollToBottomButton = false;
     this.errorMessage = '';
+    this.pendingStatusUpdates.clear();
   }
 
   private async setupRealtime(groupId: number): Promise<void> {
@@ -175,6 +218,11 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.connectedGroupId = groupId;
     await this.chatRealtimeService.joinGroup(groupId);
+  }
+
+  private async initializeGroupChat(groupId: number): Promise<void> {
+    await this.setupRealtime(groupId);
+    this.loadChat(groupId);
   }
 
   private scrollMessagesToBottom(behavior: ScrollBehavior = 'auto'): void {
@@ -202,20 +250,141 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (!this.appendMessageIfNotExists(message)) {
+    const appendResult = appendMessageIfNotExists(
+      this.messages,
+      message,
+      this.pendingStatusUpdates,
+      this.mapSeenByStatusFields,
+    );
+    this.messages = appendResult.messages;
+
+    if (!appendResult.appended) {
       return;
     }
 
     this.scrollMessagesToBottom('smooth');
     this.markCurrentGroupChatAsRead(message.groupId);
+    this.acknowledgeIncomingMessage(message);
   }
 
-  private appendMessageIfNotExists(message: GroupChatMessage): boolean {
-    if (this.messages.some((existingMessage) => existingMessage.id === message.id)) {
-      return false;
+  private handleStatusUpdate(update: ChatMessageStatusUpdate): void {
+    if (update.chatType !== 'group' || !this.group?.id || update.groupId !== this.group.id) {
+      return;
     }
 
-    this.messages = [...this.messages, message];
-    return true;
+    const updateResult = applyStatusUpdateToMessages(
+      this.messages,
+      update,
+      this.mapSeenByStatusFields,
+    );
+    this.messages = updateResult.messages;
+
+    if (!updateResult.didUpdateExistingMessage) {
+      this.pendingStatusUpdates.set(update.messageId, this.mergeStatusUpdates(
+        this.pendingStatusUpdates.get(update.messageId),
+        update,
+      ));
+    }
+  }
+
+  private acknowledgeIncomingMessage(message: GroupChatMessage): void {
+    if (!this.group?.id || this.isOwnMessage(message)) {
+      return;
+    }
+
+    void this.chatRealtimeService.acknowledgeGroupMessageDelivered(this.group.id, message.id);
+    void this.chatRealtimeService.acknowledgeGroupMessageSeen(this.group.id, message.id);
+  }
+
+  private acknowledgeLoadedMessages(): void {
+    if (!this.group?.id) {
+      return;
+    }
+
+    const latestIncomingMessageId = [...this.messages]
+      .reverse()
+      .find((message) => !this.isOwnMessage(message))?.id;
+
+    for (const message of this.messages) {
+      if (this.isOwnMessage(message)) {
+        continue;
+      }
+
+      void this.chatRealtimeService.acknowledgeGroupMessageDelivered(this.group.id, message.id);
+
+      if (latestIncomingMessageId === message.id) {
+        void this.chatRealtimeService.acknowledgeGroupMessageSeen(this.group.id, message.id);
+      }
+    }
+  }
+
+  private mapSeenByStatusFields(
+    message: GroupChatMessage,
+    update: ChatMessageStatusUpdate,
+  ): Partial<GroupChatMessage> {
+    return {
+      seenByUserIds: update.seenByUserIds ?? message.seenByUserIds ?? [],
+      seenByUserNames: update.seenByUserNames ?? message.seenByUserNames ?? [],
+      seenByUserProfilePictureUrls: update.seenByUserProfilePictureUrls ?? message.seenByUserProfilePictureUrls ?? [],
+    };
+  }
+
+  private mergeStatusUpdates(
+    currentUpdate: ChatMessageStatusUpdate | undefined,
+    nextUpdate: ChatMessageStatusUpdate,
+  ): ChatMessageStatusUpdate {
+    return mergePendingStatusUpdates(currentUpdate, nextUpdate);
+  }
+
+  shouldShowSeenByMembers(message: GroupChatMessage): boolean {
+    return !!this.group
+      && this.isLatestChatMessage(message)
+      && this.getSeenByEntries(message).length > 0;
+  }
+
+  getSeenByAvatarItems(message: GroupChatMessage): { name: string; profilePictureUrl: string | null }[] {
+    return this.getSeenByEntries(message)
+      .slice(0, 2);
+  }
+
+  getRemainingSeenByCount(message: GroupChatMessage): number {
+    const totalSeenCount = this.getSeenByEntries(message).length;
+    return Math.max(totalSeenCount - this.getSeenByAvatarItems(message).length, 0);
+  }
+
+  private getSeenByEntries(message: GroupChatMessage): { userId: string; name: string; profilePictureUrl: string | null }[] {
+    const userIds = message.seenByUserIds ?? [];
+    const names = message.seenByUserNames ?? [];
+    const profilePictureUrls = message.seenByUserProfilePictureUrls ?? [];
+    const latestMessageSenderId = this.getLatestMessageSenderId();
+
+    return userIds
+      .map((userId, index) => ({
+        userId,
+        name: names[index] ?? '',
+        profilePictureUrl: profilePictureUrls[index] ?? 'default-profile.png',
+      }))
+      .filter((item) =>
+        !!item.name.trim()
+        && item.userId !== this.group?.currentUserId
+        && item.userId !== latestMessageSenderId);
+  }
+
+  private getLatestOwnMessageId(): number | null {
+    const latestOwnMessage = [...this.messages]
+      .reverse()
+      .find((message) => this.isOwnMessage(message));
+
+    return latestOwnMessage?.id ?? null;
+  }
+
+  private isLatestChatMessage(message: GroupChatMessage): boolean {
+    return this.messages[this.messages.length - 1]?.id === message.id;
+  }
+
+  private getLatestMessageSenderId(): string | null {
+    const latestMessage = this.messages[this.messages.length - 1];
+
+    return latestMessage?.senderUserId ?? null;
   }
 }

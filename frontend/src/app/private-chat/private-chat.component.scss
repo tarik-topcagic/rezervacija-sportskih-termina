@@ -181,6 +181,14 @@
   word-break: break-word;
 }
 
+.message-status {
+  display: block;
+  margin-top: 0.4rem;
+  color: #6c757d;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .scroll-to-latest-button {
   position: sticky;
   bottom: 0.5rem;
@@ -264,6 +272,7 @@
 :host-context(body.dark-mode) .status-message,
 :host-context(body.dark-mode) .section-label,
 :host-context(body.dark-mode) .message-meta span,
+:host-context(body.dark-mode) .message-status,
 :host-context(body.dark-mode) .empty-state {
   color: #c5c8cc;
 }

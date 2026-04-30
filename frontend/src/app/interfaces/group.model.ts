@@ -47,7 +47,12 @@ export interface GroupChatMessage {
   senderFullName: string;
   senderProfilePictureUrl: string | null;
   messageText: string;
-  createdAt: Date;
+  createdAt: Date | string;
+  deliveredAt?: Date | string | null;
+  seenAt?: Date | string | null;
+  seenByUserIds?: string[];
+  seenByUserNames?: string[];
+  seenByUserProfilePictureUrls?: string[];
 }
 
 export interface GroupMembership {

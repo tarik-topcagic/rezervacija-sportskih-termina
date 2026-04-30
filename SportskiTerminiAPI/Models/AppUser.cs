@@ -11,6 +11,7 @@ namespace SportskiTerminiAPI.Models
         public virtual ICollection<GroupMembership> GroupMemberships { get; set; } = new List<GroupMembership>();
         public virtual ICollection<Group> Groups { get; set; } = new List<Group>();
         public virtual ICollection<GroupMessage> GroupMessages { get; set; } = new List<GroupMessage>();
+        public virtual ICollection<GroupMessageReceipt> GroupMessageReceipts { get; set; } = new List<GroupMessageReceipt>();
         public virtual ICollection<PrivateConversation> PrivateConversationsAsUserOne { get; set; } = new List<PrivateConversation>();
         public virtual ICollection<PrivateConversation> PrivateConversationsAsUserTwo { get; set; } = new List<PrivateConversation>();
         public virtual ICollection<PrivateMessage> PrivateMessages { get; set; } = new List<PrivateMessage>();

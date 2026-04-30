@@ -60,6 +60,9 @@
               <span>{{ message.createdAt | date:'dd.MM.yyyy. HH:mm' }}</span>
             </div>
             <p>{{ message.messageText }}</p>
+            <span *ngIf="shouldShowOwnMessageStatus(message)" class="message-status">
+              {{ getMessageStatusLabel(message) }}
+            </span>
           </div>
         </div>
 

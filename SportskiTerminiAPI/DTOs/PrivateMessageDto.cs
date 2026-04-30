@@ -9,6 +9,8 @@ namespace SportskiTerminiAPI.DTOs
         public string SenderFullName { get; set; } = string.Empty;
         public string SenderProfilePictureUrl { get; set; } = "default-profile.png";
         public string MessageText { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset? DeliveredAt { get; set; }
+        public DateTimeOffset? SeenAt { get; set; }
     }
 }

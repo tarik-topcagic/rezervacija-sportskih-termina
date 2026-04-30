@@ -17,5 +17,7 @@ export interface PrivateMessage {
   senderFullName: string;
   senderProfilePictureUrl: string | null;
   messageText: string;
-  createdAt: Date;
+  createdAt: Date | string;
+  deliveredAt?: Date | string | null;
+  seenAt?: Date | string | null;
 }

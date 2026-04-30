@@ -10,12 +10,16 @@ import { environment } from '../environments/environment';
 export class SystemNotificationRealtimeService {
   private hubConnection: any = null;
   private connectionConsumerCount = 0;
+  private connectionStartPromise: Promise<void> | null = null;
+  private disconnectTimeoutId?: ReturnType<typeof setTimeout>;
+  private readonly disconnectDelayMs = 5000;
   private readonly incomingSystemNotificationSubject = new Subject<AppNotification>();
   readonly incomingSystemNotifications$ = this.incomingSystemNotificationSubject.asObservable();
 
   constructor(private authService: AuthService) {}
 
   async connect(): Promise<void> {
+    this.clearPendingDisconnect();
     this.connectionConsumerCount += 1;
     await this.ensureConnected();
   }
@@ -24,6 +28,19 @@ export class SystemNotificationRealtimeService {
     if (this.connectionConsumerCount > 0) {
       this.connectionConsumerCount -= 1;
     }
+
+    if (this.connectionConsumerCount > 0) {
+      return;
+    }
+
+    this.clearPendingDisconnect();
+    this.disconnectTimeoutId = setTimeout(() => {
+      void this.stopConnectionIfUnused();
+    }, this.disconnectDelayMs);
+  }
+
+  private async stopConnectionIfUnused(): Promise<void> {
+    this.disconnectTimeoutId = undefined;
 
     if (this.connectionConsumerCount > 0 || !this.hubConnection) {
       return;
@@ -54,6 +71,7 @@ export class SystemNotificationRealtimeService {
 
       if (this.hubConnection.state === signalR.HubConnectionState.Connecting
         || this.hubConnection.state === signalR.HubConnectionState.Reconnecting) {
+        await this.connectionStartPromise;
         return;
       }
     }
@@ -71,10 +89,28 @@ export class SystemNotificationRealtimeService {
     });
 
     try {
-      await this.hubConnection.start();
+      this.connectionStartPromise = this.hubConnection.start()
+        .catch((error: unknown) => {
+          console.error('Error connecting to system notification SignalR hub:', error);
+          throw error;
+        })
+        .finally(() => {
+          this.connectionStartPromise = null;
+        });
+
+      await this.connectionStartPromise;
     } catch (error) {
-      console.error('Error connecting to system notification SignalR hub:', error);
+      // Already logged above; keep callers resilient.
     }
+  }
+
+  private clearPendingDisconnect(): void {
+    if (!this.disconnectTimeoutId) {
+      return;
+    }
+
+    clearTimeout(this.disconnectTimeoutId);
+    this.disconnectTimeoutId = undefined;
   }
 
   private getBaseApiUrl(): string {

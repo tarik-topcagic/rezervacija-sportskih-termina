@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SportskiTerminiAPI.Data;
 using SportskiTerminiAPI.DTOs;
+using SportskiTerminiAPI.Helpers;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
 
@@ -20,8 +21,20 @@ namespace SportskiTerminiAPI.Repositories
             return await _context.GroupMessages
                 .Where(message => message.GroupId == groupId)
                 .Include(message => message.SenderUser)
+                .Include(message => message.Receipts)
+                    .ThenInclude(receipt => receipt.User)
                 .OrderBy(message => message.CreatedAt)
                 .ToListAsync();
+        }
+
+        public async Task<GroupMessage?> GetMessageByIdAsync(int groupId, int messageId)
+        {
+            return await _context.GroupMessages
+                .Where(message => message.GroupId == groupId && message.Id == messageId)
+                .Include(message => message.SenderUser)
+                .Include(message => message.Receipts)
+                    .ThenInclude(receipt => receipt.User)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<GroupMessage> CreateMessageAsync(GroupMessage message)
@@ -34,6 +47,16 @@ namespace SportskiTerminiAPI.Repositories
                 .LoadAsync();
 
             return message;
+        }
+
+        public async Task CreateMessageReceiptsAsync(IEnumerable<GroupMessageReceipt> receipts)
+        {
+            var receiptList = receipts.ToList();
+            if (receiptList.Count == 0)
+                return;
+
+            _context.GroupMessageReceipts.AddRange(receiptList);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IReadOnlyList<GroupChatNotificationDto>> GetChatNotificationsAsync(string userId, int take)
@@ -98,7 +121,7 @@ namespace SportskiTerminiAPI.Repositories
                         : message.SenderUser?.UserName ?? string.Empty,
                     SenderProfilePictureUrl = message.SenderUser?.ProfilePictureUrl ?? "default-profile.png",
                     LatestMessagePreview = message.MessageText,
-                    CreatedAt = ToUtcOffset(message.CreatedAt),
+                    CreatedAt = BosniaTimeHelper.ToSarajevoOffset(message.CreatedAt),
                     UnreadCount = unreadCount,
                     IsRead = unreadCount == 0
                 };
@@ -158,13 +181,189 @@ namespace SportskiTerminiAPI.Repositories
             await _context.SaveChangesAsync();
         }
 
-        private static DateTimeOffset ToUtcOffset(DateTime value)
+        public async Task<bool> IsGroupChatParticipantAsync(int groupId, string userId)
         {
-            var utcValue = value.Kind == DateTimeKind.Utc
-                ? value
-                : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+            return await _context.Groups.AnyAsync(group =>
+                group.Id == groupId
+                && (group.AdminId == userId
+                    || group.Memberships.Any(membership =>
+                        membership.UserId == userId
+                        && membership.Status == MembershipStatus.Accepted)));
+        }
 
-            return new DateTimeOffset(utcValue);
+        public async Task<MessageStatusChange?> MarkMessageDeliveredAsync(int groupId, int messageId, string userId, DateTime deliveredAt)
+        {
+            var receipt = await _context.GroupMessageReceipts
+                .Include(existingReceipt => existingReceipt.GroupMessage)
+                .FirstOrDefaultAsync(existingReceipt =>
+                    existingReceipt.GroupMessageId == messageId
+                    && existingReceipt.UserId == userId
+                    && existingReceipt.GroupMessage.GroupId == groupId);
+
+            if (receipt == null)
+                return null;
+
+            if (receipt.DeliveredAt.HasValue)
+            {
+                if (receipt.SeenAt.HasValue)
+                {
+                    return null;
+                }
+
+                return new MessageStatusChange
+                {
+                    MessageId = messageId,
+                    UserId = userId,
+                    DeliveredAt = receipt.DeliveredAt,
+                    SeenAt = receipt.SeenAt
+                };
+            }
+
+            receipt.DeliveredAt = deliveredAt;
+            await _context.SaveChangesAsync();
+
+            return new MessageStatusChange
+            {
+                MessageId = messageId,
+                UserId = userId,
+                DeliveredAt = receipt.DeliveredAt,
+                SeenAt = receipt.SeenAt
+            };
+        }
+
+        public async Task<IReadOnlyList<MessageStatusChange>> MarkMessageSeenAsync(int groupId, int messageId, string userId, DateTime seenAt)
+        {
+            var receipts = await _context.GroupMessageReceipts
+                .Include(existingReceipt => existingReceipt.GroupMessage)
+                .Where(existingReceipt =>
+                    existingReceipt.UserId == userId
+                    && existingReceipt.GroupMessage.GroupId == groupId)
+                .OrderBy(existingReceipt => existingReceipt.GroupMessage.CreatedAt)
+                .ThenBy(existingReceipt => existingReceipt.GroupMessageId)
+                .ToListAsync();
+
+            var targetReceipt = receipts.FirstOrDefault(existingReceipt =>
+                    existingReceipt.GroupMessageId == messageId
+                    && existingReceipt.UserId == userId
+                    && existingReceipt.GroupMessage.GroupId == groupId);
+
+            if (targetReceipt == null)
+                return Array.Empty<MessageStatusChange>();
+
+            var changes = new List<MessageStatusChange>();
+
+            foreach (var receipt in receipts)
+            {
+                var didChange = false;
+
+                if (receipt.Id == targetReceipt.Id)
+                {
+                    if (!receipt.DeliveredAt.HasValue)
+                    {
+                        receipt.DeliveredAt = seenAt;
+                        didChange = true;
+                    }
+
+                    if (receipt.SeenAt != seenAt)
+                    {
+                        receipt.SeenAt = seenAt;
+                        didChange = true;
+                    }
+                }
+                else if (receipt.SeenAt.HasValue)
+                {
+                    receipt.SeenAt = null;
+                    didChange = true;
+                }
+
+                if (!didChange)
+                {
+                    continue;
+                }
+
+                changes.Add(new MessageStatusChange
+                {
+                    MessageId = receipt.GroupMessageId,
+                    UserId = userId,
+                    DeliveredAt = receipt.DeliveredAt,
+                    SeenAt = receipt.SeenAt
+                });
+            }
+
+            if (changes.Count == 0)
+            {
+                return Array.Empty<MessageStatusChange>();
+            }
+
+            await _context.SaveChangesAsync();
+
+            return changes;
+        }
+
+        public async Task<IReadOnlyList<MessageStatusChange>> MarkMessagesSeenForGroupAsync(int groupId, string userId, DateTime seenAt)
+        {
+            var receipts = await _context.GroupMessageReceipts
+                .Include(receipt => receipt.GroupMessage)
+                .Where(receipt =>
+                    receipt.UserId == userId
+                    && receipt.GroupMessage.GroupId == groupId)
+                .OrderBy(receipt => receipt.GroupMessage.CreatedAt)
+                .ThenBy(receipt => receipt.GroupMessageId)
+                .ToListAsync();
+
+            if (receipts.Count == 0)
+                return Array.Empty<MessageStatusChange>();
+
+            var latestReceiptId = receipts
+                .OrderByDescending(receipt => receipt.GroupMessage.CreatedAt)
+                .ThenByDescending(receipt => receipt.GroupMessageId)
+                .Select(receipt => (int?)receipt.Id)
+                .FirstOrDefault();
+
+            var changes = new List<MessageStatusChange>();
+
+            foreach (var receipt in receipts)
+            {
+                var didChange = false;
+
+                if (!receipt.DeliveredAt.HasValue)
+                {
+                    receipt.DeliveredAt = seenAt;
+                    didChange = true;
+                }
+
+                if (latestReceiptId.HasValue
+                    && receipt.Id == latestReceiptId.Value)
+                {
+                    if (receipt.SeenAt != seenAt)
+                    {
+                        receipt.SeenAt = seenAt;
+                        didChange = true;
+                    }
+                }
+                else if (receipt.SeenAt.HasValue)
+                {
+                    receipt.SeenAt = null;
+                    didChange = true;
+                }
+
+                if (!didChange)
+                {
+                    continue;
+                }
+
+                changes.Add(new MessageStatusChange
+                {
+                    MessageId = receipt.GroupMessageId,
+                    UserId = userId,
+                    DeliveredAt = receipt.DeliveredAt,
+                    SeenAt = receipt.SeenAt
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return changes;
         }
     }
 }

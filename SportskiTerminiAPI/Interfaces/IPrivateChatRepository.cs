@@ -15,5 +15,8 @@ namespace SportskiTerminiAPI.Interfaces
         Task<IReadOnlyList<PrivateChatNotificationDto>> GetChatNotificationsAsync(string userId, int take);
         Task<int> GetUnreadChatMessagesCountAsync(string userId);
         Task MarkConversationAsReadAsync(string userId, int conversationId, DateTime readAt);
+        Task<MessageStatusChange?> MarkMessageDeliveredAsync(int conversationId, int messageId, string userId, DateTime deliveredAt);
+        Task<IReadOnlyList<MessageStatusChange>> MarkMessageSeenAsync(int conversationId, int messageId, string userId, DateTime seenAt);
+        Task<IReadOnlyList<MessageStatusChange>> MarkMessagesSeenForConversationAsync(int conversationId, string userId, DateTime seenAt);
     }
 }
