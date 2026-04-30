@@ -3,6 +3,7 @@ import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } fr
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { ChatRealtimeService } from '../../services/chat-realtime.service';
 import { LanguageService } from '../../services/language.service';
 import { PrivateChatService } from '../../services/private-chat.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
@@ -28,16 +29,25 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   showScrollToBottomButton = false;
   errorMessage = '';
   private routeSubscription?: Subscription;
+  private realtimeMessageSubscription?: Subscription;
+  private connectedConversationId: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private chatRealtimeService: ChatRealtimeService,
     private privateChatService: PrivateChatService,
     private privateChatNotificationService: PrivateChatNotificationService,
     private languageService: LanguageService,
   ) {}
 
   ngOnInit(): void {
+    void this.chatRealtimeService.connect();
+
+    this.realtimeMessageSubscription = this.chatRealtimeService.incomingPrivateMessages$.subscribe((message) => {
+      this.handleIncomingRealtimeMessage(message);
+    });
+
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
       const conversationId = Number(params.get('conversationId'));
 
@@ -48,6 +58,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.resetViewState();
       this.loadChat(conversationId);
+      void this.setupRealtime(conversationId);
     });
   }
 
@@ -57,6 +68,11 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
+    this.realtimeMessageSubscription?.unsubscribe();
+    if (this.connectedConversationId !== null) {
+      void this.chatRealtimeService.leaveConversation(this.connectedConversationId);
+    }
+    void this.chatRealtimeService.disconnect();
   }
 
   sendMessage(): void {
@@ -70,7 +86,12 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.privateChatService.sendMessageToConversation(this.conversation.id, trimmedMessage).subscribe({
       next: (message) => {
-        this.messages = [...this.messages, message];
+        if (!this.appendMessageIfNotExists(message)) {
+          this.messageText = '';
+          this.isSending = false;
+          return;
+        }
+
         this.messageText = '';
         this.isSending = false;
         this.scrollMessagesToBottom('smooth');
@@ -158,6 +179,37 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
         console.error('Error marking private conversation as read:', error);
       },
     });
+  }
+
+  private async setupRealtime(conversationId: number): Promise<void> {
+    if (this.connectedConversationId !== null && this.connectedConversationId !== conversationId) {
+      await this.chatRealtimeService.leaveConversation(this.connectedConversationId);
+    }
+
+    this.connectedConversationId = conversationId;
+    await this.chatRealtimeService.joinConversation(conversationId);
+  }
+
+  private handleIncomingRealtimeMessage(message: PrivateMessage): void {
+    if (!this.conversation?.id || message.conversationId !== this.conversation.id) {
+      return;
+    }
+
+    if (!this.appendMessageIfNotExists(message)) {
+      return;
+    }
+
+    this.scrollMessagesToBottom('smooth');
+    this.markConversationAsRead(message.conversationId);
+  }
+
+  private appendMessageIfNotExists(message: PrivateMessage): boolean {
+    if (this.messages.some((existingMessage) => existingMessage.id === message.id)) {
+      return false;
+    }
+
+    this.messages = [...this.messages, message];
+    return true;
   }
 
   private scrollMessagesToBottom(behavior: ScrollBehavior = 'auto'): void {

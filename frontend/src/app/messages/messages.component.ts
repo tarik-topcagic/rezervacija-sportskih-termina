@@ -5,6 +5,7 @@ import { ChatInboxService } from '../../services/chat-inbox.service';
 import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
 import { NotificationTimeService } from '../../services/notification-time.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
+import { createHighlightedSet } from '../helpers/dropdown-ui.helper';
 import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
@@ -18,6 +19,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 export class MessagesComponent implements OnInit, OnDestroy {
   messages: ChatInboxItem[] = [];
   isLoading = true;
+  highlightedMessageKeys = new Set<string>();
   relativeTimeRefreshKey = 0;
 
   private readonly messagesRefreshIntervalMs = 30000;
@@ -94,6 +96,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
     return message.unreadCount > 0;
   }
 
+  isHighlightedMessage(message: ChatInboxItem): boolean {
+    return this.highlightedMessageKeys.has(this.getMessageKey(message));
+  }
+
   private loadMessages(showLoading = true): void {
     if (showLoading) {
       this.isLoading = true;
@@ -101,6 +107,14 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     this.chatInboxService.getInboxItems().subscribe({
       next: (messages) => {
+        if (showLoading) {
+          this.highlightedMessageKeys = createHighlightedSet(
+            messages,
+            (message) => message.unreadCount > 0,
+            (message) => this.getMessageKey(message),
+          );
+        }
+
         this.messages = messages;
 
         if (showLoading) {
@@ -115,5 +129,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
         }
       },
     });
+  }
+
+  private getMessageKey(message: ChatInboxItem): string {
+    return `${message.type}:${message.id}`;
   }
 }

@@ -91,13 +91,13 @@
           </ul>
         </div>
 
-        <div class="d-lg-none">
-          <span class="nav-link" role="button" (click)="toggleDropdown()">
+        <div class="d-lg-none mobile-profile-menu">
+          <span class="nav-link mobile-profile-toggle" role="button" (click)="toggleDropdown()">
             {{ 'welcome' | translate }}, {{ username }}
             <i class="bi bi-caret-down-fill"></i>
           </span>
           <ul
-            class="list-group mt-2"
+            class="list-group mt-2 mobile-profile-dropdown"
             [ngClass]="{ 'd-block': isDropdownOpen, 'd-none': !isDropdownOpen }"
           >
             <li class="list-group-item">

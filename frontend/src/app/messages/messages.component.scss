@@ -65,6 +65,11 @@ h1 {
   border-color: #cfe8f8;
 }
 
+.message-card.new-message {
+  background: linear-gradient(90deg, rgba(47, 164, 231, 0.14), rgba(47, 164, 231, 0.04));
+  box-shadow: inset 3px 0 0 #2fa4e7;
+}
+
 .message-avatar {
   width: 42px;
   height: 42px;
@@ -183,6 +188,11 @@ h1 {
 :host-context(body.dark-mode) .message-card.unread {
   background: #182434;
   border-color: #2f4c6b;
+}
+
+:host-context(body.dark-mode) .message-card.new-message {
+  background: linear-gradient(90deg, rgba(142, 200, 240, 0.16), rgba(142, 200, 240, 0.05));
+  box-shadow: inset 3px 0 0 #8ec8f0;
 }
 
 :host-context(body.dark-mode) .default-avatar {

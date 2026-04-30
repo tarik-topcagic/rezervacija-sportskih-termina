@@ -3,8 +3,9 @@ import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } fr
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { GroupService } from '../../services/group.service';
+import { ChatRealtimeService } from '../../services/chat-realtime.service';
 import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
+import { GroupService } from '../../services/group.service';
 import { LanguageService } from '../../services/language.service';
 import { scrollToBottom, shouldShowScrollButton } from '../helpers/chat-ui.helper';
 import { GroupChatMessage, GroupDetails } from '../interfaces/group.model';
@@ -28,16 +29,25 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   showScrollToBottomButton = false;
   errorMessage = '';
   private routeSubscription?: Subscription;
+  private realtimeMessageSubscription?: Subscription;
+  private connectedGroupId: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private chatRealtimeService: ChatRealtimeService,
     private groupService: GroupService,
     private groupChatNotificationService: GroupChatNotificationService,
     private languageService: LanguageService,
   ) {}
 
   ngOnInit(): void {
+    void this.chatRealtimeService.connect();
+
+    this.realtimeMessageSubscription = this.chatRealtimeService.incomingGroupMessages$.subscribe((message) => {
+      this.handleIncomingRealtimeMessage(message);
+    });
+
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
       const groupId = Number(params.get('id'));
 
@@ -48,6 +58,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.resetViewState();
       this.loadChat(groupId);
+      void this.setupRealtime(groupId);
     });
   }
 
@@ -57,6 +68,11 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
+    this.realtimeMessageSubscription?.unsubscribe();
+    if (this.connectedGroupId !== null) {
+      void this.chatRealtimeService.leaveGroup(this.connectedGroupId);
+    }
+    void this.chatRealtimeService.disconnect();
   }
 
   sendMessage(): void {
@@ -70,7 +86,12 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.groupService.sendGroupMessage(this.group.id, trimmedMessage).subscribe({
       next: (message) => {
-        this.messages = [...this.messages, message];
+        if (!this.appendMessageIfNotExists(message)) {
+          this.messageText = '';
+          this.isSending = false;
+          return;
+        }
+
         this.messageText = '';
         this.isSending = false;
         this.scrollMessagesToBottom('smooth');
@@ -147,6 +168,15 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.errorMessage = '';
   }
 
+  private async setupRealtime(groupId: number): Promise<void> {
+    if (this.connectedGroupId !== null && this.connectedGroupId !== groupId) {
+      await this.chatRealtimeService.leaveGroup(this.connectedGroupId);
+    }
+
+    this.connectedGroupId = groupId;
+    await this.chatRealtimeService.joinGroup(groupId);
+  }
+
   private scrollMessagesToBottom(behavior: ScrollBehavior = 'auto'): void {
     scrollToBottom(() => this.messagesContainer?.nativeElement, behavior);
     this.syncScrollButtonVisibility();
@@ -165,5 +195,27 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
         console.error('Error marking group chat as read:', error);
       },
     });
+  }
+
+  private handleIncomingRealtimeMessage(message: GroupChatMessage): void {
+    if (!this.group?.id || message.groupId !== this.group.id) {
+      return;
+    }
+
+    if (!this.appendMessageIfNotExists(message)) {
+      return;
+    }
+
+    this.scrollMessagesToBottom('smooth');
+    this.markCurrentGroupChatAsRead(message.groupId);
+  }
+
+  private appendMessageIfNotExists(message: GroupChatMessage): boolean {
+    if (this.messages.some((existingMessage) => existingMessage.id === message.id)) {
+      return false;
+    }
+
+    this.messages = [...this.messages, message];
+    return true;
   }
 }

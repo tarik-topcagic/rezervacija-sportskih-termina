@@ -33,6 +33,21 @@
   gap: 0.55rem;
   margin-left: auto;
 }
+
+.mobile-profile-menu {
+  width: 100%;
+}
+
+.mobile-profile-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-profile-dropdown {
+  width: 100%;
+}
   
 @media (max-width: 991.98px) {
   .navbar-brand {
@@ -40,6 +55,7 @@
     }
 
     .navbar-actions {
+      width: 100%;
       align-items: flex-start;
       flex-direction: column;
       gap: 0.35rem;

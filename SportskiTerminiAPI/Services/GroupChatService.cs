@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.SignalR;
+using SportskiTerminiAPI.Hubs;
 using SportskiTerminiAPI.DTOs;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
@@ -8,11 +10,16 @@ namespace SportskiTerminiAPI.Services
     {
         private readonly IGroupRepository _groupRepository;
         private readonly IGroupChatRepository _groupChatRepository;
+        private readonly IHubContext<ChatHub> _hubContext;
 
-        public GroupChatService(IGroupRepository groupRepository, IGroupChatRepository groupChatRepository)
+        public GroupChatService(
+            IGroupRepository groupRepository,
+            IGroupChatRepository groupChatRepository,
+            IHubContext<ChatHub> hubContext)
         {
             _groupRepository = groupRepository;
             _groupChatRepository = groupChatRepository;
+            _hubContext = hubContext;
         }
 
         public async Task<ServiceResult> GetGroupMessagesAsync(string userId, int groupId)
@@ -50,7 +57,26 @@ namespace SportskiTerminiAPI.Services
             };
 
             var createdMessage = await _groupChatRepository.CreateMessageAsync(message);
-            return ServiceResult.Ok(ToGroupMessageDto(createdMessage));
+            var messageDto = ToGroupMessageDto(createdMessage);
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetGroupChannelName(groupId.ToString()))
+                .SendAsync("ReceiveGroupMessage", messageDto);
+
+            await _hubContext.Clients
+                .Users(GetGroupNotificationRecipientUserIds(group))
+                .SendAsync("ReceiveMessageNotification", new ChatMessageNotificationDto
+                {
+                    Type = "group",
+                    GroupId = groupId,
+                    ConversationId = null,
+                    SenderUserId = messageDto.SenderUserId,
+                    SenderName = messageDto.SenderFullName,
+                    Preview = messageDto.MessageText,
+                    CreatedAt = messageDto.CreatedAt
+                });
+
+            return ServiceResult.Ok(messageDto);
         }
 
         private static bool CanAccessGroupChat(Group group, string userId)
@@ -59,6 +85,17 @@ namespace SportskiTerminiAPI.Services
                 || group.Memberships.Any(membership =>
                     membership.UserId == userId
                     && membership.Status == MembershipStatus.Accepted);
+        }
+
+        private static IReadOnlyList<string> GetGroupNotificationRecipientUserIds(Group group)
+        {
+            return group.Memberships
+                .Where(membership => membership.Status == MembershipStatus.Accepted)
+                .Select(membership => membership.UserId)
+                .Append(group.AdminId)
+                .Where(userId => !string.IsNullOrWhiteSpace(userId))
+                .Distinct()
+                .ToList();
         }
 
         private static GroupMessageDto ToGroupMessageDto(GroupMessage message)

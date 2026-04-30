@@ -9,6 +9,7 @@ import { MembershipStatus } from '../interfaces/group.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { NotificationTimeService } from '../../services/notification-time.service';
+import { createHighlightedSet } from '../helpers/dropdown-ui.helper';
 
 @Component({
   selector: 'app-notifications',
@@ -19,6 +20,7 @@ import { NotificationTimeService } from '../../services/notification-time.servic
 export class NotificationsComponent implements OnInit, OnDestroy {
   notifications: AppNotification[] = [];
   isLoading = true;
+  highlightedNotificationIds = new Set<number>();
   respondingInvitationIds = new Set<number>();
   respondingJoinRequestIds = new Set<number>();
   notificationType = AppNotificationType;
@@ -98,6 +100,10 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     return this.notificationTimeService.formatRelativeTime(notification.createdAt);
   }
 
+  isHighlightedNotification(notification: AppNotification): boolean {
+    return this.highlightedNotificationIds.has(notification.id);
+  }
+
   canRespondToInvitation(notification: AppNotification): boolean {
     return notification.type === AppNotificationType.GroupInvitationReceived
       && !!notification.membershipId
@@ -144,6 +150,14 @@ export class NotificationsComponent implements OnInit, OnDestroy {
 
     this.notificationService.getNotifications().subscribe({
       next: (notifications) => {
+        if (showLoading) {
+          this.highlightedNotificationIds = createHighlightedSet(
+            notifications,
+            (notification) => !notification.isRead,
+            (notification) => notification.id,
+          );
+        }
+
         this.notifications = notifications;
         this.publishMembershipChangesFromNotifications(notifications);
         if (showLoading) {

@@ -21,6 +21,7 @@
           class="message-card"
           *ngFor="let message of messages"
           [class.unread]="hasUnreadMessages(message)"
+          [class.new-message]="isHighlightedMessage(message)"
           (click)="openMessage(message)"
         >
           <div class="message-avatar">

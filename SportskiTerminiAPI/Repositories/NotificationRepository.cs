@@ -86,10 +86,16 @@ namespace SportskiTerminiAPI.Repositories
                 && n.MembershipId == membershipId);
         }
 
-        public async Task AddNotificationAsync(AppNotification notification)
+        public async Task<AppNotification> AddNotificationAsync(AppNotification notification)
         {
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
+
+            return await _context.Notifications
+                .Include(n => n.Group)
+                .Include(n => n.ActorUser)
+                .Include(n => n.Membership)
+                .FirstAsync(n => n.Id == notification.Id);
         }
 
         public async Task AddNotificationsAsync(IEnumerable<AppNotification> notifications)

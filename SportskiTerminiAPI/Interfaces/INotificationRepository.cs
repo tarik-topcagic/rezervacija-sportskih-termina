@@ -16,7 +16,7 @@ namespace SportskiTerminiAPI.Interfaces
             int? groupId = null,
             int? membershipId = null);
         Task<bool> NotificationExistsAsync(string userId, AppNotificationType type, int membershipId);
-        Task AddNotificationAsync(AppNotification notification);
+        Task<AppNotification> AddNotificationAsync(AppNotification notification);
         Task AddNotificationsAsync(IEnumerable<AppNotification> notifications);
         Task RemoveNotificationsAsync(IEnumerable<AppNotification> notifications);
         Task SaveChangesAsync();

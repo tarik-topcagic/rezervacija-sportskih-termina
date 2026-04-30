@@ -1,12 +1,14 @@
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SportskiTerminiAPI.Data;
 using SportskiTerminiAPI.Helpers;
+using SportskiTerminiAPI.Hubs;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
 using SportskiTerminiAPI.Repositories;
@@ -37,6 +39,8 @@ namespace SportskiTerminiAPI
                     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
                     options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
                 });
+            builder.Services.AddSignalR();
+            builder.Services.AddSingleton<IUserIdProvider, SignalRUserIdProvider>();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
@@ -94,6 +98,23 @@ namespace SportskiTerminiAPI
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidateAudience = false
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrWhiteSpace(accessToken)
+                            && (path.StartsWithSegments("/hubs/chat")
+                                || path.StartsWithSegments("/hubs/system-notifications")))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             builder.Services.AddAuthorization(options =>
@@ -142,6 +163,8 @@ namespace SportskiTerminiAPI
             app.UseAuthorization();
 
             app.MapControllers();
+            app.MapHub<ChatHub>("/hubs/chat");
+            app.MapHub<SystemNotificationHub>("/hubs/system-notifications");
 
             app.Run();
         }

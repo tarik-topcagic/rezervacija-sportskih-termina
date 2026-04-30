@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.SignalR;
+using SportskiTerminiAPI.Hubs;
 using SportskiTerminiAPI.DTOs;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
@@ -7,10 +9,14 @@ namespace SportskiTerminiAPI.Services
     public class PrivateChatService : IPrivateChatService
     {
         private readonly IPrivateChatRepository _privateChatRepository;
+        private readonly IHubContext<ChatHub> _hubContext;
 
-        public PrivateChatService(IPrivateChatRepository privateChatRepository)
+        public PrivateChatService(
+            IPrivateChatRepository privateChatRepository,
+            IHubContext<ChatHub> hubContext)
         {
             _privateChatRepository = privateChatRepository;
+            _hubContext = hubContext;
         }
 
         public async Task<ServiceResult> GetConversationsAsync(string userId)
@@ -69,7 +75,26 @@ namespace SportskiTerminiAPI.Services
             };
 
             var createdMessage = await _privateChatRepository.CreateMessageAsync(message);
-            return ServiceResult.Ok(ToPrivateMessageDto(createdMessage));
+            var messageDto = ToPrivateMessageDto(createdMessage);
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetConversationChannelName(conversation.Id.ToString()))
+                .SendAsync("ReceivePrivateMessage", messageDto);
+
+            await _hubContext.Clients
+                .Users(GetConversationNotificationRecipientUserIds(conversation, senderUserId, targetUserId))
+                .SendAsync("ReceiveMessageNotification", new ChatMessageNotificationDto
+                {
+                    Type = "private",
+                    GroupId = null,
+                    ConversationId = conversation.Id,
+                    SenderUserId = messageDto.SenderUserId,
+                    SenderName = messageDto.SenderFullName,
+                    Preview = messageDto.MessageText,
+                    CreatedAt = messageDto.CreatedAt
+                });
+
+            return ServiceResult.Ok(messageDto);
         }
 
         public async Task<ServiceResult> CreateMessageForConversationAsync(string senderUserId, int conversationId, CreatePrivateMessageDto createPrivateMessageDto)
@@ -94,12 +119,47 @@ namespace SportskiTerminiAPI.Services
             };
 
             var createdMessage = await _privateChatRepository.CreateMessageAsync(message);
-            return ServiceResult.Ok(ToPrivateMessageDto(createdMessage));
+            var messageDto = ToPrivateMessageDto(createdMessage);
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetConversationChannelName(conversation.Id.ToString()))
+                .SendAsync("ReceivePrivateMessage", messageDto);
+
+            await _hubContext.Clients
+                .Users(GetConversationNotificationRecipientUserIds(conversation))
+                .SendAsync("ReceiveMessageNotification", new ChatMessageNotificationDto
+                {
+                    Type = "private",
+                    GroupId = null,
+                    ConversationId = conversation.Id,
+                    SenderUserId = messageDto.SenderUserId,
+                    SenderName = messageDto.SenderFullName,
+                    Preview = messageDto.MessageText,
+                    CreatedAt = messageDto.CreatedAt
+                });
+
+            return ServiceResult.Ok(messageDto);
         }
 
         private static bool IsConversationParticipant(PrivateConversation conversation, string userId)
         {
             return conversation.UserOneId == userId || conversation.UserTwoId == userId;
+        }
+
+        private static IReadOnlyList<string> GetConversationNotificationRecipientUserIds(
+            PrivateConversation conversation,
+            params string[] fallbackUserIds)
+        {
+            var conversationUserIds = new[] { conversation.UserOneId, conversation.UserTwoId }
+                .Where(userId => !string.IsNullOrWhiteSpace(userId));
+
+            var resolvedUserIds = conversationUserIds.Any()
+                ? conversationUserIds
+                : fallbackUserIds.Where(userId => !string.IsNullOrWhiteSpace(userId));
+
+            return resolvedUserIds
+                .Distinct()
+                .ToList();
         }
 
         private async Task<PrivateConversation> GetOrCreateConversationEntityAsync(string firstUserId, string secondUserId)

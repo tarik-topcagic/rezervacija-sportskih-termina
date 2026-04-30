@@ -7,6 +7,15 @@ import { GroupService } from '../../services/group.service';
 import { LanguageService } from '../../services/language.service';
 import { NotificationService } from '../../services/notification.service';
 import { NotificationTimeService } from '../../services/notification-time.service';
+import { SystemNotificationRealtimeService } from '../../services/system-notification-realtime.service';
+import {
+  clearDropdownTimer,
+  createHighlightedSet,
+  incrementIf,
+  isDropdownActiveForViewport,
+  prependIfNotExists,
+  startDropdownTimer,
+} from '../helpers/dropdown-ui.helper';
 import { MembershipStatus } from '../interfaces/group.model';
 import { AppNotification, AppNotificationType } from '../interfaces/notification.model';
 import { TranslatePipe } from '../pipes/translate.pipe';
@@ -34,6 +43,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
 
   private currentUserSubscription?: Subscription;
   private unreadCountSubscription?: Subscription;
+  private realtimeNotificationSubscription?: Subscription;
   private readonly notificationRefreshIntervalMs = 30000;
   private readonly relativeTimeRefreshIntervalMs = 60000;
   private notificationRefreshIntervalId?: ReturnType<typeof setInterval>;
@@ -50,6 +60,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     private groupService: GroupService,
     private languageService: LanguageService,
     private notificationTimeService: NotificationTimeService,
+    private systemNotificationRealtimeService: SystemNotificationRealtimeService,
     private router: Router,
   ) {}
 
@@ -68,6 +79,12 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
       }
     });
 
+    this.realtimeNotificationSubscription = this.systemNotificationRealtimeService.incomingSystemNotifications$.subscribe((notification) => {
+      if (this.username && this.isActiveForViewport) {
+        this.applyRealtimeNotification(notification);
+      }
+    });
+
     this.unreadCountSubscription = this.notificationService.unreadCountRefresh$.subscribe(() => {
       if (this.username && this.isActiveForViewport) {
         this.loadUnreadNotificationsCount();
@@ -82,9 +99,11 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.currentUserSubscription?.unsubscribe();
     this.unreadCountSubscription?.unsubscribe();
+    this.realtimeNotificationSubscription?.unsubscribe();
     this.desktopMediaQuery.removeEventListener('change', this.onViewportChange);
     window.removeEventListener('app-message-dropdown-opened', this.onMessageDropdownOpened);
     this.stopTimers();
+    void this.systemNotificationRealtimeService.disconnect();
   }
 
   toggleNotifications(event?: Event): void {
@@ -197,9 +216,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
   }
 
   private syncViewportActivity(): void {
-    const shouldBeActive = this.mode === 'desktop'
-      ? this.desktopMediaQuery.matches
-      : !this.desktopMediaQuery.matches;
+    const shouldBeActive = isDropdownActiveForViewport(this.mode, this.desktopMediaQuery);
 
     if (shouldBeActive === this.isActiveForViewport) {
       return;
@@ -208,6 +225,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     this.isActiveForViewport = shouldBeActive;
 
     if (shouldBeActive) {
+      void this.systemNotificationRealtimeService.connect();
       this.startTimers();
 
       if (this.username) {
@@ -219,13 +237,14 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     }
 
     this.stopTimers();
+    void this.systemNotificationRealtimeService.disconnect();
     this.closeNotifications();
   }
 
   private startTimers(): void {
     this.stopTimers();
 
-    this.notificationRefreshIntervalId = setInterval(() => {
+    this.notificationRefreshIntervalId = startDropdownTimer(() => {
       if (!this.username) {
         return;
       }
@@ -234,21 +253,14 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
       this.loadNotifications();
     }, this.notificationRefreshIntervalMs);
 
-    this.relativeTimeRefreshIntervalId = setInterval(() => {
+    this.relativeTimeRefreshIntervalId = startDropdownTimer(() => {
       this.relativeTimeRefreshKey += 1;
     }, this.relativeTimeRefreshIntervalMs);
   }
 
   private stopTimers(): void {
-    if (this.notificationRefreshIntervalId) {
-      clearInterval(this.notificationRefreshIntervalId);
-      this.notificationRefreshIntervalId = undefined;
-    }
-
-    if (this.relativeTimeRefreshIntervalId) {
-      clearInterval(this.relativeTimeRefreshIntervalId);
-      this.relativeTimeRefreshIntervalId = undefined;
-    }
+    this.notificationRefreshIntervalId = clearDropdownTimer(this.notificationRefreshIntervalId);
+    this.relativeTimeRefreshIntervalId = clearDropdownTimer(this.relativeTimeRefreshIntervalId);
   }
 
   private closeNotifications(): void {
@@ -264,10 +276,10 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     this.notificationService.getNotifications().subscribe({
       next: (notifications) => {
         if (captureUnreadHighlights) {
-          this.highlightedNotificationIds = new Set(
-            notifications
-              .filter((notification) => !notification.isRead)
-              .map((notification) => notification.id),
+          this.highlightedNotificationIds = createHighlightedSet(
+            notifications,
+            (notification) => !notification.isRead,
+            (notification) => notification.id,
           );
         }
 
@@ -393,5 +405,26 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     this.respondingInvitationIds.clear();
     this.respondingJoinRequestIds.clear();
     this.closeNotifications();
+  }
+
+  private applyRealtimeNotification(notification: AppNotification): void {
+    const nextNotifications = prependIfNotExists(
+      this.notifications,
+      notification,
+      (existingNotification) => existingNotification.id === notification.id,
+    );
+
+    if (nextNotifications === this.notifications) {
+      return;
+    }
+
+    this.notifications = nextNotifications;
+    this.unreadNotificationsCount = incrementIf(this.unreadNotificationsCount, !notification.isRead);
+
+    if (!notification.isRead) {
+      this.highlightedNotificationIds.add(notification.id);
+    }
+
+    this.publishMembershipChangesFromNotifications([notification]);
   }
 }
