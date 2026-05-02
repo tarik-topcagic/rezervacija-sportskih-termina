@@ -3,7 +3,9 @@ import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } fr
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { AuthService } from '../../services/auth.service';
 import { ChatRealtimeService } from '../../services/chat-realtime.service';
+import { ChatInboxService } from '../../services/chat-inbox.service';
 import { LanguageService } from '../../services/language.service';
 import { PrivateChatService } from '../../services/private-chat.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
@@ -12,8 +14,20 @@ import {
   applyStatusUpdateToMessages,
   mergeStatusUpdates as mergePendingStatusUpdates,
 } from '../helpers/chat-status.helper';
+import {
+  applyRealtimeChatListNotification as applyRealtimeChatListUpdate,
+  createChatListHighlightedKeys,
+  createGroupChatListItemFromNotification,
+  createPrivateChatListItemFromNotification,
+  getChatListItemKey,
+} from '../helpers/chat-list.helper';
+import { clearTypingTimer, scheduleTypingTimer } from '../helpers/chat-typing.helper';
 import { scrollToBottom, shouldShowScrollButton } from '../helpers/chat-ui.helper';
+import { getUserIdFromToken } from '../helpers/jwt.helper';
+import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
+import { ChatMessageNotification } from '../interfaces/chat-message-notification.model';
 import { ChatMessageStatusUpdate } from '../interfaces/chat-message-status-update.model';
+import { ChatTypingEvent } from '../interfaces/chat-typing-event.model';
 import { PrivateConversation, PrivateMessage } from '../interfaces/private-chat.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
@@ -28,22 +42,36 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
 
   conversation: PrivateConversation | null = null;
+  conversations: PrivateConversation[] = [];
+  chatListItems: ChatInboxItem[] = [];
+  highlightedChatListKeys = new Set<string>();
   messages: PrivateMessage[] = [];
   messageText = '';
   isLoading = true;
   isSending = false;
   showScrollToBottomButton = false;
   errorMessage = '';
+  private currentUserId: string | null = null;
+  private currentUserSubscription?: Subscription;
   private routeSubscription?: Subscription;
   private realtimeMessageSubscription?: Subscription;
+  private realtimeNotificationSubscription?: Subscription;
   private realtimeStatusSubscription?: Subscription;
+  private realtimeTypingSubscription?: Subscription;
+  private realtimeStopTypingSubscription?: Subscription;
   private connectedConversationId: number | null = null;
   private pendingStatusUpdates = new Map<number, ChatMessageStatusUpdate>();
+  private readonly typingUsers = new Map<string, string>();
+  private typingStartTimeoutId?: ReturnType<typeof setTimeout>;
+  private typingStopTimeoutId?: ReturnType<typeof setTimeout>;
+  private isTypingActive = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private authService: AuthService,
     private chatRealtimeService: ChatRealtimeService,
+    private chatInboxService: ChatInboxService,
     private privateChatService: PrivateChatService,
     private privateChatNotificationService: PrivateChatNotificationService,
     private languageService: LanguageService,
@@ -52,12 +80,28 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     void this.chatRealtimeService.connect();
 
+    this.currentUserSubscription = this.authService.currentUser.subscribe((user) => {
+      this.currentUserId = user?.token ? getUserIdFromToken(user.token) : null;
+    });
+
     this.realtimeMessageSubscription = this.chatRealtimeService.incomingPrivateMessages$.subscribe((message) => {
       this.handleIncomingRealtimeMessage(message);
     });
 
+    this.realtimeNotificationSubscription = this.chatRealtimeService.incomingMessageNotifications$.subscribe((notification) => {
+      this.applyRealtimeChatListNotification(notification);
+    });
+
     this.realtimeStatusSubscription = this.chatRealtimeService.incomingMessageStatusUpdates$.subscribe((update) => {
       this.handleStatusUpdate(update);
+    });
+
+    this.realtimeTypingSubscription = this.chatRealtimeService.incomingTyping$.subscribe((event) => {
+      this.handleTypingEvent(event);
+    });
+
+    this.realtimeStopTypingSubscription = this.chatRealtimeService.incomingStopTyping$.subscribe((event) => {
+      this.handleStopTypingEvent(event);
     });
 
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
@@ -78,9 +122,14 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.currentUserSubscription?.unsubscribe();
     this.routeSubscription?.unsubscribe();
     this.realtimeMessageSubscription?.unsubscribe();
+    this.realtimeNotificationSubscription?.unsubscribe();
     this.realtimeStatusSubscription?.unsubscribe();
+    this.realtimeTypingSubscription?.unsubscribe();
+    this.realtimeStopTypingSubscription?.unsubscribe();
+    this.stopTypingLocally();
     if (this.connectedConversationId !== null) {
       void this.chatRealtimeService.leaveConversation(this.connectedConversationId);
     }
@@ -93,6 +142,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    this.stopTypingLocally();
     this.isSending = true;
     this.errorMessage = '';
 
@@ -131,6 +181,32 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return !!this.conversation?.id && !!this.messageText.trim() && !this.isSending;
   }
 
+  onMessageInputChange(): void {
+    if (!this.conversation?.id) {
+      return;
+    }
+
+    if (!this.messageText.trim()) {
+      this.stopTypingLocally();
+      return;
+    }
+
+    if (!this.isTypingActive && !this.typingStartTimeoutId) {
+      this.typingStartTimeoutId = setTimeout(() => {
+        this.typingStartTimeoutId = undefined;
+
+        if (!this.conversation?.id || !this.messageText.trim() || this.isTypingActive) {
+          return;
+        }
+
+        this.isTypingActive = true;
+        void this.chatRealtimeService.startTyping('private', this.conversation.id);
+      }, 300);
+    }
+
+    this.scheduleTypingStop();
+  }
+
   onMessagesScroll(): void {
     this.syncScrollButtonVisibility();
   }
@@ -155,12 +231,53 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.languageService.translate('sent');
   }
 
+  hasTypingUsers(): boolean {
+    return this.typingUsers.size > 0;
+  }
+
+  getTypingIndicatorAvatarUrl(): string | null {
+    return this.conversation?.otherProfilePictureUrl ?? null;
+  }
+
+  getTypingIndicatorAvatarAlt(): string {
+    return this.conversation?.otherFullName ?? this.languageService.translate('messages');
+  }
+
+  openConversation(conversationId: number): void {
+    if (this.conversation?.id === conversationId) {
+      return;
+    }
+
+    this.router.navigate(['/poruke/privatno', conversationId]);
+  }
+
+  openChatListItem(item: ChatInboxItem): void {
+    if (item.type === 'private' && item.conversationId) {
+      void this.router.navigate(['/poruke/privatno', item.conversationId]);
+      return;
+    }
+
+    if (item.type === 'group' && item.groupId) {
+      void this.router.navigate(['/grupe', item.groupId, 'chat']);
+    }
+  }
+
+  isActiveChatListItem(item: ChatInboxItem): boolean {
+    return item.type === 'private' && item.conversationId === this.conversation?.id;
+  }
+
+  isHighlightedChatListItem(item: ChatInboxItem): boolean {
+    return this.highlightedChatListKeys.has(getChatListItemKey(item));
+  }
+
   private loadChat(conversationId: number): void {
     this.isLoading = true;
     this.errorMessage = '';
+    this.loadChatListItems();
 
     this.privateChatService.getConversations().subscribe({
       next: (conversations) => {
+        this.conversations = conversations;
         const conversation = conversations.find((item) => item.id === conversationId);
 
         if (!conversation) {
@@ -197,6 +314,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private resetViewState(): void {
+    this.stopTypingLocally();
     this.conversation = null;
     this.messages = [];
     this.messageText = '';
@@ -204,7 +322,21 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSending = false;
     this.showScrollToBottomButton = false;
     this.errorMessage = '';
+    this.highlightedChatListKeys.clear();
     this.pendingStatusUpdates.clear();
+    this.typingUsers.clear();
+  }
+
+  private loadChatListItems(): void {
+    this.chatInboxService.getInboxItems().subscribe({
+      next: (items) => {
+        this.chatListItems = items;
+        this.highlightedChatListKeys = createChatListHighlightedKeys(items);
+      },
+      error: (error) => {
+        console.error('Error loading desktop chat list items:', error);
+      },
+    });
   }
 
   private markConversationAsRead(conversationId: number): void {
@@ -251,6 +383,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.scrollMessagesToBottom('smooth');
     this.markConversationAsRead(message.conversationId);
     this.acknowledgeIncomingMessage(message);
+    this.typingUsers.delete(message.senderUserId);
   }
 
   private handleStatusUpdate(update: ChatMessageStatusUpdate): void {
@@ -312,6 +445,60 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return mergePendingStatusUpdates(currentUpdate, nextUpdate);
   }
 
+  private handleTypingEvent(event: ChatTypingEvent): void {
+    if (event.type !== 'private'
+      || !this.conversation?.id
+      || event.targetId !== this.conversation.id.toString()
+      || event.userId !== this.conversation.otherUserId) {
+      return;
+    }
+
+    const shouldStickToBottom = !this.showScrollToBottomButton;
+    this.typingUsers.set(event.userId, event.userName);
+    this.adjustScrollAfterTypingStateChange(shouldStickToBottom);
+  }
+
+  private handleStopTypingEvent(event: ChatTypingEvent): void {
+    if (event.type !== 'private'
+      || !this.conversation?.id
+      || event.targetId !== this.conversation.id.toString()) {
+      return;
+    }
+
+    const shouldStickToBottom = !this.showScrollToBottomButton;
+    this.typingUsers.delete(event.userId);
+    this.adjustScrollAfterTypingStateChange(shouldStickToBottom);
+  }
+
+  private scheduleTypingStop(): void {
+    this.typingStopTimeoutId = scheduleTypingTimer(this.typingStopTimeoutId, () => {
+      this.typingStopTimeoutId = undefined;
+      this.stopTypingLocally();
+    }, 1500);
+  }
+
+  private stopTypingLocally(): void {
+    this.typingStartTimeoutId = clearTypingTimer(this.typingStartTimeoutId);
+    this.typingStopTimeoutId = clearTypingTimer(this.typingStopTimeoutId);
+
+    if (!this.conversation?.id || !this.isTypingActive) {
+      this.isTypingActive = false;
+      return;
+    }
+
+    this.isTypingActive = false;
+    void this.chatRealtimeService.stopTyping('private', this.conversation.id);
+  }
+
+  private adjustScrollAfterTypingStateChange(shouldStickToBottom: boolean): void {
+    if (!shouldStickToBottom) {
+      this.syncScrollButtonVisibility();
+      return;
+    }
+
+    this.scrollMessagesToBottom();
+  }
+
   private getLatestOwnMessageId(): number | null {
     const latestOwnMessage = [...this.messages]
       .reverse()
@@ -327,5 +514,22 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private syncScrollButtonVisibility(): void {
     this.showScrollToBottomButton = shouldShowScrollButton(() => this.messagesContainer?.nativeElement);
+  }
+
+  private applyRealtimeChatListNotification(notification: ChatMessageNotification): void {
+    const updateResult = applyRealtimeChatListUpdate({
+      items: this.chatListItems,
+      highlightedKeys: this.highlightedChatListKeys,
+      notification,
+      currentUserId: this.currentUserId,
+      isCurrentOpenChat: notification.type === 'private' && notification.conversationId === this.conversation?.id,
+      createItem: (incomingNotification, shouldHighlight) =>
+        incomingNotification.type === 'private'
+          ? createPrivateChatListItemFromNotification(incomingNotification, shouldHighlight, this.conversation)
+          : createGroupChatListItemFromNotification(incomingNotification, shouldHighlight, null),
+    });
+
+    this.chatListItems = updateResult.items;
+    this.highlightedChatListKeys = updateResult.highlightedKeys;
   }
 }

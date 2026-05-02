@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using SportskiTerminiAPI.DTOs;
 using SportskiTerminiAPI.Interfaces;
 using System.Security.Claims;
 
@@ -75,6 +76,26 @@ namespace SportskiTerminiAPI.Hubs
             await _privateChatService.AcknowledgeMessageSeenAsync(userId, parsedConversationId, messageId);
         }
 
+        public async Task StartTyping(string type, string targetId)
+        {
+            var payload = CreateTypingPayload(type, targetId);
+            if (payload == null)
+                return;
+
+            await Clients.Group(GetChannelName(type, targetId))
+                .SendAsync("UserTyping", payload);
+        }
+
+        public async Task StopTyping(string type, string targetId)
+        {
+            var payload = CreateTypingPayload(type, targetId);
+            if (payload == null)
+                return;
+
+            await Clients.Group(GetChannelName(type, targetId))
+                .SendAsync("UserStoppedTyping", payload);
+        }
+
         public static string GetGroupChannelName(string groupId)
         {
             return $"group-{groupId}";
@@ -89,6 +110,42 @@ namespace SportskiTerminiAPI.Hubs
         {
             return Context.UserIdentifier
                 ?? Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
+
+        private ChatTypingDto? CreateTypingPayload(string type, string targetId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null || string.IsNullOrWhiteSpace(targetId) || !IsSupportedType(type))
+                return null;
+
+            return new ChatTypingDto
+            {
+                UserId = userId,
+                UserName = GetCurrentUserName(),
+                Type = type,
+                TargetId = targetId,
+            };
+        }
+
+        private static string GetChannelName(string type, string targetId)
+        {
+            return type == "group"
+                ? GetGroupChannelName(targetId)
+                : GetConversationChannelName(targetId);
+        }
+
+        private static bool IsSupportedType(string type)
+        {
+            return type == "group" || type == "private";
+        }
+
+        private string GetCurrentUserName()
+        {
+            return Context.User?.Identity?.Name
+                ?? Context.User?.FindFirstValue(ClaimTypes.Name)
+                ?? Context.User?.FindFirstValue("unique_name")
+                ?? Context.User?.FindFirstValue("name")
+                ?? "User";
         }
     }
 }

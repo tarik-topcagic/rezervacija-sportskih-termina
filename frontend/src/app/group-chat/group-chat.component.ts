@@ -3,7 +3,9 @@ import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } fr
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { AuthService } from '../../services/auth.service';
 import { ChatRealtimeService } from '../../services/chat-realtime.service';
+import { ChatInboxService } from '../../services/chat-inbox.service';
 import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
 import { GroupService } from '../../services/group.service';
 import { LanguageService } from '../../services/language.service';
@@ -12,8 +14,20 @@ import {
   applyStatusUpdateToMessages,
   mergeStatusUpdates as mergePendingStatusUpdates,
 } from '../helpers/chat-status.helper';
+import {
+  applyRealtimeChatListNotification as applyRealtimeChatListUpdate,
+  createChatListHighlightedKeys,
+  createGroupChatListItemFromNotification,
+  createPrivateChatListItemFromNotification,
+  getChatListItemKey,
+} from '../helpers/chat-list.helper';
+import { clearTypingTimer, scheduleTypingTimer } from '../helpers/chat-typing.helper';
 import { scrollToBottom, shouldShowScrollButton } from '../helpers/chat-ui.helper';
+import { getUserIdFromToken } from '../helpers/jwt.helper';
+import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
+import { ChatMessageNotification } from '../interfaces/chat-message-notification.model';
 import { ChatMessageStatusUpdate } from '../interfaces/chat-message-status-update.model';
+import { ChatTypingEvent } from '../interfaces/chat-typing-event.model';
 import { GroupChatMessage, GroupDetails } from '../interfaces/group.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
@@ -28,22 +42,35 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
 
   group: GroupDetails | null = null;
+  chatListItems: ChatInboxItem[] = [];
+  highlightedChatListKeys = new Set<string>();
   messages: GroupChatMessage[] = [];
   messageText = '';
   isLoading = true;
   isSending = false;
   showScrollToBottomButton = false;
   errorMessage = '';
+  private currentUserId: string | null = null;
+  private currentUserSubscription?: Subscription;
   private routeSubscription?: Subscription;
   private realtimeMessageSubscription?: Subscription;
+  private realtimeNotificationSubscription?: Subscription;
   private realtimeStatusSubscription?: Subscription;
+  private realtimeTypingSubscription?: Subscription;
+  private realtimeStopTypingSubscription?: Subscription;
   private connectedGroupId: number | null = null;
   private pendingStatusUpdates = new Map<number, ChatMessageStatusUpdate>();
+  private readonly typingUsers = new Map<string, string>();
+  private typingStartTimeoutId?: ReturnType<typeof setTimeout>;
+  private typingStopTimeoutId?: ReturnType<typeof setTimeout>;
+  private isTypingActive = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private authService: AuthService,
     private chatRealtimeService: ChatRealtimeService,
+    private chatInboxService: ChatInboxService,
     private groupService: GroupService,
     private groupChatNotificationService: GroupChatNotificationService,
     private languageService: LanguageService,
@@ -52,12 +79,28 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     void this.chatRealtimeService.connect();
 
+    this.currentUserSubscription = this.authService.currentUser.subscribe((user) => {
+      this.currentUserId = user?.token ? getUserIdFromToken(user.token) : null;
+    });
+
     this.realtimeMessageSubscription = this.chatRealtimeService.incomingGroupMessages$.subscribe((message) => {
       this.handleIncomingRealtimeMessage(message);
     });
 
+    this.realtimeNotificationSubscription = this.chatRealtimeService.incomingMessageNotifications$.subscribe((notification) => {
+      this.applyRealtimeChatListNotification(notification);
+    });
+
     this.realtimeStatusSubscription = this.chatRealtimeService.incomingMessageStatusUpdates$.subscribe((update) => {
       this.handleStatusUpdate(update);
+    });
+
+    this.realtimeTypingSubscription = this.chatRealtimeService.incomingTyping$.subscribe((event) => {
+      this.handleTypingEvent(event);
+    });
+
+    this.realtimeStopTypingSubscription = this.chatRealtimeService.incomingStopTyping$.subscribe((event) => {
+      this.handleStopTypingEvent(event);
     });
 
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
@@ -78,9 +121,14 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.currentUserSubscription?.unsubscribe();
     this.routeSubscription?.unsubscribe();
     this.realtimeMessageSubscription?.unsubscribe();
+    this.realtimeNotificationSubscription?.unsubscribe();
     this.realtimeStatusSubscription?.unsubscribe();
+    this.realtimeTypingSubscription?.unsubscribe();
+    this.realtimeStopTypingSubscription?.unsubscribe();
+    this.stopTypingLocally();
     if (this.connectedGroupId !== null) {
       void this.chatRealtimeService.leaveGroup(this.connectedGroupId);
     }
@@ -93,6 +141,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    this.stopTypingLocally();
     this.isSending = true;
     this.errorMessage = '';
 
@@ -132,6 +181,32 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return !!this.group?.isMember && !!this.messageText.trim() && !this.isSending;
   }
 
+  onMessageInputChange(): void {
+    if (!this.group?.id) {
+      return;
+    }
+
+    if (!this.messageText.trim()) {
+      this.stopTypingLocally();
+      return;
+    }
+
+    if (!this.isTypingActive && !this.typingStartTimeoutId) {
+      this.typingStartTimeoutId = setTimeout(() => {
+        this.typingStartTimeoutId = undefined;
+
+        if (!this.group?.id || !this.messageText.trim() || this.isTypingActive) {
+          return;
+        }
+
+        this.isTypingActive = true;
+        void this.chatRealtimeService.startTyping('group', this.group.id);
+      }, 300);
+    }
+
+    this.scheduleTypingStop();
+  }
+
   onMessagesScroll(): void {
     this.syncScrollButtonVisibility();
   }
@@ -161,9 +236,62 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.languageService.translate('sent');
   }
 
+  getTypingIndicatorText(): string {
+    const typingNames = [...this.typingUsers.values()];
+
+    if (!typingNames.length) {
+      return '';
+    }
+
+    if (typingNames.length === 1) {
+      return `${typingNames[0]} ${this.languageService.translate('isTyping')}`;
+    }
+
+    return this.languageService.translate('usersAreTyping')
+      .replace('{count}', typingNames.length.toString());
+  }
+
+  hasTypingUsers(): boolean {
+    return this.typingUsers.size > 0;
+  }
+
+  getTypingIndicatorAvatarUrl(): string | null {
+    const firstTypingUserId = this.typingUsers.keys().next().value as string | undefined;
+    if (!firstTypingUserId) {
+      return null;
+    }
+
+    return this.group?.members.find((member) => member.userId === firstTypingUserId)?.profilePictureUrl ?? null;
+  }
+
+  getTypingIndicatorAvatarAlt(): string {
+    const firstTypingUserName = this.typingUsers.values().next().value as string | undefined;
+    return firstTypingUserName ?? this.languageService.translate('groupChat');
+  }
+
+  openChatListItem(item: ChatInboxItem): void {
+    if (item.type === 'group' && item.groupId) {
+      void this.router.navigate(['/grupe', item.groupId, 'chat']);
+      return;
+    }
+
+    if (item.type === 'private' && item.conversationId) {
+      void this.router.navigate(['/poruke/privatno', item.conversationId]);
+    }
+  }
+
+  isActiveChatListItem(item: ChatInboxItem): boolean {
+    return item.type === 'group' && item.groupId === this.group?.id;
+  }
+
+  isHighlightedChatListItem(item: ChatInboxItem): boolean {
+    return this.highlightedChatListKeys.has(getChatListItemKey(item));
+  }
+
   private loadChat(groupId: number): void {
     this.isLoading = true;
     this.errorMessage = '';
+    this.loadChatListItems();
 
     this.groupService.getGroupDetails(groupId).subscribe({
       next: (group) => {
@@ -201,6 +329,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private resetViewState(): void {
+    this.stopTypingLocally();
     this.group = null;
     this.messages = [];
     this.messageText = '';
@@ -208,7 +337,21 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSending = false;
     this.showScrollToBottomButton = false;
     this.errorMessage = '';
+    this.highlightedChatListKeys.clear();
     this.pendingStatusUpdates.clear();
+    this.typingUsers.clear();
+  }
+
+  private loadChatListItems(): void {
+    this.chatInboxService.getInboxItems().subscribe({
+      next: (items) => {
+        this.chatListItems = items;
+        this.highlightedChatListKeys = createChatListHighlightedKeys(items);
+      },
+      error: (error) => {
+        console.error('Error loading desktop chat list items:', error);
+      },
+    });
   }
 
   private async setupRealtime(groupId: number): Promise<void> {
@@ -265,6 +408,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.scrollMessagesToBottom('smooth');
     this.markCurrentGroupChatAsRead(message.groupId);
     this.acknowledgeIncomingMessage(message);
+    this.typingUsers.delete(message.senderUserId);
   }
 
   private handleStatusUpdate(update: ChatMessageStatusUpdate): void {
@@ -336,6 +480,60 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return mergePendingStatusUpdates(currentUpdate, nextUpdate);
   }
 
+  private handleTypingEvent(event: ChatTypingEvent): void {
+    if (event.type !== 'group'
+      || !this.group?.id
+      || event.targetId !== this.group.id.toString()
+      || event.userId === this.group.currentUserId) {
+      return;
+    }
+
+    const shouldStickToBottom = !this.showScrollToBottomButton;
+    this.typingUsers.set(event.userId, event.userName);
+    this.adjustScrollAfterTypingStateChange(shouldStickToBottom);
+  }
+
+  private handleStopTypingEvent(event: ChatTypingEvent): void {
+    if (event.type !== 'group'
+      || !this.group?.id
+      || event.targetId !== this.group.id.toString()) {
+      return;
+    }
+
+    const shouldStickToBottom = !this.showScrollToBottomButton;
+    this.typingUsers.delete(event.userId);
+    this.adjustScrollAfterTypingStateChange(shouldStickToBottom);
+  }
+
+  private scheduleTypingStop(): void {
+    this.typingStopTimeoutId = scheduleTypingTimer(this.typingStopTimeoutId, () => {
+      this.typingStopTimeoutId = undefined;
+      this.stopTypingLocally();
+    }, 1500);
+  }
+
+  private stopTypingLocally(): void {
+    this.typingStartTimeoutId = clearTypingTimer(this.typingStartTimeoutId);
+    this.typingStopTimeoutId = clearTypingTimer(this.typingStopTimeoutId);
+
+    if (!this.group?.id || !this.isTypingActive) {
+      this.isTypingActive = false;
+      return;
+    }
+
+    this.isTypingActive = false;
+    void this.chatRealtimeService.stopTyping('group', this.group.id);
+  }
+
+  private adjustScrollAfterTypingStateChange(shouldStickToBottom: boolean): void {
+    if (!shouldStickToBottom) {
+      this.syncScrollButtonVisibility();
+      return;
+    }
+
+    this.scrollMessagesToBottom();
+  }
+
   shouldShowSeenByMembers(message: GroupChatMessage): boolean {
     return !!this.group
       && this.isLatestChatMessage(message)
@@ -386,5 +584,22 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     const latestMessage = this.messages[this.messages.length - 1];
 
     return latestMessage?.senderUserId ?? null;
+  }
+
+  private applyRealtimeChatListNotification(notification: ChatMessageNotification): void {
+    const updateResult = applyRealtimeChatListUpdate({
+      items: this.chatListItems,
+      highlightedKeys: this.highlightedChatListKeys,
+      notification,
+      currentUserId: this.currentUserId,
+      isCurrentOpenChat: notification.type === 'group' && notification.groupId === this.group?.id,
+      createItem: (incomingNotification, shouldHighlight) =>
+        incomingNotification.type === 'group'
+          ? createGroupChatListItemFromNotification(incomingNotification, shouldHighlight, this.group)
+          : createPrivateChatListItemFromNotification(incomingNotification, shouldHighlight, null),
+    });
+
+    this.chatListItems = updateResult.items;
+    this.highlightedChatListKeys = updateResult.highlightedKeys;
   }
 }

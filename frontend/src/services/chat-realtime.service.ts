@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { ChatMessageNotification } from '../app/interfaces/chat-message-notification.model';
 import { ChatMessageStatusUpdate } from '../app/interfaces/chat-message-status-update.model';
+import { ChatTypingEvent } from '../app/interfaces/chat-typing-event.model';
 import { GroupChatMessage } from '../app/interfaces/group.model';
 import { PrivateMessage } from '../app/interfaces/private-chat.model';
 import { AuthService } from './auth.service';
@@ -22,10 +23,14 @@ export class ChatRealtimeService {
   private readonly incomingPrivateMessageSubject = new Subject<PrivateMessage>();
   private readonly incomingMessageNotificationSubject = new Subject<ChatMessageNotification>();
   private readonly incomingMessageStatusUpdateSubject = new Subject<ChatMessageStatusUpdate>();
+  private readonly incomingTypingSubject = new Subject<ChatTypingEvent>();
+  private readonly incomingStopTypingSubject = new Subject<ChatTypingEvent>();
   readonly incomingGroupMessages$ = this.incomingGroupMessageSubject.asObservable();
   readonly incomingPrivateMessages$ = this.incomingPrivateMessageSubject.asObservable();
   readonly incomingMessageNotifications$ = this.incomingMessageNotificationSubject.asObservable();
   readonly incomingMessageStatusUpdates$ = this.incomingMessageStatusUpdateSubject.asObservable();
+  readonly incomingTyping$ = this.incomingTypingSubject.asObservable();
+  readonly incomingStopTyping$ = this.incomingStopTypingSubject.asObservable();
 
   constructor(private authService: AuthService) {}
 
@@ -79,6 +84,16 @@ export class ChatRealtimeService {
     this.hubConnection.off('ReceiveMessageStatusUpdate');
     this.hubConnection.on('ReceiveMessageStatusUpdate', (update: ChatMessageStatusUpdate) => {
       this.incomingMessageStatusUpdateSubject.next(update);
+    });
+
+    this.hubConnection.off('UserTyping');
+    this.hubConnection.on('UserTyping', (payload: ChatTypingEvent) => {
+      this.incomingTypingSubject.next(payload);
+    });
+
+    this.hubConnection.off('UserStoppedTyping');
+    this.hubConnection.on('UserStoppedTyping', (payload: ChatTypingEvent) => {
+      this.incomingStopTypingSubject.next(payload);
     });
 
     try {
@@ -195,6 +210,8 @@ export class ChatRealtimeService {
       this.hubConnection.off('ReceivePrivateMessage');
       this.hubConnection.off('ReceiveMessageNotification');
       this.hubConnection.off('ReceiveMessageStatusUpdate');
+      this.hubConnection.off('UserTyping');
+      this.hubConnection.off('UserStoppedTyping');
 
       if (this.hubConnection.state !== signalR.HubConnectionState.Disconnected) {
         await this.hubConnection.stop();
@@ -263,6 +280,36 @@ export class ChatRealtimeService {
       await this.hubConnection.invoke('AcknowledgePrivateMessageSeen', conversationId.toString(), messageId);
     } catch (error) {
       console.error('Error acknowledging seen private message:', error);
+    }
+  }
+
+  async startTyping(type: 'group' | 'private', targetId: number): Promise<void> {
+    try {
+      await this.ensureConnected();
+      const signalR = await import('@microsoft/signalr');
+
+      if (!this.hubConnection || this.hubConnection.state !== signalR.HubConnectionState.Connected) {
+        return;
+      }
+
+      await this.hubConnection.invoke('StartTyping', type, targetId.toString());
+    } catch (error) {
+      console.error('Error sending typing start event:', error);
+    }
+  }
+
+  async stopTyping(type: 'group' | 'private', targetId: number): Promise<void> {
+    try {
+      await this.ensureConnected();
+      const signalR = await import('@microsoft/signalr');
+
+      if (!this.hubConnection || this.hubConnection.state !== signalR.HubConnectionState.Connected) {
+        return;
+      }
+
+      await this.hubConnection.invoke('StopTyping', type, targetId.toString());
+    } catch (error) {
+      console.error('Error sending typing stop event:', error);
     }
   }
 

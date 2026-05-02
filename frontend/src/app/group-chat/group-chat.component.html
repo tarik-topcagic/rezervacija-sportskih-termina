@@ -10,114 +10,186 @@
       {{ errorMessage }}
     </div>
 
-    <section *ngIf="group && !isLoading" class="chat-shell">
-      <header class="chat-header">
-        <a class="back-link" [routerLink]="['/grupe', group.id]">
-          <i class="bi bi-arrow-left"></i>
-        </a>
+    <section *ngIf="group && !isLoading" class="chat-layout">
+      <aside class="conversations-sidebar">
+        <div class="sidebar-header">
+          <p class="section-label">{{ 'messages' | translate }}</p>
+          <h2>{{ 'messages' | translate }}</h2>
+        </div>
 
-        <div class="group-summary">
-          <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultGroupAvatar">
-            <img [src]="group.imageUrl" [alt]="group.name" class="group-image" />
-          </ng-container>
-          <ng-template #defaultGroupAvatar>
-            <div class="group-image default-group-avatar">
-              <i class="bi bi-people"></i>
-            </div>
-          </ng-template>
-
-          <div class="group-summary-text">
-            <p class="section-label">{{ 'groupChat' | translate }}</p>
-            <h1>{{ group.name }}</h1>
+        <div class="conversation-list">
+          <div *ngIf="!chatListItems.length" class="conversation-list-empty">
+            {{ 'noChats' | translate }}
           </div>
-        </div>
-      </header>
 
-      <div #messagesContainer class="messages-panel" (scroll)="onMessagesScroll()">
-        <div *ngIf="!messages.length" class="empty-state">
-          {{ 'noGroupMessages' | translate }}
-        </div>
-
-        <div
-          *ngFor="let message of messages"
-          class="message-row"
-          [ngClass]="{ 'own-message': isOwnMessage(message) }"
-        >
-          <div class="message-avatar">
-            <ng-container *ngIf="message.senderProfilePictureUrl && message.senderProfilePictureUrl !== 'default-profile.png'; else defaultAvatar">
-              <img [src]="message.senderProfilePictureUrl" [alt]="message.senderFullName" class="avatar-image" />
+          <button
+            type="button"
+            *ngFor="let item of chatListItems"
+            class="conversation-item"
+            [class.active]="isActiveChatListItem(item)"
+            [class.new-update]="isHighlightedChatListItem(item)"
+            (click)="openChatListItem(item)"
+          >
+            <ng-container *ngIf="item.imageUrl && item.imageUrl !== 'default-profile.png' && item.imageUrl !== 'default-group.png'; else defaultSidebarAvatar">
+              <img [src]="item.imageUrl" [alt]="item.title" class="conversation-avatar-image" />
             </ng-container>
-            <ng-template #defaultAvatar>
-              <div class="default-avatar">
+            <ng-template #defaultSidebarAvatar>
+              <div class="conversation-avatar-fallback">
+                <i class="bi" [ngClass]="item.fallbackIcon"></i>
+              </div>
+            </ng-template>
+
+            <div class="conversation-item-content">
+              <div class="conversation-item-topline">
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.createdAt | date:'dd.MM.' }}</span>
+              </div>
+              <p *ngIf="item.subtitle" class="conversation-item-subtitle">{{ item.subtitle }}</p>
+              <p class="conversation-item-preview">
+                {{ item.preview || ('noGroupMessages' | translate) }}
+              </p>
+            </div>
+          </button>
+        </div>
+      </aside>
+
+      <section class="chat-shell">
+        <header class="chat-header">
+          <a class="back-link" [routerLink]="['/grupe', group.id]">
+            <i class="bi bi-arrow-left"></i>
+          </a>
+
+          <div class="group-summary">
+            <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultGroupAvatar">
+              <img [src]="group.imageUrl" [alt]="group.name" class="group-image" />
+            </ng-container>
+            <ng-template #defaultGroupAvatar>
+              <div class="group-image default-group-avatar">
+                <i class="bi bi-people"></i>
+              </div>
+            </ng-template>
+
+            <div class="group-summary-text">
+              <p class="section-label">{{ 'groupChat' | translate }}</p>
+              <h1>{{ group.name }}</h1>
+            </div>
+          </div>
+        </header>
+
+        <div #messagesContainer class="messages-panel" (scroll)="onMessagesScroll()">
+          <div *ngIf="!messages.length" class="empty-state">
+            {{ 'noGroupMessages' | translate }}
+          </div>
+
+          <div
+            *ngFor="let message of messages"
+            class="message-row"
+            [ngClass]="{ 'own-message': isOwnMessage(message) }"
+          >
+            <div class="message-avatar">
+              <ng-container *ngIf="message.senderProfilePictureUrl && message.senderProfilePictureUrl !== 'default-profile.png'; else defaultAvatar">
+                <img [src]="message.senderProfilePictureUrl" [alt]="message.senderFullName" class="avatar-image" />
+              </ng-container>
+              <ng-template #defaultAvatar>
+                <div class="default-avatar">
+                  <i class="bi bi-person"></i>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="message-bubble">
+              <div class="message-meta">
+                <strong>{{ message.senderFullName }}</strong>
+                <span>{{ message.createdAt | date:'dd.MM.yyyy. HH:mm' }}</span>
+              </div>
+              <p>{{ message.messageText }}</p>
+              <span *ngIf="shouldShowMessageStatus(message) && !shouldShowSeenByMembers(message)" class="message-status">
+                {{ getMessageStatusLabel(message) }}
+              </span>
+              <div *ngIf="shouldShowSeenByMembers(message)" class="message-status message-status-seen-by">
+                <span class="seen-by-label">{{ 'seenBy' | translate }}</span>
+                <div class="seen-by-avatars">
+                  <ng-container *ngFor="let seenByUser of getSeenByAvatarItems(message)">
+                    <img
+                      *ngIf="seenByUser.profilePictureUrl && seenByUser.profilePictureUrl !== 'default-profile.png'; else defaultSeenByAvatar"
+                      [src]="seenByUser.profilePictureUrl"
+                      [alt]="seenByUser.name"
+                      [title]="seenByUser.name"
+                      class="seen-by-avatar-image"
+                    />
+                    <ng-template #defaultSeenByAvatar>
+                      <div class="seen-by-avatar-fallback" [title]="seenByUser.name">
+                        <i class="bi bi-person"></i>
+                      </div>
+                    </ng-template>
+                  </ng-container>
+                  <span *ngIf="getRemainingSeenByCount(message) > 0" class="seen-by-extra-count">
+                    +{{ getRemainingSeenByCount(message) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            *ngIf="showScrollToBottomButton"
+            type="button"
+            class="scroll-to-latest-button"
+            (click)="scrollMessagesToLatest()"
+            [attr.aria-label]="'groupChat' | translate"
+            title="Najnovija poruka"
+          >
+            <i class="bi bi-arrow-down"></i>
+          </button>
+        </div>
+
+        <div *ngIf="hasTypingUsers()" class="typing-indicator">
+          <div class="typing-indicator-row">
+            <ng-container *ngIf="getTypingIndicatorAvatarUrl() && getTypingIndicatorAvatarUrl() !== 'default-profile.png'; else defaultTypingAvatar">
+              <img
+                [src]="getTypingIndicatorAvatarUrl()!"
+                [alt]="getTypingIndicatorAvatarAlt()"
+                class="typing-avatar-image"
+              />
+            </ng-container>
+            <ng-template #defaultTypingAvatar>
+              <div class="typing-avatar-fallback">
                 <i class="bi bi-person"></i>
               </div>
             </ng-template>
+
+            <div class="typing-bubble" aria-hidden="true">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
           </div>
 
-          <div class="message-bubble">
-            <div class="message-meta">
-              <strong>{{ message.senderFullName }}</strong>
-              <span>{{ message.createdAt | date:'dd.MM.yyyy. HH:mm' }}</span>
-            </div>
-            <p>{{ message.messageText }}</p>
-            <span *ngIf="shouldShowMessageStatus(message) && !shouldShowSeenByMembers(message)" class="message-status">
-              {{ getMessageStatusLabel(message) }}
-            </span>
-            <div *ngIf="shouldShowSeenByMembers(message)" class="message-status message-status-seen-by">
-              <span class="seen-by-label">{{ 'seenBy' | translate }}</span>
-              <div class="seen-by-avatars">
-                <ng-container *ngFor="let seenByUser of getSeenByAvatarItems(message)">
-                  <img
-                    *ngIf="seenByUser.profilePictureUrl && seenByUser.profilePictureUrl !== 'default-profile.png'; else defaultSeenByAvatar"
-                    [src]="seenByUser.profilePictureUrl"
-                    [alt]="seenByUser.name"
-                    [title]="seenByUser.name"
-                    class="seen-by-avatar-image"
-                  />
-                  <ng-template #defaultSeenByAvatar>
-                    <div class="seen-by-avatar-fallback" [title]="seenByUser.name">
-                      <i class="bi bi-person"></i>
-                    </div>
-                  </ng-template>
-                </ng-container>
-                <span *ngIf="getRemainingSeenByCount(message) > 0" class="seen-by-extra-count">
-                  +{{ getRemainingSeenByCount(message) }}
-                </span>
-              </div>
-            </div>
+          <div class="typing-indicator-text">
+            {{ getTypingIndicatorText() }}
           </div>
         </div>
 
-        <button
-          *ngIf="showScrollToBottomButton"
-          type="button"
-          class="scroll-to-latest-button"
-          (click)="scrollMessagesToLatest()"
-          [attr.aria-label]="'groupChat' | translate"
-          title="Najnovija poruka"
-        >
-          <i class="bi bi-arrow-down"></i>
-        </button>
-      </div>
-
-      <form class="chat-composer" (ngSubmit)="sendMessage()">
-        <div class="input-group">
-          <input
-            type="text"
-            class="form-control"
-            [(ngModel)]="messageText"
-            name="messageText"
-            [placeholder]="'writeMessage' | translate"
-            maxlength="1000"
-          />
-          <button type="submit" class="btn btn-primary" [disabled]="!canSendMessage()">
-            <i class="bi bi-send"></i>
-            <span class="send-button-label">
-              {{ (isSending ? 'sending' : 'send') | translate }}
-            </span>
-          </button>
-        </div>
-      </form>
+        <form class="chat-composer" (ngSubmit)="sendMessage()">
+          <div class="input-group">
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="messageText"
+              (ngModelChange)="onMessageInputChange()"
+              name="messageText"
+              [placeholder]="'writeMessage' | translate"
+              maxlength="1000"
+            />
+            <button type="submit" class="btn btn-primary" [disabled]="!canSendMessage()">
+              <i class="bi bi-send"></i>
+              <span class="send-button-label">
+                {{ (isSending ? 'sending' : 'send') | translate }}
+              </span>
+            </button>
+          </div>
+        </form>
+      </section>
     </section>
   </div>
 </main>
