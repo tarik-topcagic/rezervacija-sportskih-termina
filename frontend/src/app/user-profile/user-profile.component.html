@@ -9,6 +9,7 @@
     <div class="card mx-auto shadow-sm profile-card">
       <div class="card-body text-center">
         <div class="profile-image-shell mb-3 mx-auto">
+          <span *ngIf="canShowPresence && isProfileUserOnline" class="profile-presence-dot"></span>
           <ng-container *ngIf="userProfile.profilePictureUrl && userProfile.profilePictureUrl !== 'default-profile.png'; else defaultImage">
             <img
               [src]="userProfile.profilePictureUrl + '?t=' + timestamp"

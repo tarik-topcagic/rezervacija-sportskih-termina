@@ -11,13 +11,51 @@ namespace SportskiTerminiAPI.Hubs
     {
         private readonly IGroupChatService _groupChatService;
         private readonly IPrivateChatService _privateChatService;
+        private readonly IPresenceService _presenceService;
+        private readonly IPresenceAccessService _presenceAccessService;
 
         public ChatHub(
             IGroupChatService groupChatService,
-            IPrivateChatService privateChatService)
+            IPrivateChatService privateChatService,
+            IPresenceService presenceService,
+            IPresenceAccessService presenceAccessService)
         {
             _groupChatService = groupChatService;
             _privateChatService = privateChatService;
+            _presenceService = presenceService;
+            _presenceAccessService = presenceAccessService;
+        }
+
+        public override async Task OnConnectedAsync()
+        {
+            var userId = GetCurrentUserId();
+
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                var becameOnline = _presenceService.AddConnection(userId, Context.ConnectionId);
+                if (becameOnline)
+                {
+                    await BroadcastPresenceChangedAsync(userId, true);
+                }
+            }
+
+            await base.OnConnectedAsync();
+        }
+
+        public override async Task OnDisconnectedAsync(Exception? exception)
+        {
+            var userId = GetCurrentUserId();
+
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                var becameOffline = _presenceService.RemoveConnection(userId, Context.ConnectionId);
+                if (becameOffline)
+                {
+                    await BroadcastPresenceChangedAsync(userId, false);
+                }
+            }
+
+            await base.OnDisconnectedAsync(exception);
         }
 
         public async Task JoinGroup(string groupId)
@@ -146,6 +184,21 @@ namespace SportskiTerminiAPI.Hubs
                 ?? Context.User?.FindFirstValue("unique_name")
                 ?? Context.User?.FindFirstValue("name")
                 ?? "User";
+        }
+
+        private async Task BroadcastPresenceChangedAsync(string userId, bool isOnline)
+        {
+            var allowedViewerUserIds = await _presenceAccessService.GetAllowedViewerUserIdsAsync(userId);
+            if (allowedViewerUserIds.Count == 0)
+            {
+                return;
+            }
+
+            await Clients.Users(allowedViewerUserIds).SendAsync("UserPresenceChanged", new UserPresenceDto
+            {
+                UserId = userId,
+                IsOnline = isOnline
+            });
         }
     }
 }

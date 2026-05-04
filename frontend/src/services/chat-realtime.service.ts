@@ -5,6 +5,7 @@ import { ChatMessageStatusUpdate } from '../app/interfaces/chat-message-status-u
 import { ChatTypingEvent } from '../app/interfaces/chat-typing-event.model';
 import { GroupChatMessage } from '../app/interfaces/group.model';
 import { PrivateMessage } from '../app/interfaces/private-chat.model';
+import { UserPresence } from '../app/interfaces/user-presence.model';
 import { AuthService } from './auth.service';
 import { environment } from '../environments/environment';
 
@@ -25,12 +26,14 @@ export class ChatRealtimeService {
   private readonly incomingMessageStatusUpdateSubject = new Subject<ChatMessageStatusUpdate>();
   private readonly incomingTypingSubject = new Subject<ChatTypingEvent>();
   private readonly incomingStopTypingSubject = new Subject<ChatTypingEvent>();
+  private readonly incomingPresenceUpdateSubject = new Subject<UserPresence>();
   readonly incomingGroupMessages$ = this.incomingGroupMessageSubject.asObservable();
   readonly incomingPrivateMessages$ = this.incomingPrivateMessageSubject.asObservable();
   readonly incomingMessageNotifications$ = this.incomingMessageNotificationSubject.asObservable();
   readonly incomingMessageStatusUpdates$ = this.incomingMessageStatusUpdateSubject.asObservable();
   readonly incomingTyping$ = this.incomingTypingSubject.asObservable();
   readonly incomingStopTyping$ = this.incomingStopTypingSubject.asObservable();
+  readonly incomingPresenceUpdates$ = this.incomingPresenceUpdateSubject.asObservable();
 
   constructor(private authService: AuthService) {}
 
@@ -94,6 +97,11 @@ export class ChatRealtimeService {
     this.hubConnection.off('UserStoppedTyping');
     this.hubConnection.on('UserStoppedTyping', (payload: ChatTypingEvent) => {
       this.incomingStopTypingSubject.next(payload);
+    });
+
+    this.hubConnection.off('UserPresenceChanged');
+    this.hubConnection.on('UserPresenceChanged', (payload: UserPresence) => {
+      this.incomingPresenceUpdateSubject.next(payload);
     });
 
     try {
@@ -212,6 +220,7 @@ export class ChatRealtimeService {
       this.hubConnection.off('ReceiveMessageStatusUpdate');
       this.hubConnection.off('UserTyping');
       this.hubConnection.off('UserStoppedTyping');
+      this.hubConnection.off('UserPresenceChanged');
 
       if (this.hubConnection.state !== signalR.HubConnectionState.Disconnected) {
         await this.hubConnection.stop();

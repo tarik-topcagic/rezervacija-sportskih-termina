@@ -136,6 +136,8 @@ namespace SportskiTerminiAPI
             builder.Services.AddScoped<IGroupService, GroupService>();
             builder.Services.AddScoped<IGroupChatService, GroupChatService>();
             builder.Services.AddScoped<IPrivateChatService, PrivateChatService>();
+            builder.Services.AddSingleton<IPresenceService, PresenceService>();
+            builder.Services.AddScoped<IPresenceAccessService, PresenceAccessService>();
             builder.Services.AddScoped<IGroupChatNotificationService, GroupChatNotificationService>();
             builder.Services.AddScoped<IPrivateChatNotificationService, PrivateChatNotificationService>();
             builder.Services.AddScoped<IGroupMembershipService, GroupMembershipService>();

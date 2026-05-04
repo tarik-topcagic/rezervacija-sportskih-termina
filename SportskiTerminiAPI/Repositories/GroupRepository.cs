@@ -90,6 +90,54 @@ namespace SportskiTerminiAPI.Repositories
                 .ToListAsync();
         }
 
+        public async Task<bool> ShareAcceptedGroupAsync(string firstUserId, string secondUserId)
+        {
+            return await _context.Groups.AnyAsync(group =>
+                (group.AdminId == firstUserId || group.Memberships.Any(membership =>
+                    membership.UserId == firstUserId
+                    && membership.Status == MembershipStatus.Accepted))
+                && (group.AdminId == secondUserId || group.Memberships.Any(membership =>
+                    membership.UserId == secondUserId
+                    && membership.Status == MembershipStatus.Accepted)));
+        }
+
+        public async Task<IReadOnlyList<string>> GetPresenceViewerUserIdsAsync(string userId)
+        {
+            var groups = await _context.Groups
+                .Where(group => group.AdminId == userId
+                    || group.Memberships.Any(membership =>
+                        membership.UserId == userId
+                        && membership.Status == MembershipStatus.Accepted))
+                .Select(group => new
+                {
+                    group.AdminId,
+                    AcceptedUserIds = group.Memberships
+                        .Where(membership => membership.Status == MembershipStatus.Accepted)
+                        .Select(membership => membership.UserId)
+                })
+                .ToListAsync();
+
+            var viewerIds = new HashSet<string>();
+
+            foreach (var group in groups)
+            {
+                if (!string.Equals(group.AdminId, userId, StringComparison.Ordinal))
+                {
+                    viewerIds.Add(group.AdminId);
+                }
+
+                foreach (var acceptedUserId in group.AcceptedUserIds)
+                {
+                    if (!string.Equals(acceptedUserId, userId, StringComparison.Ordinal))
+                    {
+                        viewerIds.Add(acceptedUserId);
+                    }
+                }
+            }
+
+            return viewerIds.ToList();
+        }
+
         public async Task<IEnumerable<Group>> GetPublicGroupsAsync(string userId)
         {
             return await _context.Groups

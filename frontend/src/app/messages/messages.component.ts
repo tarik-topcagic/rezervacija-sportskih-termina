@@ -7,6 +7,7 @@ import { ChatRealtimeService } from '../../services/chat-realtime.service';
 import { ChatInboxService } from '../../services/chat-inbox.service';
 import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
 import { NotificationTimeService } from '../../services/notification-time.service';
+import { PresenceService } from '../../services/presence.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
 import { createHighlightedSet, moveItemToTop, prependIfNotExists } from '../helpers/dropdown-ui.helper';
 import { ChatMessageNotification } from '../interfaces/chat-message-notification.model';
@@ -33,6 +34,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
   private currentUserId: string | null = null;
   private currentUserSubscription?: Subscription;
   private realtimeNotificationSubscription?: Subscription;
+  private presenceSubscription?: Subscription;
+  private privatePresenceByUserId = new Map<string, boolean>();
+  private groupPresenceByGroupId = new Map<number, boolean>();
 
   constructor(
     private authService: AuthService,
@@ -41,6 +45,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
     private groupChatNotificationService: GroupChatNotificationService,
     private privateChatNotificationService: PrivateChatNotificationService,
     private notificationTimeService: NotificationTimeService,
+    private presenceService: PresenceService,
     private router: Router,
   ) {}
 
@@ -53,6 +58,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     this.realtimeNotificationSubscription = this.chatRealtimeService.incomingMessageNotifications$.subscribe((notification) => {
       this.applyRealtimeNotification(notification);
+    });
+
+    this.presenceSubscription = this.presenceService.presenceUpdates$.subscribe((update) => {
+      this.applyPresenceUpdate(update.userId, update.isOnline);
     });
 
     this.loadMessages();
@@ -69,6 +78,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.currentUserSubscription?.unsubscribe();
     this.realtimeNotificationSubscription?.unsubscribe();
+    this.presenceSubscription?.unsubscribe();
 
     if (this.messagesRefreshIntervalId) {
       clearInterval(this.messagesRefreshIntervalId);
@@ -124,6 +134,16 @@ export class MessagesComponent implements OnInit, OnDestroy {
     return this.highlightedMessageKeys.has(this.getMessageKey(message));
   }
 
+  shouldShowPresenceDot(message: ChatInboxItem): boolean {
+    if (message.type === 'private') {
+      return !!message.otherUserId
+        && message.otherUserId !== this.currentUserId
+        && this.privatePresenceByUserId.get(message.otherUserId) === true;
+    }
+
+    return !!message.groupId && this.groupPresenceByGroupId.get(message.groupId) === true;
+  }
+
   private loadMessages(showLoading = true): void {
     if (showLoading) {
       this.isLoading = true;
@@ -140,6 +160,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
         }
 
         this.messages = messages;
+        this.syncPresenceIndicators(messages);
 
         if (showLoading) {
           this.isLoading = false;
@@ -179,6 +200,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
       if (shouldIncrementUnread) {
         this.highlightedMessageKeys.add(this.getMessageKey(newMessage));
       }
+
+      this.syncPresenceIndicators(this.messages);
 
       return;
     }
@@ -227,6 +250,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       type: 'private',
       id: notification.conversationId ?? 0,
       title: notification.senderName,
+      otherUserId: notification.senderUserId,
       preview: notification.preview,
       createdAt: notification.createdAt,
       unreadCount: shouldIncrementUnread ? 1 : 0,
@@ -243,6 +267,96 @@ export class MessagesComponent implements OnInit, OnDestroy {
       return payload.nameid ?? payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ?? null;
     } catch {
       return null;
+    }
+  }
+
+  private syncPresenceIndicators(messages: ChatInboxItem[]): void {
+    const privateUserIds = new Set(
+      messages
+        .filter((message) => message.type === 'private' && !!message.otherUserId && message.otherUserId !== this.currentUserId)
+        .map((message) => message.otherUserId as string),
+    );
+    const groupIds = new Set(
+      messages
+        .filter((message) => message.type === 'group' && !!message.groupId)
+        .map((message) => message.groupId as number),
+    );
+
+    for (const userId of Array.from(this.privatePresenceByUserId.keys())) {
+      if (!privateUserIds.has(userId)) {
+        this.privatePresenceByUserId.delete(userId);
+      }
+    }
+
+    for (const groupId of Array.from(this.groupPresenceByGroupId.keys())) {
+      if (!groupIds.has(groupId)) {
+        this.groupPresenceByGroupId.delete(groupId);
+      }
+    }
+
+    for (const userId of privateUserIds) {
+      if (!this.privatePresenceByUserId.has(userId)) {
+        this.loadPrivatePresence(userId);
+      }
+    }
+
+    for (const groupId of groupIds) {
+      if (!this.groupPresenceByGroupId.has(groupId)) {
+        this.loadGroupPresence(groupId);
+      }
+    }
+  }
+
+  private loadPrivatePresence(userId: string): void {
+    this.presenceService.getUserPresence(userId).subscribe({
+      next: (presence) => {
+        this.privatePresenceByUserId.set(userId, presence.isOnline);
+      },
+      error: () => {
+        this.privatePresenceByUserId.set(userId, false);
+      },
+    });
+  }
+
+  private loadGroupPresence(groupId: number): void {
+    this.presenceService.getGroupPresence(groupId).subscribe({
+      next: (presence) => {
+        this.groupPresenceByGroupId.set(groupId, presence.onlineUserIds.length > 0);
+      },
+      error: () => {
+        this.groupPresenceByGroupId.set(groupId, false);
+      },
+    });
+  }
+
+  private applyPresenceUpdate(userId: string, isOnline: boolean): void {
+    if (userId === this.currentUserId) {
+      for (const message of this.messages) {
+        if (message.type === 'group' && message.groupId) {
+          this.loadGroupPresence(message.groupId);
+        }
+      }
+
+      return;
+    }
+
+    let affectedPrivateChat = false;
+
+    for (const message of this.messages) {
+      if (message.type === 'private' && message.otherUserId === userId) {
+        this.privatePresenceByUserId.set(userId, isOnline);
+        affectedPrivateChat = true;
+      }
+    }
+
+    if (affectedPrivateChat) {
+      return;
+    }
+
+    for (const message of this.messages) {
+      if (message.type === 'group' && message.groupId) {
+        this.loadGroupPresence(message.groupId);
+      }
     }
   }
 }

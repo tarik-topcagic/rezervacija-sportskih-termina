@@ -7,7 +7,18 @@ import { ChatRealtimeService } from '../../services/chat-realtime.service';
 import { ChatInboxService } from '../../services/chat-inbox.service';
 import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
 import { NotificationTimeService } from '../../services/notification-time.service';
+import { PresenceService } from '../../services/presence.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
+import {
+  createGroupChatListItemFromNotification,
+  createPrivateChatListItemFromNotification,
+  getChatListItemKey,
+} from '../helpers/chat-list.helper';
+import {
+  applyChatListPresenceUpdate,
+  planChatListPresenceSync,
+  shouldShowChatListPresenceDot as shouldShowChatListPresenceDotHelper,
+} from '../helpers/chat-list-presence.helper';
 import {
   clearDropdownTimer,
   createHighlightedSet,
@@ -17,6 +28,7 @@ import {
   prependIfNotExists,
   startDropdownTimer,
 } from '../helpers/dropdown-ui.helper';
+import { getUserIdFromToken } from '../helpers/jwt.helper';
 import { ChatMessageNotification } from '../interfaces/chat-message-notification.model';
 import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
 import { TranslatePipe } from '../pipes/translate.pipe';
@@ -43,6 +55,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
   private unreadCountSubscription?: Subscription;
   private privateUnreadCountSubscription?: Subscription;
   private realtimeNotificationSubscription?: Subscription;
+  private presenceSubscription?: Subscription;
   private readonly refreshIntervalMs = 30000;
   private readonly relativeTimeRefreshIntervalMs = 60000;
   private refreshIntervalId?: ReturnType<typeof setInterval>;
@@ -56,6 +69,12 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
   private currentUserId: string | null = null;
   private joinedGroupIds = new Set<number>();
   private joinedConversationIds = new Set<number>();
+  private privatePresenceByUserId = new Map<string, boolean>();
+  private groupPresenceByGroupId = new Map<number, boolean>();
+  private loadingPrivatePresenceUserIds = new Set<string>();
+  private loadingGroupPresenceIds = new Set<number>();
+  private privatePresenceRequestVersions = new Map<string, number>();
+  private groupPresenceRequestVersions = new Map<number, number>();
 
   constructor(
     private authService: AuthService,
@@ -64,17 +83,17 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     private groupChatNotificationService: GroupChatNotificationService,
     private privateChatNotificationService: PrivateChatNotificationService,
     private notificationTimeService: NotificationTimeService,
+    private presenceService: PresenceService,
     private router: Router,
   ) {}
 
   ngOnInit(): void {
     this.currentUserSubscription = this.authService.currentUser.subscribe((user) => {
       this.username = user ? user.username : null;
-      this.currentUserId = user?.token ? this.getUserIdFromToken(user.token) : null;
+      this.currentUserId = user?.token ? getUserIdFromToken(user.token) : null;
 
       if (this.username && this.isActiveForViewport) {
-        this.loadMessages();
-        this.loadUnreadCount();
+        void this.refreshViewportData();
         return;
       }
 
@@ -94,6 +113,10 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.syncCurrentChatContext(this.router.url);
       });
+
+    this.presenceSubscription = this.presenceService.presenceUpdates$.subscribe((update) => {
+      this.applyPresenceUpdate(update.userId, update.isOnline);
+    });
 
     this.syncCurrentChatContext(this.router.url);
 
@@ -122,6 +145,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     this.unreadCountSubscription?.unsubscribe();
     this.privateUnreadCountSubscription?.unsubscribe();
     this.realtimeNotificationSubscription?.unsubscribe();
+    this.presenceSubscription?.unsubscribe();
     this.desktopMediaQuery.removeEventListener('change', this.onViewportChange);
     window.removeEventListener('app-notification-dropdown-opened', this.onNotificationDropdownOpened);
     this.stopTimers();
@@ -192,7 +216,31 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
   }
 
   isHighlightedMessage(message: ChatInboxItem): boolean {
-    return this.highlightedMessageKeys.has(this.getMessageKey(message));
+    return this.highlightedMessageKeys.has(getChatListItemKey(message));
+  }
+
+  shouldShowPresenceDot(message: ChatInboxItem): boolean {
+    const shouldShowKnownPresence = shouldShowChatListPresenceDotHelper(
+      message,
+      this.currentUserId,
+      this.privatePresenceByUserId,
+      this.groupPresenceByGroupId,
+    );
+
+    if (shouldShowKnownPresence) {
+      return true;
+    }
+
+    if (message.type === 'group' && !!message.groupId) {
+      return this.loadingGroupPresenceIds.has(message.groupId) && !!this.currentUserId;
+    }
+
+    if (message.type === 'private' && !!message.otherUserId) {
+      return this.loadingPrivatePresenceUserIds.has(message.otherUserId)
+        && this.privatePresenceByUserId.get(message.otherUserId) === true;
+    }
+
+    return false;
   }
 
   @HostListener('document:click', ['$event'])
@@ -217,13 +265,8 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     this.isActiveForViewport = shouldBeActive;
 
     if (shouldBeActive) {
-      void this.chatRealtimeService.connect();
       this.startTimers();
-
-      if (this.username) {
-        this.loadMessages();
-        this.loadUnreadCount();
-      }
+      void this.refreshViewportData();
 
       return;
     }
@@ -242,8 +285,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.loadUnreadCount();
-      this.loadMessages();
+      void this.refreshViewportData();
     }, this.refreshIntervalMs);
 
     this.relativeTimeRefreshIntervalId = startDropdownTimer(() => {
@@ -267,12 +309,13 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
           this.highlightedMessageKeys = createHighlightedSet(
             messages,
             (message) => message.unreadCount > 0,
-            (message) => this.getMessageKey(message),
+            (message) => getChatListItemKey(message),
           );
         }
 
         this.messages = messages;
         void this.syncRealtimeRooms(messages);
+        this.syncPresenceIndicators(messages);
       },
       error: (error) => {
         console.error('Error loading chat inbox notifications:', error);
@@ -304,12 +347,12 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     this.messages = [];
     this.unreadCount = 0;
     this.highlightedMessageKeys.clear();
+    this.privatePresenceByUserId.clear();
+    this.groupPresenceByGroupId.clear();
+    this.loadingPrivatePresenceUserIds.clear();
+    this.loadingGroupPresenceIds.clear();
     this.leaveTrackedRooms();
     this.closeMessages();
-  }
-
-  private getMessageKey(message: ChatInboxItem): string {
-    return `${message.type}:${message.id}`;
   }
 
   private async syncRealtimeRooms(messages: ChatInboxItem[]): Promise<void> {
@@ -371,15 +414,16 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
       this.messages = prependIfNotExists(
         this.messages,
         newMessage,
-        (message) => this.getMessageKey(message) === this.getMessageKey(newMessage),
+        (message) => getChatListItemKey(message) === getChatListItemKey(newMessage),
       );
 
       if (shouldIncrementUnread) {
         this.unreadCount = incrementIf(this.unreadCount, true);
-        this.highlightedMessageKeys.add(this.getMessageKey(newMessage));
+        this.highlightedMessageKeys.add(getChatListItemKey(newMessage));
       }
 
       void this.syncRealtimeRooms(this.messages);
+      this.syncPresenceIndicators(this.messages);
 
       return;
     }
@@ -396,12 +440,12 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     this.messages = moveItemToTop(
       this.messages,
       updatedMessage,
-      (message) => this.getMessageKey(message) === this.getMessageKey(existingMessage),
+      (message) => getChatListItemKey(message) === getChatListItemKey(existingMessage),
     );
 
     if (shouldIncrementUnread) {
       this.unreadCount = incrementIf(this.unreadCount, true);
-      this.highlightedMessageKeys.add(this.getMessageKey(updatedMessage));
+      this.highlightedMessageKeys.add(getChatListItemKey(updatedMessage));
     }
   }
 
@@ -426,33 +470,114 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     shouldIncrementUnread: boolean,
   ): ChatInboxItem {
     if (notification.type === 'group') {
-      return {
-        type: 'group',
-        id: notification.groupId ?? 0,
-        title: notification.groupId ? `Grupa #${notification.groupId}` : notification.senderName,
-        subtitle: notification.senderName,
-        preview: notification.preview,
-        createdAt: notification.createdAt,
-        unreadCount: shouldIncrementUnread ? 1 : 0,
-        isRead: !shouldIncrementUnread,
-        imageUrl: null,
-        fallbackIcon: 'bi-people',
-        groupId: notification.groupId ?? undefined,
-      };
+      return createGroupChatListItemFromNotification(notification, shouldIncrementUnread, null);
     }
 
-    return {
-      type: 'private',
-      id: notification.conversationId ?? 0,
-      title: notification.senderName,
-      preview: notification.preview,
-      createdAt: notification.createdAt,
-      unreadCount: shouldIncrementUnread ? 1 : 0,
-      isRead: !shouldIncrementUnread,
-      imageUrl: null,
-      fallbackIcon: 'bi-person',
-      conversationId: notification.conversationId ?? undefined,
-    };
+    return createPrivateChatListItemFromNotification(notification, shouldIncrementUnread, null);
+  }
+
+  private syncPresenceIndicators(messages: ChatInboxItem[]): void {
+    const syncPlan = planChatListPresenceSync(
+      messages,
+      this.currentUserId,
+      this.privatePresenceByUserId,
+      this.groupPresenceByGroupId,
+    );
+
+    for (const userId of syncPlan.stalePrivateUserIds) {
+      this.privatePresenceByUserId.delete(userId);
+      this.loadingPrivatePresenceUserIds.delete(userId);
+    }
+
+    for (const groupId of syncPlan.staleGroupIds) {
+      this.groupPresenceByGroupId.delete(groupId);
+      this.loadingGroupPresenceIds.delete(groupId);
+    }
+
+    for (const userId of syncPlan.missingPrivateUserIds) {
+      this.loadPrivatePresence(userId);
+    }
+
+    for (const groupId of syncPlan.missingGroupIds) {
+      if (this.currentUserId) {
+        this.groupPresenceByGroupId.set(groupId, true);
+      }
+      this.loadGroupPresence(groupId);
+    }
+  }
+
+  private loadPrivatePresence(userId: string): void {
+    if (this.loadingPrivatePresenceUserIds.has(userId)) {
+      return;
+    }
+
+    const requestVersion = (this.privatePresenceRequestVersions.get(userId) ?? 0) + 1;
+    this.privatePresenceRequestVersions.set(userId, requestVersion);
+    this.loadingPrivatePresenceUserIds.add(userId);
+
+    this.presenceService.getUserPresence(userId).subscribe({
+      next: (presence) => {
+        if (this.privatePresenceRequestVersions.get(userId) !== requestVersion) {
+          return;
+        }
+
+        this.loadingPrivatePresenceUserIds.delete(userId);
+        this.privatePresenceByUserId.set(userId, presence.isOnline);
+      },
+      error: () => {
+        if (this.privatePresenceRequestVersions.get(userId) !== requestVersion) {
+          return;
+        }
+
+        this.loadingPrivatePresenceUserIds.delete(userId);
+        this.privatePresenceByUserId.set(userId, false);
+      },
+    });
+  }
+
+  private loadGroupPresence(groupId: number): void {
+    if (this.loadingGroupPresenceIds.has(groupId)) {
+      return;
+    }
+
+    const requestVersion = (this.groupPresenceRequestVersions.get(groupId) ?? 0) + 1;
+    this.groupPresenceRequestVersions.set(groupId, requestVersion);
+    this.loadingGroupPresenceIds.add(groupId);
+
+    this.presenceService.getGroupPresence(groupId).subscribe({
+      next: (presence) => {
+        if (this.groupPresenceRequestVersions.get(groupId) !== requestVersion) {
+          return;
+        }
+
+        this.loadingGroupPresenceIds.delete(groupId);
+        this.groupPresenceByGroupId.set(groupId, presence.onlineUserIds.length > 0);
+      },
+      error: () => {
+        if (this.groupPresenceRequestVersions.get(groupId) !== requestVersion) {
+          return;
+        }
+
+        this.loadingGroupPresenceIds.delete(groupId);
+        this.groupPresenceByGroupId.set(groupId, false);
+      },
+    });
+  }
+
+  private applyPresenceUpdate(userId: string, isOnline: boolean): void {
+    const updateResult = applyChatListPresenceUpdate(
+      this.messages,
+      userId,
+      isOnline,
+      this.currentUserId,
+      this.privatePresenceByUserId,
+    );
+
+    this.privatePresenceByUserId = updateResult.nextPrivatePresenceByUserId;
+
+    for (const groupId of updateResult.groupIdsToReload) {
+      this.loadGroupPresence(groupId);
+    }
   }
 
   private syncCurrentChatContext(url: string): void {
@@ -463,12 +588,18 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     this.currentConversationId = conversationMatch ? Number(conversationMatch[1]) : null;
   }
 
-  private getUserIdFromToken(token: string): string | null {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1] ?? ''));
-      return payload.nameid ?? payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ?? null;
-    } catch {
-      return null;
+  private async refreshViewportData(): Promise<void> {
+    if (!this.username || !this.isActiveForViewport) {
+      return;
     }
+
+    await this.chatRealtimeService.connect();
+
+    if (!this.username || !this.isActiveForViewport) {
+      return;
+    }
+
+    this.loadUnreadCount();
+    this.loadMessages();
   }
 }

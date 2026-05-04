@@ -30,14 +30,17 @@
             [class.new-update]="isHighlightedChatListItem(item)"
             (click)="openChatListItem(item)"
           >
-            <ng-container *ngIf="item.imageUrl && item.imageUrl !== 'default-profile.png' && item.imageUrl !== 'default-group.png'; else defaultSidebarAvatar">
-              <img [src]="item.imageUrl" [alt]="item.title" class="conversation-avatar-image" />
-            </ng-container>
-            <ng-template #defaultSidebarAvatar>
-              <div class="conversation-avatar-fallback">
-                <i class="bi" [ngClass]="item.fallbackIcon"></i>
-              </div>
-            </ng-template>
+            <div class="conversation-avatar-shell">
+              <ng-container *ngIf="item.imageUrl && item.imageUrl !== 'default-profile.png' && item.imageUrl !== 'default-group.png'; else defaultSidebarAvatar">
+                <img [src]="item.imageUrl" [alt]="item.title" class="conversation-avatar-image" />
+              </ng-container>
+              <ng-template #defaultSidebarAvatar>
+                <div class="conversation-avatar-fallback">
+                  <i class="bi" [ngClass]="item.fallbackIcon"></i>
+                </div>
+              </ng-template>
+              <span *ngIf="shouldShowChatListPresenceDot(item)" class="conversation-presence-dot"></span>
+            </div>
 
             <div class="conversation-item-content">
               <div class="conversation-item-topline">
@@ -72,6 +75,10 @@
             <div class="user-summary-text">
               <p class="section-label">{{ 'messages' | translate }}</p>
               <h1>{{ conversation.otherFullName }}</h1>
+              <p *ngIf="isOtherUserPresenceKnown" class="presence-line" [class.online]="isOtherUserOnline">
+                <span class="presence-dot" [class.online]="isOtherUserOnline"></span>
+                {{ (isOtherUserOnline ? 'activeNow' : 'offline') | translate }}
+              </p>
             </div>
           </div>
         </header>

@@ -59,6 +59,7 @@ export class ChatInboxService {
       type: 'private',
       id: message.conversationId,
       title: message.otherFullName || message.otherUsername,
+      otherUserId: message.otherUserId,
       preview: message.latestMessagePreview,
       createdAt: message.createdAt,
       unreadCount: message.unreadCount,

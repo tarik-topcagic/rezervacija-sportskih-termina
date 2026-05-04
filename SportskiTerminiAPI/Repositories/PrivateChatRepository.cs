@@ -57,6 +57,24 @@ namespace SportskiTerminiAPI.Repositories
             return conversation;
         }
 
+        public async Task<bool> HasConversationAsync(string userOneId, string userTwoId)
+        {
+            return await _context.PrivateConversations.AnyAsync(conversation =>
+                (conversation.UserOneId == userOneId && conversation.UserTwoId == userTwoId)
+                || (conversation.UserOneId == userTwoId && conversation.UserTwoId == userOneId));
+        }
+
+        public async Task<IReadOnlyList<string>> GetConversationPartnerUserIdsAsync(string userId)
+        {
+            return await _context.PrivateConversations
+                .Where(conversation => conversation.UserOneId == userId || conversation.UserTwoId == userId)
+                .Select(conversation => conversation.UserOneId == userId
+                    ? conversation.UserTwoId
+                    : conversation.UserOneId)
+                .Distinct()
+                .ToListAsync();
+        }
+
         public async Task<IReadOnlyList<PrivateConversation>> GetConversationsForUserAsync(string userId)
         {
             var conversations = await _context.PrivateConversations

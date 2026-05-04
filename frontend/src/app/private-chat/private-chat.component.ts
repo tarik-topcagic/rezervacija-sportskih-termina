@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { ChatRealtimeService } from '../../services/chat-realtime.service';
 import { ChatInboxService } from '../../services/chat-inbox.service';
 import { LanguageService } from '../../services/language.service';
+import { PresenceService } from '../../services/presence.service';
 import { PrivateChatService } from '../../services/private-chat.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
 import {
@@ -21,6 +22,11 @@ import {
   createPrivateChatListItemFromNotification,
   getChatListItemKey,
 } from '../helpers/chat-list.helper';
+import {
+  applyChatListPresenceUpdate,
+  planChatListPresenceSync,
+  shouldShowChatListPresenceDot as shouldShowChatListPresenceDotHelper,
+} from '../helpers/chat-list-presence.helper';
 import { clearTypingTimer, scheduleTypingTimer } from '../helpers/chat-typing.helper';
 import { scrollToBottom, shouldShowScrollButton } from '../helpers/chat-ui.helper';
 import { getUserIdFromToken } from '../helpers/jwt.helper';
@@ -29,6 +35,7 @@ import { ChatMessageNotification } from '../interfaces/chat-message-notification
 import { ChatMessageStatusUpdate } from '../interfaces/chat-message-status-update.model';
 import { ChatTypingEvent } from '../interfaces/chat-typing-event.model';
 import { PrivateConversation, PrivateMessage } from '../interfaces/private-chat.model';
+import { UserPresence } from '../interfaces/user-presence.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
@@ -51,6 +58,10 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   isSending = false;
   showScrollToBottomButton = false;
   errorMessage = '';
+  isOtherUserOnline = false;
+  isOtherUserPresenceKnown = false;
+  privateChatListPresenceByUserId = new Map<string, boolean>();
+  groupChatListPresenceByGroupId = new Map<number, boolean>();
   private currentUserId: string | null = null;
   private currentUserSubscription?: Subscription;
   private routeSubscription?: Subscription;
@@ -59,6 +70,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   private realtimeStatusSubscription?: Subscription;
   private realtimeTypingSubscription?: Subscription;
   private realtimeStopTypingSubscription?: Subscription;
+  private presenceSubscription?: Subscription;
   private connectedConversationId: number | null = null;
   private pendingStatusUpdates = new Map<number, ChatMessageStatusUpdate>();
   private readonly typingUsers = new Map<string, string>();
@@ -75,6 +87,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     private privateChatService: PrivateChatService,
     private privateChatNotificationService: PrivateChatNotificationService,
     private languageService: LanguageService,
+    private presenceService: PresenceService,
   ) {}
 
   ngOnInit(): void {
@@ -104,6 +117,10 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
       this.handleStopTypingEvent(event);
     });
 
+    this.presenceSubscription = this.presenceService.presenceUpdates$.subscribe((update) => {
+      this.handlePresenceUpdate(update);
+    });
+
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
       const conversationId = Number(params.get('conversationId'));
 
@@ -129,6 +146,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.realtimeStatusSubscription?.unsubscribe();
     this.realtimeTypingSubscription?.unsubscribe();
     this.realtimeStopTypingSubscription?.unsubscribe();
+    this.presenceSubscription?.unsubscribe();
     this.stopTypingLocally();
     if (this.connectedConversationId !== null) {
       void this.chatRealtimeService.leaveConversation(this.connectedConversationId);
@@ -270,6 +288,15 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.highlightedChatListKeys.has(getChatListItemKey(item));
   }
 
+  shouldShowChatListPresenceDot(item: ChatInboxItem): boolean {
+    return shouldShowChatListPresenceDotHelper(
+      item,
+      this.currentUserId,
+      this.privateChatListPresenceByUserId,
+      this.groupChatListPresenceByGroupId,
+    );
+  }
+
   private loadChat(conversationId: number): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -286,6 +313,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         this.conversation = conversation;
+        this.loadConversationPresence(conversation.otherUserId);
         this.loadMessages(conversationId);
       },
       error: (error) => {
@@ -322,6 +350,10 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSending = false;
     this.showScrollToBottomButton = false;
     this.errorMessage = '';
+    this.isOtherUserOnline = false;
+    this.isOtherUserPresenceKnown = false;
+    this.privateChatListPresenceByUserId.clear();
+    this.groupChatListPresenceByGroupId.clear();
     this.highlightedChatListKeys.clear();
     this.pendingStatusUpdates.clear();
     this.typingUsers.clear();
@@ -332,6 +364,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (items) => {
         this.chatListItems = items;
         this.highlightedChatListKeys = createChatListHighlightedKeys(items);
+        this.syncChatListPresenceIndicators(items);
       },
       error: (error) => {
         console.error('Error loading desktop chat list items:', error);
@@ -470,6 +503,29 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.adjustScrollAfterTypingStateChange(shouldStickToBottom);
   }
 
+  private handlePresenceUpdate(update: UserPresence): void {
+    if (this.conversation && update.userId === this.conversation.otherUserId) {
+      this.isOtherUserPresenceKnown = true;
+      this.isOtherUserOnline = update.isOnline;
+    }
+
+    this.applyChatListPresenceUpdate(update.userId, update.isOnline);
+  }
+
+  private loadConversationPresence(userId: string): void {
+    this.presenceService.getUserPresence(userId).subscribe({
+      next: (presence) => {
+        this.isOtherUserPresenceKnown = true;
+        this.isOtherUserOnline = presence.isOnline;
+      },
+      error: (error) => {
+        this.isOtherUserPresenceKnown = false;
+        this.isOtherUserOnline = false;
+        console.error('Error loading private chat presence state:', error);
+      },
+    });
+  }
+
   private scheduleTypingStop(): void {
     this.typingStopTimeoutId = scheduleTypingTimer(this.typingStopTimeoutId, () => {
       this.typingStopTimeoutId = undefined;
@@ -531,5 +587,69 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.chatListItems = updateResult.items;
     this.highlightedChatListKeys = updateResult.highlightedKeys;
+    this.syncChatListPresenceIndicators(this.chatListItems);
+  }
+
+  private syncChatListPresenceIndicators(items: ChatInboxItem[]): void {
+    const syncPlan = planChatListPresenceSync(
+      items,
+      this.currentUserId,
+      this.privateChatListPresenceByUserId,
+      this.groupChatListPresenceByGroupId,
+    );
+
+    for (const userId of syncPlan.stalePrivateUserIds) {
+      this.privateChatListPresenceByUserId.delete(userId);
+    }
+
+    for (const groupId of syncPlan.staleGroupIds) {
+      this.groupChatListPresenceByGroupId.delete(groupId);
+    }
+
+    for (const userId of syncPlan.missingPrivateUserIds) {
+      this.loadPrivateChatListPresence(userId);
+    }
+
+    for (const groupId of syncPlan.missingGroupIds) {
+      this.loadGroupChatListPresence(groupId);
+    }
+  }
+
+  private loadPrivateChatListPresence(userId: string): void {
+    this.presenceService.getUserPresence(userId).subscribe({
+      next: (presence) => {
+        this.privateChatListPresenceByUserId.set(userId, presence.isOnline);
+      },
+      error: () => {
+        this.privateChatListPresenceByUserId.set(userId, false);
+      },
+    });
+  }
+
+  private loadGroupChatListPresence(groupId: number): void {
+    this.presenceService.getGroupPresence(groupId).subscribe({
+      next: (presence) => {
+        this.groupChatListPresenceByGroupId.set(groupId, presence.onlineUserIds.length > 0);
+      },
+      error: () => {
+        this.groupChatListPresenceByGroupId.set(groupId, false);
+      },
+    });
+  }
+
+  private applyChatListPresenceUpdate(userId: string, isOnline: boolean): void {
+    const updateResult = applyChatListPresenceUpdate(
+      this.chatListItems,
+      userId,
+      isOnline,
+      this.currentUserId,
+      this.privateChatListPresenceByUserId,
+    );
+
+    this.privateChatListPresenceByUserId = updateResult.nextPrivatePresenceByUserId;
+
+    for (const groupId of updateResult.groupIdsToReload) {
+      this.loadGroupChatListPresence(groupId);
+    }
   }
 }

@@ -19,6 +19,7 @@
       <div class="details-header">
         <div class="title-block">
           <div class="group-image-container">
+            <span *ngIf="canShowPresence && hasOnlineMembers()" class="group-presence-dot"></span>
             <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultGroupImage">
               <img [src]="group.imageUrl" [alt]="group.name" class="group-image" />
             </ng-container>

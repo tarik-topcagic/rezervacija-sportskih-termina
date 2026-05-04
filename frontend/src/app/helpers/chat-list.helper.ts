@@ -51,6 +51,7 @@ export function createPrivateChatListItemFromNotification(
     title: currentConversationMatches
       ? (currentConversation?.otherFullName || currentConversation?.otherUsername || notification.senderName)
       : notification.senderName,
+    otherUserId: notification.senderUserId,
     preview: notification.preview,
     createdAt: notification.createdAt,
     unreadCount: shouldHighlight ? 1 : 0,

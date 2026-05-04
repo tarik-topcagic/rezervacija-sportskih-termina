@@ -99,6 +99,7 @@
   word-break: break-word;
 }
 
+
 .messages-panel {
   position: relative;
   flex: 1 1 auto;
@@ -393,6 +394,8 @@
 :host-context(body.dark-mode) .typing-dot {
   background: #76a8ff;
 }
+
+
 
 :host-context(body.dark-mode) .message-bubble {
   background: #262626;

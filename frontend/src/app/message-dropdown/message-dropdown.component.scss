@@ -84,6 +84,7 @@
 }
 
 .message-item-avatar {
+  position: relative;
   width: 40px;
   height: 40px;
   flex: 0 0 40px;
@@ -107,6 +108,20 @@
   background: #e9ecef;
   color: #2fa4e7;
   font-size: 1rem;
+}
+
+.message-presence-dot {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18);
+  transform: translate(18%, 18%);
+  z-index: 1;
 }
 
 .message-item-body {
@@ -204,6 +219,11 @@
 :host-context(body.dark-mode) .default-avatar {
   background: #2a2a2a;
   color: #8ec8f0;
+}
+
+:host-context(body.dark-mode) .message-presence-dot {
+  border-color: #1f1f1f;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.22);
 }
 
 :host-context(body.dark-mode) .sender-name,

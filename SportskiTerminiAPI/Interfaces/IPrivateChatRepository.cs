@@ -9,6 +9,8 @@ namespace SportskiTerminiAPI.Interfaces
         Task<PrivateConversation?> GetConversationByIdAsync(int conversationId);
         Task<PrivateConversation?> GetConversationBetweenUsersAsync(string userOneId, string userTwoId);
         Task<PrivateConversation> CreateConversationAsync(PrivateConversation conversation);
+        Task<bool> HasConversationAsync(string userOneId, string userTwoId);
+        Task<IReadOnlyList<string>> GetConversationPartnerUserIdsAsync(string userId);
         Task<IReadOnlyList<PrivateConversation>> GetConversationsForUserAsync(string userId);
         Task<IReadOnlyList<PrivateMessage>> GetMessagesForConversationAsync(int conversationId);
         Task<PrivateMessage> CreateMessageAsync(PrivateMessage message);

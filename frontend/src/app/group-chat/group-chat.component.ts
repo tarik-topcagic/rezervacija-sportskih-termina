@@ -9,6 +9,7 @@ import { ChatInboxService } from '../../services/chat-inbox.service';
 import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
 import { GroupService } from '../../services/group.service';
 import { LanguageService } from '../../services/language.service';
+import { PresenceService } from '../../services/presence.service';
 import {
   appendMessageIfNotExists,
   applyStatusUpdateToMessages,
@@ -21,6 +22,11 @@ import {
   createPrivateChatListItemFromNotification,
   getChatListItemKey,
 } from '../helpers/chat-list.helper';
+import {
+  applyChatListPresenceUpdate,
+  planChatListPresenceSync,
+  shouldShowChatListPresenceDot as shouldShowChatListPresenceDotHelper,
+} from '../helpers/chat-list-presence.helper';
 import { clearTypingTimer, scheduleTypingTimer } from '../helpers/chat-typing.helper';
 import { scrollToBottom, shouldShowScrollButton } from '../helpers/chat-ui.helper';
 import { getUserIdFromToken } from '../helpers/jwt.helper';
@@ -28,7 +34,9 @@ import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
 import { ChatMessageNotification } from '../interfaces/chat-message-notification.model';
 import { ChatMessageStatusUpdate } from '../interfaces/chat-message-status-update.model';
 import { ChatTypingEvent } from '../interfaces/chat-typing-event.model';
+import { GroupPresence } from '../interfaces/group-presence.model';
 import { GroupChatMessage, GroupDetails } from '../interfaces/group.model';
+import { UserPresence } from '../interfaces/user-presence.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
@@ -50,6 +58,9 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   isSending = false;
   showScrollToBottomButton = false;
   errorMessage = '';
+  onlineMemberUserIds = new Set<string>();
+  privateChatListPresenceByUserId = new Map<string, boolean>();
+  groupChatListPresenceByGroupId = new Map<number, boolean>();
   private currentUserId: string | null = null;
   private currentUserSubscription?: Subscription;
   private routeSubscription?: Subscription;
@@ -58,6 +69,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   private realtimeStatusSubscription?: Subscription;
   private realtimeTypingSubscription?: Subscription;
   private realtimeStopTypingSubscription?: Subscription;
+  private presenceSubscription?: Subscription;
   private connectedGroupId: number | null = null;
   private pendingStatusUpdates = new Map<number, ChatMessageStatusUpdate>();
   private readonly typingUsers = new Map<string, string>();
@@ -74,6 +86,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     private groupService: GroupService,
     private groupChatNotificationService: GroupChatNotificationService,
     private languageService: LanguageService,
+    private presenceService: PresenceService,
   ) {}
 
   ngOnInit(): void {
@@ -103,6 +116,10 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       this.handleStopTypingEvent(event);
     });
 
+    this.presenceSubscription = this.presenceService.presenceUpdates$.subscribe((update) => {
+      this.handlePresenceUpdate(update);
+    });
+
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
       const groupId = Number(params.get('id'));
 
@@ -128,6 +145,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.realtimeStatusSubscription?.unsubscribe();
     this.realtimeTypingSubscription?.unsubscribe();
     this.realtimeStopTypingSubscription?.unsubscribe();
+    this.presenceSubscription?.unsubscribe();
     this.stopTypingLocally();
     if (this.connectedGroupId !== null) {
       void this.chatRealtimeService.leaveGroup(this.connectedGroupId);
@@ -255,6 +273,16 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.typingUsers.size > 0;
   }
 
+  hasOnlineMembers(): boolean {
+    return this.onlineMemberUserIds.size > 0;
+  }
+
+  getGroupPresenceLabel(): string {
+    return this.hasOnlineMembers()
+      ? this.languageService.translate('activeMembers')
+      : this.languageService.translate('noActiveMembers');
+  }
+
   getTypingIndicatorAvatarUrl(): string | null {
     const firstTypingUserId = this.typingUsers.keys().next().value as string | undefined;
     if (!firstTypingUserId) {
@@ -288,6 +316,15 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.highlightedChatListKeys.has(getChatListItemKey(item));
   }
 
+  shouldShowChatListPresenceDot(item: ChatInboxItem): boolean {
+    return shouldShowChatListPresenceDotHelper(
+      item,
+      this.currentUserId,
+      this.privateChatListPresenceByUserId,
+      this.groupChatListPresenceByGroupId,
+    );
+  }
+
   private loadChat(groupId: number): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -301,6 +338,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         this.group = group;
+        this.loadGroupPresence(group.id);
         this.loadMessages(groupId);
       },
       error: (error) => {
@@ -337,6 +375,9 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSending = false;
     this.showScrollToBottomButton = false;
     this.errorMessage = '';
+    this.onlineMemberUserIds.clear();
+    this.privateChatListPresenceByUserId.clear();
+    this.groupChatListPresenceByGroupId.clear();
     this.highlightedChatListKeys.clear();
     this.pendingStatusUpdates.clear();
     this.typingUsers.clear();
@@ -347,6 +388,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (items) => {
         this.chatListItems = items;
         this.highlightedChatListKeys = createChatListHighlightedKeys(items);
+        this.syncChatListPresenceIndicators(items);
       },
       error: (error) => {
         console.error('Error loading desktop chat list items:', error);
@@ -505,6 +547,36 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.adjustScrollAfterTypingStateChange(shouldStickToBottom);
   }
 
+  private handlePresenceUpdate(update: UserPresence): void {
+    if (!this.group || !this.isPresenceRelevantToCurrentGroup(update.userId)) {
+      this.applyChatListPresenceUpdate(update.userId, update.isOnline);
+      return;
+    }
+
+    const nextOnlineUserIds = new Set(this.onlineMemberUserIds);
+
+    if (update.isOnline) {
+      nextOnlineUserIds.add(update.userId);
+    } else {
+      nextOnlineUserIds.delete(update.userId);
+    }
+
+    this.onlineMemberUserIds = nextOnlineUserIds;
+    this.applyChatListPresenceUpdate(update.userId, update.isOnline);
+  }
+
+  private loadGroupPresence(groupId: number): void {
+    this.presenceService.getGroupPresence(groupId).subscribe({
+      next: (presence) => {
+        this.applyGroupPresence(presence);
+      },
+      error: (error) => {
+        this.onlineMemberUserIds.clear();
+        console.error('Error loading group chat presence state:', error);
+      },
+    });
+  }
+
   private scheduleTypingStop(): void {
     this.typingStopTimeoutId = scheduleTypingTimer(this.typingStopTimeoutId, () => {
       this.typingStopTimeoutId = undefined;
@@ -586,6 +658,17 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return latestMessage?.senderUserId ?? null;
   }
 
+  private applyGroupPresence(presence: GroupPresence): void {
+    this.onlineMemberUserIds = new Set(
+      presence.onlineUserIds.filter((userId) => this.isPresenceRelevantToCurrentGroup(userId)),
+    );
+  }
+
+  private isPresenceRelevantToCurrentGroup(userId: string): boolean {
+    return !!this.group
+      && this.group.members.some((member) => member.userId === userId);
+  }
+
   private applyRealtimeChatListNotification(notification: ChatMessageNotification): void {
     const updateResult = applyRealtimeChatListUpdate({
       items: this.chatListItems,
@@ -601,5 +684,69 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.chatListItems = updateResult.items;
     this.highlightedChatListKeys = updateResult.highlightedKeys;
+    this.syncChatListPresenceIndicators(this.chatListItems);
+  }
+
+  private syncChatListPresenceIndicators(items: ChatInboxItem[]): void {
+    const syncPlan = planChatListPresenceSync(
+      items,
+      this.currentUserId,
+      this.privateChatListPresenceByUserId,
+      this.groupChatListPresenceByGroupId,
+    );
+
+    for (const userId of syncPlan.stalePrivateUserIds) {
+      this.privateChatListPresenceByUserId.delete(userId);
+    }
+
+    for (const groupId of syncPlan.staleGroupIds) {
+      this.groupChatListPresenceByGroupId.delete(groupId);
+    }
+
+    for (const userId of syncPlan.missingPrivateUserIds) {
+      this.loadPrivateChatListPresence(userId);
+    }
+
+    for (const groupId of syncPlan.missingGroupIds) {
+      this.loadGroupChatListPresence(groupId);
+    }
+  }
+
+  private loadPrivateChatListPresence(userId: string): void {
+    this.presenceService.getUserPresence(userId).subscribe({
+      next: (presence) => {
+        this.privateChatListPresenceByUserId.set(userId, presence.isOnline);
+      },
+      error: () => {
+        this.privateChatListPresenceByUserId.set(userId, false);
+      },
+    });
+  }
+
+  private loadGroupChatListPresence(groupId: number): void {
+    this.presenceService.getGroupPresence(groupId).subscribe({
+      next: (presence) => {
+        this.groupChatListPresenceByGroupId.set(groupId, presence.onlineUserIds.length > 0);
+      },
+      error: () => {
+        this.groupChatListPresenceByGroupId.set(groupId, false);
+      },
+    });
+  }
+
+  private applyChatListPresenceUpdate(userId: string, isOnline: boolean): void {
+    const updateResult = applyChatListPresenceUpdate(
+      this.chatListItems,
+      userId,
+      isOnline,
+      this.currentUserId,
+      this.privateChatListPresenceByUserId,
+    );
+
+    this.privateChatListPresenceByUserId = updateResult.nextPrivatePresenceByUserId;
+
+    for (const groupId of updateResult.groupIdsToReload) {
+      this.loadGroupChatListPresence(groupId);
+    }
   }
 }

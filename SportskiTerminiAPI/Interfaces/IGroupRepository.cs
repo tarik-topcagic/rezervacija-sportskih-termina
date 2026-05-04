@@ -15,6 +15,8 @@ namespace SportskiTerminiAPI.Interfaces
         Task<GroupMembership?> GetMembershipAsync(int groupId, string userId);
         Task<IEnumerable<GroupMembership>> GetMembershipsForGroupAsync(int groupId);
         Task<IEnumerable<GroupMembership>> GetMembershipsForUserAsync(string userId);
+        Task<bool> ShareAcceptedGroupAsync(string firstUserId, string secondUserId);
+        Task<IReadOnlyList<string>> GetPresenceViewerUserIdsAsync(string userId);
         Task RemoveMembershipAsync(int membershipId);
         Task UpdateMembershipAsync(GroupMembership membership);
         Task<IEnumerable<Group>> GetMemberGroupsAsync(string userId);

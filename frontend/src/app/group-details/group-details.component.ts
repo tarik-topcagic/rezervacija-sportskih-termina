@@ -6,11 +6,14 @@ import { GroupService } from '../../services/group.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { LanguageService } from '../../services/language.service';
+import { PresenceService } from '../../services/presence.service';
 import { EditGroupModalComponent } from '../edit-group-modal/edit-group-modal.component';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { Subscription } from 'rxjs';
 import { GroupInviteMembersModalComponent } from '../group-invite-members-modal/group-invite-members-modal.component';
 import { GroupMembersModalComponent } from '../group-members-modal/group-members-modal.component';
+import { GroupPresence } from '../interfaces/group-presence.model';
+import { UserPresence } from '../interfaces/user-presence.model';
 
 @Component({
   selector: 'app-group-details',
@@ -31,8 +34,11 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   isMemberMenuOpen = false;
   errorMessage = '';
   successMessage = '';
+  canShowPresence = false;
+  onlineMemberUserIds = new Set<string>();
   private routeSubscription?: Subscription;
   private groupDetailsRefreshSubscription?: Subscription;
+  private presenceSubscription?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
@@ -40,6 +46,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     private groupService: GroupService,
     private languageService: LanguageService,
     private confirmDialogService: ConfirmDialogService,
+    private presenceService: PresenceService,
   ) {}
 
   ngOnInit(): void {
@@ -60,11 +67,21 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
         this.loadGroup(groupId);
       }
     });
+
+    this.presenceSubscription = this.presenceService.presenceUpdates$.subscribe((update) => {
+      this.handlePresenceUpdate(update);
+    });
   }
 
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
     this.groupDetailsRefreshSubscription?.unsubscribe();
+    this.presenceSubscription?.unsubscribe();
+    void this.presenceService.disconnectRealtime();
+  }
+
+  hasOnlineMembers(): boolean {
+    return this.onlineMemberUserIds.size > 0;
   }
 
   requestAccess(): void {
@@ -220,6 +237,8 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     this.isMemberMenuOpen = false;
     this.errorMessage = '';
     this.successMessage = '';
+    this.canShowPresence = false;
+    this.onlineMemberUserIds.clear();
   }
 
   private loadGroup(groupId: number): void {
@@ -231,6 +250,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
         this.group = group;
         this.isMemberMenuOpen = false;
         this.isLoading = false;
+        this.loadGroupPresence(group.id);
       },
       (error) => {
         this.isLoading = false;
@@ -297,5 +317,47 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
 
   onMembersModalError(message: string): void {
     this.errorMessage = message;
+  }
+
+  private loadGroupPresence(groupId: number): void {
+    void this.presenceService.connectRealtime();
+
+    this.presenceService.getGroupPresence(groupId).subscribe({
+      next: (presence) => {
+        this.canShowPresence = true;
+        this.applyGroupPresence(presence);
+      },
+      error: () => {
+        this.canShowPresence = false;
+        this.onlineMemberUserIds.clear();
+      },
+    });
+  }
+
+  private handlePresenceUpdate(update: UserPresence): void {
+    if (!this.group || !this.canShowPresence || !this.isPresenceRelevant(update.userId)) {
+      return;
+    }
+
+    const nextOnlineIds = new Set(this.onlineMemberUserIds);
+
+    if (update.isOnline) {
+      nextOnlineIds.add(update.userId);
+    } else {
+      nextOnlineIds.delete(update.userId);
+    }
+
+    this.onlineMemberUserIds = nextOnlineIds;
+  }
+
+  private applyGroupPresence(presence: GroupPresence): void {
+    this.onlineMemberUserIds = new Set(
+      presence.onlineUserIds.filter((userId) => this.isPresenceRelevant(userId)),
+    );
+  }
+
+  private isPresenceRelevant(userId: string): boolean {
+    return !!this.group
+      && this.group.members.some((member) => member.userId === userId);
   }
 }

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { NgIf } from '@angular/common';
@@ -8,6 +8,9 @@ import { ChooseGroupModalComponent } from '../choose-group-modal/choose-group-mo
 import { User } from '../interfaces/user';
 import { AuthService } from '../../services/auth.service';
 import { PrivateChatService } from '../../services/private-chat.service';
+import { PresenceService } from '../../services/presence.service';
+import { Subscription } from 'rxjs';
+import { UserPresence } from '../interfaces/user-presence.model';
 
 @Component({
   selector: 'app-user-profile',
@@ -15,27 +18,39 @@ import { PrivateChatService } from '../../services/private-chat.service';
   templateUrl: './user-profile.component.html',
   styleUrl: './user-profile.component.scss'
 })
-export class UserProfileComponent {
+export class UserProfileComponent implements OnDestroy {
   userProfile: User | null = null;
   selectedUserForGroupInvite: User | null = null;
   timestamp: number = Date.now();
   isLoading = true;
   currentUserId: string | null = null;
+  canShowPresence = false;
+  isProfileUserOnline = false;
+  private presenceSubscription?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
     private userService: UserService,
     private authService: AuthService,
     private privateChatService: PrivateChatService,
+    private presenceService: PresenceService,
     private router: Router,
   ) { }
 
   ngOnInit(): void {
     this.currentUserId = this.authService.currentUserValue?.id || null;
+    this.presenceSubscription = this.presenceService.presenceUpdates$.subscribe((update) => {
+      this.handlePresenceUpdate(update);
+    });
     const username = this.route.snapshot.paramMap.get('username');
     if (username) {
       this.getUserProfile(username);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.presenceSubscription?.unsubscribe();
+    void this.presenceService.disconnectRealtime();
   }
 
   getUserProfile(username: string): void {
@@ -49,6 +64,7 @@ export class UserProfileComponent {
       next: (user) => {
         this.userProfile = user;
         this.isLoading = false;
+        this.loadPresenceForProfileUser();
       },
       error: (error) => {
         this.userProfile = null;
@@ -118,5 +134,33 @@ export class UserProfileComponent {
         console.error('Error opening private chat from user profile:', error);
       },
     });
+  }
+
+  private loadPresenceForProfileUser(): void {
+    if (!this.userProfile?.id || this.isOwnProfile()) {
+      this.canShowPresence = false;
+      this.isProfileUserOnline = false;
+      return;
+    }
+
+    void this.presenceService.connectRealtime();
+    this.presenceService.getUserPresence(this.userProfile.id).subscribe({
+      next: (presence) => {
+        this.canShowPresence = true;
+        this.isProfileUserOnline = presence.isOnline;
+      },
+      error: () => {
+        this.canShowPresence = false;
+        this.isProfileUserOnline = false;
+      },
+    });
+  }
+
+  private handlePresenceUpdate(update: UserPresence): void {
+    if (!this.userProfile?.id || !this.canShowPresence || update.userId !== this.userProfile.id) {
+      return;
+    }
+
+    this.isProfileUserOnline = update.isOnline;
   }
 }

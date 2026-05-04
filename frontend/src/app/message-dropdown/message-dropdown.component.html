@@ -34,6 +34,7 @@
                 <i class="bi" [ngClass]="message.fallbackIcon"></i>
               </div>
             </ng-template>
+            <span *ngIf="shouldShowPresenceDot(message)" class="message-presence-dot"></span>
           </div>
 
           <div class="message-item-body">
