@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
@@ -27,7 +26,10 @@ namespace SportskiTerminiAPI
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend",
-                    policy => policy.WithOrigins("http://localhost:4200")
+                    policy => policy.WithOrigins(
+                                        "http://localhost:4200",
+                                        "https://jolly-snickerdoodle-2557ba.netlify.app"
+                                    )
                                     .AllowAnyHeader()
                                     .AllowAnyMethod()
                                     .AllowCredentials());
@@ -74,8 +76,11 @@ namespace SportskiTerminiAPI
                 c.OperationFilter<FileUploadOperationFilter>();
             });
 
-            builder.Services.AddDbContext<ApplicationDBContext>(options => 
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Services.AddDbContext<ApplicationDBContext>(options =>
+                options.UseSqlServer(
+                    builder.Configuration.GetConnectionString("DefaultConnection"),
+                    sqlOptions => sqlOptions.EnableRetryOnFailure()
+            ));
 
             builder.Services.AddIdentity<AppUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDBContext>()
@@ -152,11 +157,8 @@ namespace SportskiTerminiAPI
 
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseHttpsRedirection();
             app.UseStaticFiles(); 

@@ -1,4 +1,4 @@
 export const environment = {
     production: false,
-    apiUrl: 'http://localhost:5135/api'
+    apiUrl: 'https://sport-booking-api-gaeebqg7bvf7g8h7.austriaeast-01.azurewebsites.net/api'
 }
