@@ -1,6 +1,6 @@
-import { NgFor, NgIf } from '@angular/common';
-import { Component } from '@angular/core';
-import { NavbarComponent } from "../navbar/navbar.component";
+import { NgClass, NgFor, NgIf } from '@angular/common';
+import { Component, HostListener, OnInit } from '@angular/core';
+import { NavbarComponent } from '../navbar/navbar.component';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { UserService } from '../../services/user.service';
@@ -10,51 +10,120 @@ import { User } from '../interfaces/user';
 import { ChooseGroupModalComponent } from '../choose-group-modal/choose-group-modal.component';
 import { paginate } from '../helpers/pagination.helper';
 import { PrivateChatService } from '../../services/private-chat.service';
+import { GroupService } from '../../services/group.service';
+import { catchError, forkJoin, of } from 'rxjs';
+import { Group, GroupDetails } from '../interfaces/group.model';
+import { SearchSortDirection, sortItemsByText } from '../helpers/search.helper';
 
 @Component({
   selector: 'app-search-users',
-  imports: [NgFor, NgIf, NavbarComponent, FormsModule, TranslatePipe, ChooseGroupModalComponent],
+  imports: [NgFor, NgIf, NgClass, NavbarComponent, FormsModule, TranslatePipe, ChooseGroupModalComponent],
   templateUrl: './search-users.component.html',
-  styleUrl: './search-users.component.scss'
+  styleUrl: './search-users.component.scss',
 })
-export class SearchUsersComponent {
-  searchQuery: string = '';
+export class SearchUsersComponent implements OnInit {
+  searchQuery = '';
   users: User[] = [];
-  currentUsername: string = '';
+  filteredUsers: User[] = [];
+  currentUsername = '';
+  activeFilter: 'allUsers' | 'commonGroups' = 'allUsers';
+  activeSort: SearchSortDirection = 'asc';
+  showFilterMenu = false;
+  showSortMenu = false;
   selectedUserForGroupInvite: User | null = null;
+  isLoadingUsers = false;
+  isLoadingCommonGroups = false;
 
   pagedUsers: User[] = [];
-  currentPage: number = 1;
-  itemsPerPage: number = 6;
-  totalPages: number = 0;
+  currentPage = 1;
+  itemsPerPage = 6;
+  totalPages = 0;
   totalPagesArray: number[] = [];
+
+  private commonGroupUserIds = new Set<string>();
 
   constructor(
     private userService: UserService,
     private router: Router,
     private authService: AuthService,
     private privateChatService: PrivateChatService,
+    private groupService: GroupService,
   ) {
     const currentUser = this.authService.currentUserValue;
     if (currentUser) {
       this.currentUsername = currentUser.username;
     }
-
-    this.loadAllUsers();
   }
 
-  loadAllUsers() {
-    this.userService.searchUsers().subscribe(response => {
-      this.users = response;
-      this.setupPagination();
+  ngOnInit(): void {
+    this.loadUsers();
+    this.loadCommonGroupUsers();
+  }
+
+  loadUsers(): void {
+    this.isLoadingUsers = true;
+
+    this.userService.searchUsers(this.searchQuery).subscribe({
+      next: (response) => {
+        this.users = response;
+        this.isLoadingUsers = false;
+        this.applyFiltersAndSort();
+      },
+      error: (error) => {
+        console.error('Error loading users from search page:', error);
+        this.users = [];
+        this.isLoadingUsers = false;
+        this.applyFiltersAndSort();
+      },
     });
   }
 
-  searchUsers() {
-    this.userService.searchUsers(this.searchQuery).subscribe(response => {
-      this.users = response;
-      this.setupPagination();
-    });
+  searchUsers(): void {
+    this.loadUsers();
+  }
+
+  onSearchQueryChange(): void {
+    this.loadUsers();
+  }
+
+  onFilterChange(): void {
+    this.applyFiltersAndSort();
+  }
+
+  toggleFilterMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.showFilterMenu = !this.showFilterMenu;
+    this.showSortMenu = false;
+  }
+
+  selectFilter(filter: 'allUsers' | 'commonGroups', event?: Event): void {
+    event?.stopPropagation();
+    this.activeFilter = filter;
+    this.showFilterMenu = false;
+    this.onFilterChange();
+  }
+
+  onSortChange(): void {
+    this.applyFiltersAndSort();
+  }
+
+  toggleSortMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.showFilterMenu = false;
+    this.showSortMenu = !this.showSortMenu;
+  }
+
+  selectSortDirection(direction: SearchSortDirection, event?: Event): void {
+    event?.stopPropagation();
+    this.activeSort = direction;
+    this.showSortMenu = false;
+    this.onSortChange();
+  }
+
+  @HostListener('document:click')
+  closeSortMenu(): void {
+    this.showFilterMenu = false;
+    this.showSortMenu = false;
   }
 
   setupPagination(): void {
@@ -63,7 +132,7 @@ export class SearchUsersComponent {
   }
 
   setPagedUsers(): void {
-    const pagination = paginate(this.users, this.currentPage, this.itemsPerPage);
+    const pagination = paginate(this.filteredUsers, this.currentPage, this.itemsPerPage);
     this.pagedUsers = pagination.pagedItems;
     this.totalPages = pagination.totalPages;
     this.totalPagesArray = pagination.totalPagesArray;
@@ -91,20 +160,21 @@ export class SearchUsersComponent {
     this.setPagedUsers();
   }
 
-  goToProfile(user: any): void {
+  goToProfile(user: User): void {
     this.router.navigate(['/korisnicki-profil', user.username]);
   }
 
-  viewProfile(event: Event, user: any): void {
-    event.stopPropagation(); 
+  viewProfile(event: Event, user: User): void {
+    event.stopPropagation();
     if (user.username === this.currentUsername) {
       this.router.navigate(['/moj-profil']);
-    } else {
-      this.goToProfile(user);
+      return;
     }
+
+    this.goToProfile(user);
   }
 
-  editProfile(event: Event, user: any): void {
+  editProfile(event: Event, user: User): void {
     event.stopPropagation();
     if (user.username === this.currentUsername) {
       this.router.navigate(['/postavke-profila']);
@@ -149,6 +219,14 @@ export class SearchUsersComponent {
     });
   }
 
+  closeChooseGroupModal(): void {
+    this.selectedUserForGroupInvite = null;
+  }
+
+  getDisplayName(user: User): string {
+    return user.fullName || user.username || '';
+  }
+
   private openConversationByUserId(userId: string): void {
     this.privateChatService.getOrCreateConversation(userId).subscribe({
       next: (conversation) => {
@@ -160,7 +238,74 @@ export class SearchUsersComponent {
     });
   }
 
-  closeChooseGroupModal(): void {
-    this.selectedUserForGroupInvite = null;
+  private applyFiltersAndSort(): void {
+    let nextUsers = [...this.users];
+
+    if (this.activeFilter === 'commonGroups') {
+      nextUsers = nextUsers.filter((user) => this.commonGroupUserIds.has(user.id));
+    }
+
+    this.filteredUsers = sortItemsByText(nextUsers, (user) => this.getDisplayName(user), this.activeSort);
+    this.setupPagination();
+  }
+
+  private loadCommonGroupUsers(): void {
+    this.isLoadingCommonGroups = true;
+
+    forkJoin({
+      adminGroups: this.groupService.getMyGroups().pipe(catchError(() => of([] as Group[]))),
+      memberGroups: this.groupService.getMemberGroups().pipe(catchError(() => of([] as Group[]))),
+    }).subscribe({
+      next: ({ adminGroups, memberGroups }) => {
+        const uniqueGroupIds = Array.from(
+          new Set([...adminGroups, ...memberGroups].map((group) => group.id)),
+        );
+
+        if (!uniqueGroupIds.length) {
+          this.commonGroupUserIds.clear();
+          this.isLoadingCommonGroups = false;
+          this.applyFiltersAndSort();
+          return;
+        }
+
+        forkJoin(
+          uniqueGroupIds.map((groupId) =>
+            this.groupService.getGroupDetails(groupId).pipe(
+              catchError(() => of(null as GroupDetails | null)),
+            ),
+          ),
+        ).subscribe({
+          next: (details) => {
+            const nextCommonUserIds = new Set<string>();
+
+            details
+              .filter((group): group is GroupDetails => group !== null)
+              .forEach((group) => {
+                group.members.forEach((member) => {
+                  if (member.username !== this.currentUsername) {
+                    nextCommonUserIds.add(member.userId);
+                  }
+                });
+              });
+
+            this.commonGroupUserIds = nextCommonUserIds;
+            this.isLoadingCommonGroups = false;
+            this.applyFiltersAndSort();
+          },
+          error: (error) => {
+            console.error('Error resolving common group users:', error);
+            this.commonGroupUserIds.clear();
+            this.isLoadingCommonGroups = false;
+            this.applyFiltersAndSort();
+          },
+        });
+      },
+      error: (error) => {
+        console.error('Error loading groups for common user filter:', error);
+        this.commonGroupUserIds.clear();
+        this.isLoadingCommonGroups = false;
+        this.applyFiltersAndSort();
+      },
+    });
   }
 }

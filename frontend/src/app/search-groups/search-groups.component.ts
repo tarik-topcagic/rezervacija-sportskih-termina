@@ -1,50 +1,65 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { Group } from '../interfaces/group.model';
 import { GroupService } from '../../services/group.service';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { FormsModule } from '@angular/forms';
 import { NgClass, NgFor, NgIf } from '@angular/common';
-import { AuthService } from '../../services/auth.service';
 import { CreateGroupModalComponent } from '../create-group-modal/create-group-modal.component';
 import { EditGroupModalComponent } from '../edit-group-modal/edit-group-modal.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, catchError, forkJoin, of } from 'rxjs';
 import { paginate } from '../helpers/pagination.helper';
+import { matchesSearchQuery, SearchSortDirection, sortItemsByText } from '../helpers/search.helper';
+import { LanguageService } from '../../services/language.service';
 
 @Component({
   selector: 'app-search-groups',
   imports: [NgIf, NgFor, NgClass, NavbarComponent, FormsModule, CreateGroupModalComponent, EditGroupModalComponent, TranslatePipe],
   templateUrl: './search-groups.component.html',
-  styleUrl: './search-groups.component.scss'
+  styleUrl: './search-groups.component.scss',
 })
-export class SearchGroupsComponent implements OnDestroy {
-  searchQuery: string = '';
-  searchedGroups: Group[] = [];
+export class SearchGroupsComponent implements OnInit, OnDestroy {
+  searchQuery = '';
+  filteredGroups: Group[] = [];
+  allGroups: Group[] = [];
   myGroups: Group[] = [];
   memberGroups: Group[] = [];
-  showCreateGroupModal: boolean = false;
-  showEditGroupModal: boolean = false;
+  activeFilter: 'all' | 'admin' | 'membership' = 'admin';
+  activeSort: SearchSortDirection = 'asc';
+  showFilterMenu = false;
+  showSortMenu = false;
+  showCreateGroupModal = false;
+  showEditGroupModal = false;
   selectedGroupToEdit: Group | null = null;
+  isLoadingGroups = false;
+  successMessage = '';
 
-  currentPage: number = 1;
-  pageSize: number = 6;
-  totalPages: number = 0;
-  pagedGroups: any[] = [];
+  currentPage = 1;
+  pageSize = 6;
+  totalPages = 0;
+  pagedGroups: Group[] = [];
   totalPagesArray: number[] = [];
+
   private membershipChangedSubscription?: Subscription;
 
-  constructor(private groupService: GroupService, private authService: AuthService, private router: Router) {
+  constructor(
+    private groupService: GroupService,
+    private router: Router,
+    private languageService: LanguageService,
+  ) {
     this.membershipChangedSubscription = this.groupService.membershipChanged$.subscribe(() => {
-      this.getMemberGroups();
-      this.searchGroups();
+      this.loadGroupCollections();
     });
   }
 
   ngOnInit(): void {
-    this.searchGroups();
-    this.getMyGroups();
-    this.getMemberGroups();
+    const navigationState = history.state as { successMessageKey?: string } | undefined;
+    if (navigationState?.successMessageKey) {
+      this.successMessage = this.languageService.translate(navigationState.successMessageKey);
+    }
+
+    this.loadGroupCollections();
   }
 
   ngOnDestroy(): void {
@@ -52,13 +67,51 @@ export class SearchGroupsComponent implements OnDestroy {
   }
 
   searchGroups(): void {
-    this.groupService.searchGroups(this.searchQuery).subscribe(
-      (groups) => {
-        this.searchedGroups = groups;
-        this.setupPagination();
-      },
-      error => console.error('Greška pri pretrazi grupa: ', error)
-    );
+    this.applyFiltersAndSort();
+  }
+
+  onSearchQueryChange(): void {
+    this.applyFiltersAndSort();
+  }
+
+  onFilterChange(): void {
+    this.applyFiltersAndSort();
+  }
+
+  toggleFilterMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.showFilterMenu = !this.showFilterMenu;
+    this.showSortMenu = false;
+  }
+
+  selectFilter(filter: 'all' | 'admin' | 'membership', event?: Event): void {
+    event?.stopPropagation();
+    this.activeFilter = filter;
+    this.showFilterMenu = false;
+    this.onFilterChange();
+  }
+
+  onSortChange(): void {
+    this.applyFiltersAndSort();
+  }
+
+  toggleSortMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.showFilterMenu = false;
+    this.showSortMenu = !this.showSortMenu;
+  }
+
+  selectSortDirection(direction: SearchSortDirection, event?: Event): void {
+    event?.stopPropagation();
+    this.activeSort = direction;
+    this.showSortMenu = false;
+    this.onSortChange();
+  }
+
+  @HostListener('document:click')
+  closeSortMenu(): void {
+    this.showFilterMenu = false;
+    this.showSortMenu = false;
   }
 
   setupPagination(): void {
@@ -67,7 +120,7 @@ export class SearchGroupsComponent implements OnDestroy {
   }
 
   setPagedGroups(): void {
-    const pagination = paginate(this.searchedGroups, this.currentPage, this.pageSize);
+    const pagination = paginate(this.filteredGroups, this.currentPage, this.pageSize);
     this.pagedGroups = pagination.pagedItems;
     this.totalPages = pagination.totalPages;
     this.totalPagesArray = pagination.totalPagesArray;
@@ -80,7 +133,7 @@ export class SearchGroupsComponent implements OnDestroy {
       this.setPagedGroups();
     }
   }
-  
+
   nextPage(event: Event): void {
     event.preventDefault();
     if (this.currentPage < this.totalPages) {
@@ -99,36 +152,23 @@ export class SearchGroupsComponent implements OnDestroy {
     return this.totalPagesArray;
   }
 
-  getMyGroups(): void {
-    this.groupService.getMyGroups().subscribe(
-      (groups) => (this.myGroups = groups),
-      (error) => console.error('Greška pri dohvatanju mojih grupa: ', error)
-    )
-  }
-
-  getMemberGroups(): void {
-    this.groupService.getMemberGroups().subscribe(
-      (groups) => (this.memberGroups = groups),
-      (error) => console.error('Greška pri dohvatanju grupa članstva: ', error) 
-    )
-  }
-
   openCreateGroupModal(): void {
+    this.successMessage = '';
     this.showCreateGroupModal = true;
   }
 
   closeCreateGroupModal(): void {
     this.showCreateGroupModal = false;
-    this.getMyGroups();
+    this.loadGroupCollections();
   }
 
   onGroupCreated(newGroup: Group): void {
-    this.getMyGroups();
+    this.loadGroupCollections();
     this.closeCreateGroupModal();
-    window.location.reload();
   }
 
   openEditGroupModal(group: Group): void {
+    this.successMessage = '';
     this.selectedGroupToEdit = group;
     this.showEditGroupModal = true;
   }
@@ -137,23 +177,112 @@ export class SearchGroupsComponent implements OnDestroy {
     this.router.navigate(['/grupe', group.id]);
   }
 
+  openGroupChat(event: Event, group: Group): void {
+    event.stopPropagation();
+    this.router.navigate(['/grupe', group.id, 'chat'], { fragment: 'chat-composer-anchor' });
+  }
+
   closeEditGroupModal(): void {
     this.showEditGroupModal = false;
     this.selectedGroupToEdit = null;
-    this.getMyGroups();
+    this.loadGroupCollections();
   }
 
   onGroupUpdated(updatedGroup: Group): void {
-    this.getMyGroups();
+    this.loadGroupCollections();
     this.closeEditGroupModal();
-    window.location.reload();
+  }
+
+  onGroupDeleted(): void {
+    this.successMessage = this.languageService.translate('groupDeleted');
+    this.closeEditGroupModal();
   }
 
   isMyGroup(group: Group): boolean {
-    return this.myGroups.some(g => g.id === group.id);
+    return this.myGroups.some((candidate) => candidate.id === group.id);
   }
 
-  isMemberGroup(group: Group): boolean {
-    return this.memberGroups.some(g => g.id === group.id);
+  canMessageGroup(group: Group): boolean {
+    return this.myGroups.some((candidate) => candidate.id === group.id)
+      || this.memberGroups.some((candidate) => candidate.id === group.id);
+  }
+
+  getEmptyStateKey(): string {
+    if (this.activeFilter === 'all') {
+      return 'noGroupsFound';
+    }
+
+    return this.activeFilter === 'admin' ? 'noAdminGroups' : 'noMemberGroups';
+  }
+
+  private loadGroupCollections(): void {
+    this.isLoadingGroups = true;
+
+    forkJoin({
+      allGroups: this.groupService.searchGroups().pipe(catchError(() => of([] as Group[]))),
+      adminGroups: this.groupService.getMyGroups().pipe(catchError(() => of([] as Group[]))),
+      memberGroups: this.groupService.getMemberGroups().pipe(catchError(() => of([] as Group[]))),
+    }).subscribe({
+      next: ({ allGroups, adminGroups, memberGroups }) => {
+        this.myGroups = adminGroups;
+        this.memberGroups = memberGroups;
+        this.allGroups = this.mergeUniqueGroups(allGroups, adminGroups, memberGroups);
+
+        if (!this.myGroups.length && !this.memberGroups.length) {
+          this.activeFilter = 'all';
+        } else if (this.activeFilter === 'all') {
+          this.activeFilter = this.myGroups.length ? 'admin' : 'membership';
+        } else if (this.activeFilter === 'admin' && !this.myGroups.length && this.memberGroups.length) {
+          this.activeFilter = 'membership';
+        }
+
+        this.isLoadingGroups = false;
+        this.applyFiltersAndSort();
+      },
+      error: (error) => {
+        console.error('Error loading group collections for search groups page:', error);
+        this.allGroups = [];
+        this.myGroups = [];
+        this.memberGroups = [];
+        this.isLoadingGroups = false;
+        this.applyFiltersAndSort();
+      },
+    });
+  }
+
+  private mergeUniqueGroups(...groupCollections: Group[][]): Group[] {
+    const uniqueGroups = new Map<number, Group>();
+
+    groupCollections.flat().forEach((group) => {
+      uniqueGroups.set(group.id, group);
+    });
+
+    return Array.from(uniqueGroups.values());
+  }
+
+  private applyFiltersAndSort(): void {
+    const sourceGroups =
+      this.activeFilter === 'all'
+        ? this.allGroups
+        : this.activeFilter === 'admin'
+          ? this.myGroups
+          : this.memberGroups;
+
+    let nextGroups = sourceGroups.filter((group) =>
+      matchesSearchQuery(
+        [
+        group.name,
+        group.description,
+        group.grad,
+        group.kategorijaSporta,
+        ],
+        this.searchQuery,
+      ),
+    );
+
+    nextGroups = sortItemsByText(nextGroups, (group) => group.name, this.activeSort);
+
+    this.filteredGroups = nextGroups;
+    this.setupPagination();
   }
 }

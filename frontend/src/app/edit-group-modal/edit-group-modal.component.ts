@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Group } from '../interfaces/group.model';
 import { GroupService } from '../../services/group.service';
@@ -17,12 +17,14 @@ export class EditGroupModalComponent implements OnInit {
   @Input() group!: Group; 
   @Output() close = new EventEmitter<void>();
   @Output() groupUpdated = new EventEmitter<Group>();
+  @Output() groupDeleted = new EventEmitter<number>();
 
   editGroupForm: FormGroup;
   selectedImage: File | null = null;
   previewUrl: string | null = null;
   isSubmitting: boolean = false;
   errorMessage: string = '';
+  showActionsMenu = false;
 
   constructor(
     private groupService: GroupService,
@@ -51,6 +53,29 @@ export class EditGroupModalComponent implements OnInit {
     }
   }
 
+  get canDeleteGroup(): boolean {
+    return !!this.group;
+  }
+
+  @HostListener('document:click')
+  closeActionsMenu(): void {
+    this.showActionsMenu = false;
+  }
+
+  onModalContentClick(event: Event): void {
+    event.stopPropagation();
+
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('.group-actions-menu')) {
+      this.showActionsMenu = false;
+    }
+  }
+
+  toggleActionsMenu(event: Event): void {
+    event.stopPropagation();
+    this.showActionsMenu = !this.showActionsMenu;
+  }
+
   onFileSelected(event: any): void {
     const file: File = event.target.files[0];
     if (file) {
@@ -68,6 +93,40 @@ export class EditGroupModalComponent implements OnInit {
     this.selectedImage = null;
     this.previewUrl = null;
     this.editGroupForm.markAsDirty();
+  }
+
+  async deleteGroup(event?: Event): Promise<void> {
+    event?.stopPropagation();
+    this.showActionsMenu = false;
+
+    if (!this.canDeleteGroup || this.isSubmitting) {
+      return;
+    }
+
+    const confirmed = await this.confirmDialogService.confirm('confirmDeleteGroup', {
+      previewName: this.group.name,
+      previewImageUrl: this.previewUrl || this.group.imageUrl,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.errorMessage = '';
+
+    this.groupService.deleteGroup(this.group.id).subscribe({
+      next: () => {
+        this.isSubmitting = false;
+        this.groupDeleted.emit(this.group.id);
+        this.close.emit();
+      },
+      error: (error) => {
+        this.isSubmitting = false;
+        this.errorMessage = this.languageService.translate('deleteGroupError');
+        console.error('Error deleting group:', error);
+      },
+    });
   }
   
   submitGroup(): void {
@@ -101,6 +160,7 @@ export class EditGroupModalComponent implements OnInit {
   }
   
   async onClose(): Promise<void> {
+    this.showActionsMenu = false;
     if (this.editGroupForm.dirty) {
       if (!(await this.confirmDialogService.confirm('unsavedChangesConfirm'))) {
         return;

@@ -110,6 +110,14 @@ body.dark-mode .form-select {
     border-color: #3a3a3a;
 }
 
+.dropdown-menu {
+    border-radius: 1rem !important;
+}
+
+.modal-content {
+    border-radius: 1rem !important;
+}
+
 body.dark-mode .text-secondary {
     color: #c5c8cc !important;
 }

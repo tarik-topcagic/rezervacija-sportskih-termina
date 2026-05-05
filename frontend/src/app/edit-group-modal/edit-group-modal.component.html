@@ -1,10 +1,31 @@
 <div class="modal-backdrop" (click)="onClose()"></div>
-<div class="modal-content" (click)="$event.stopPropagation()">
+<div class="modal-content" (click)="onModalContentClick($event)">
   <h2 class="text-center mb-4">{{ 'editGroup' | translate }}</h2>
   <form [formGroup]="editGroupForm" (ngSubmit)="submitGroup()">
     <div class="mb-3 text-center">
       <label for="groupImage" class="form-label">{{ 'groupImage' | translate }}</label>
-      <div class="mb-2">
+      <div class="mb-2 image-preview-shell">
+        <div *ngIf="canDeleteGroup" class="group-actions-menu" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="btn btn-sm action-menu-trigger"
+            [title]="'deleteGroup' | translate"
+            (click)="toggleActionsMenu($event)"
+          >
+            <i class="bi bi-three-dots-vertical"></i>
+          </button>
+
+          <div *ngIf="showActionsMenu" class="action-menu-dropdown">
+            <button
+              type="button"
+              class="action-menu-item delete-action"
+              (click)="deleteGroup($event)"
+            >
+              {{ 'deleteGroup' | translate }}
+            </button>
+          </div>
+        </div>
+
         <ng-container *ngIf="!previewUrl; else imgPreview">
           <div
             class="image-picker rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto"

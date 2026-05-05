@@ -1,104 +1,194 @@
 <app-navbar></app-navbar>
-<div class="container mt-4">
-  <div class="row mb-5 justify-content-center">
-    <div class="col-md-8">
-      <h2 class="text-center mb-4">{{ 'searchUsersTitle' | translate }}</h2>
-      <div class="input-group">
+<div class="search-page">
+  <div class="search-shell">
+    <section class="hero-copy">
+      <h1>{{ 'searchUsersTitle' | translate }}</h1>
+      <p>{{ 'searchUsersSubtitle' | translate }}</p>
+    </section>
+
+    <section class="search-panel">
+      <div class="search-bar">
+        <i class="bi bi-search"></i>
         <input
           type="text"
           [(ngModel)]="searchQuery"
-          class="form-control"
           [placeholder]="'enterNameOrUsername' | translate"
+          (ngModelChange)="onSearchQueryChange()"
+          (keyup.enter)="searchUsers()"
         />
-        <button class="btn btn-primary" (click)="searchUsers()">
+        <button type="button" class="btn btn-primary primary-search-button" (click)="searchUsers()">
           {{ 'search' | translate }}
         </button>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <div class="row">
-    <div class="col-12 mb-4">
-      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-6 g-4">
-        <div class="col" *ngFor="let user of pagedUsers">
-          <div class="card h-100 border-0 modern-card user-card">
-            <div class="card-body text-center">
-              <div class="user-image-container mx-auto">
-                <ng-container *ngIf="user.profilePictureUrl && user.profilePictureUrl !== 'default-profile.png'; else defaultPlaceholder">
-                  <img
-                    [src]="user.profilePictureUrl"
-                    [alt]="'profilePicture' | translate"
-                    class="rounded-circle user-image"
-                  />
-                </ng-container>
-                <ng-template #defaultPlaceholder>
-                  <div class="default-placeholder">
-                    <i class="bi bi-person" style="font-size: 2rem; color: #aaa;"></i>
-                  </div>
-                </ng-template>
-                <div class="overlay">
-                  <div class="overlay-icons">
-                    <ng-container *ngIf="user.username === currentUsername; else otherUserIcons">
-                      <div class="icon-square" [title]="'viewProfile' | translate" (click)="viewProfile($event, user)">
-                        <i class="bi bi-eye"></i>
-                      </div>
-                      <div class="icon-square" [title]="'edit' | translate" (click)="editProfile($event, user)">
-                        <i class="bi bi-pencil"></i>
-                      </div>
-                    </ng-container>
-                    <ng-template #otherUserIcons>
-                      <div class="icon-square" [title]="'viewProfile' | translate" (click)="viewProfile($event, user)">
-                        <i class="bi bi-eye"></i>
-                      </div>
-                      <button
-                        type="button"
-                        class="icon-square"
-                        [title]="'addToGroup' | translate"
-                        (click)="openChooseGroupModal($event, user)"
-                      >
-                        <i class="bi bi-person-plus"></i>
-                      </button>
-                      <button
-                        type="button"
-                        class="icon-square"
-                        [title]="'sendMessage' | translate"
-                        (click)="openPrivateChat($event, user)"
-                      >
-                        <i class="bi bi-chat-dots"></i>
-                      </button>
-                    </ng-template>
-                  </div>
-                </div>
-              </div>
-              <h6 class="mb-2 mt-2">{{ user.fullName }}</h6>
-              <small class="text-muted">{{ user.location }}</small>
-            </div>
+    <section class="toolbar">
+      <div class="toolbar-row">
+        <div class="select-shell filter-dropdown-shell">
+          <span>{{ 'filter' | translate }}</span>
+          <button
+            type="button"
+            class="filter-dropdown-trigger"
+            (click)="toggleFilterMenu($event)"
+            [attr.aria-expanded]="showFilterMenu"
+          >
+            <span>{{ activeFilter === 'allUsers' ? ('allUsers' | translate) : ('commonGroups' | translate) }}</span>
+            <i class="bi" [ngClass]="showFilterMenu ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </button>
+
+          <div class="filter-dropdown-menu" *ngIf="showFilterMenu" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="filter-dropdown-option"
+              [class.active]="activeFilter === 'allUsers'"
+              (click)="selectFilter('allUsers', $event)"
+            >
+              {{ 'allUsers' | translate }}
+            </button>
+            <button
+              type="button"
+              class="filter-dropdown-option"
+              [class.active]="activeFilter === 'commonGroups'"
+              (click)="selectFilter('commonGroups', $event)"
+            >
+              {{ 'commonGroups' | translate }}
+            </button>
+          </div>
+        </div>
+
+        <div class="select-shell sort-dropdown-shell">
+          <span>{{ 'sortBy' | translate }}</span>
+          <button
+            type="button"
+            class="sort-dropdown-trigger"
+            (click)="toggleSortMenu($event)"
+            [attr.aria-expanded]="showSortMenu"
+          >
+            <span>{{ 'alphabetical' | translate }}</span>
+            <i class="bi" [ngClass]="showSortMenu ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </button>
+
+          <div class="sort-dropdown-menu" *ngIf="showSortMenu" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="sort-dropdown-option"
+              [class.active]="activeSort === 'asc'"
+              (click)="selectSortDirection('asc', $event)"
+            >
+              {{ 'alphabeticalAsc' | translate }}
+            </button>
+            <button
+              type="button"
+              class="sort-dropdown-option"
+              [class.active]="activeSort === 'desc'"
+              (click)="selectSortDirection('desc', $event)"
+            >
+              {{ 'alphabeticalDesc' | translate }}
+            </button>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <div class="row mt-4">
-    <div class="col d-flex justify-content-center">
-      <nav [attr.aria-label]="'searchUsersTitle' | translate">
-        <ul class="pagination flex-nowrap" style="cursor: pointer;">
-          <li class="page-item" [class.disabled]="currentPage === 1">
-            <a class="page-link" (click)="previousPage($event)">{{ 'previous' | translate }}</a>
-          </li>
-          <li
-            class="page-item"
-            *ngFor="let page of totalPagesArray"
-            [class.active]="page === currentPage"
-          >
-            <a class="page-link" (click)="goToPage(page, $event)">{{ page }}</a>
-          </li>
-          <li class="page-item" [class.disabled]="currentPage === totalPages">
-            <a class="page-link" (click)="nextPage($event)">{{ 'next' | translate }}</a>
-          </li>
-        </ul>
-      </nav>
-    </div>
+      <p class="results-label">{{ filteredUsers.length }} {{ 'usersFound' | translate }}</p>
+    </section>
+
+    <section class="results-card" *ngIf="pagedUsers.length; else emptyUsersState">
+      <article class="result-row" *ngFor="let user of pagedUsers">
+        <div class="result-main">
+          <div class="avatar-shell">
+            <ng-container *ngIf="user.profilePictureUrl && user.profilePictureUrl !== 'default-profile.png'; else defaultPlaceholder">
+              <img
+                [src]="user.profilePictureUrl"
+                [alt]="'profilePicture' | translate"
+                class="avatar-image"
+              />
+            </ng-container>
+            <ng-template #defaultPlaceholder>
+              <div class="avatar-fallback">
+                <i class="bi bi-person"></i>
+              </div>
+            </ng-template>
+          </div>
+
+          <div class="result-copy">
+            <h2>{{ user.fullName }}</h2>
+            <p class="username-text">&#64;{{ user.username }}</p>
+            <p class="meta-text">{{ user.location || ('notSet' | translate) }}</p>
+          </div>
+        </div>
+
+        <div class="result-actions">
+          <button type="button" class="outline-button" (click)="viewProfile($event, user)">
+            {{ 'viewProfile' | translate }}
+          </button>
+
+          <ng-container *ngIf="user.username !== currentUsername; else selfActions">
+            <button
+              type="button"
+              class="icon-button"
+              [title]="'sendMessage' | translate"
+              (click)="openPrivateChat($event, user)"
+            >
+              <i class="bi bi-chat-dots"></i>
+            </button>
+            <button
+              type="button"
+              class="icon-button"
+              [title]="'addToGroup' | translate"
+              (click)="openChooseGroupModal($event, user)"
+            >
+              <i class="bi bi-person-plus"></i>
+            </button>
+          </ng-container>
+
+          <ng-template #selfActions>
+            <button
+              type="button"
+              class="icon-button"
+              [title]="'edit' | translate"
+              (click)="editProfile($event, user)"
+            >
+              <i class="bi bi-pencil"></i>
+            </button>
+          </ng-template>
+        </div>
+      </article>
+    </section>
+
+    <ng-template #emptyUsersState>
+      <section class="empty-state">
+        <p *ngIf="isLoadingUsers || (activeFilter === 'commonGroups' && isLoadingCommonGroups)">
+          {{ 'loading' | translate }}
+        </p>
+        <p *ngIf="!isLoadingUsers && !(activeFilter === 'commonGroups' && isLoadingCommonGroups)">
+          {{ 'noUsersFound' | translate }}
+        </p>
+      </section>
+    </ng-template>
+
+    <nav
+      class="pagination-shell"
+      [attr.aria-label]="'searchUsersTitle' | translate"
+      *ngIf="totalPages > 1"
+    >
+      <button type="button" class="page-button" [disabled]="currentPage === 1" (click)="previousPage($event)">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+
+      <button
+        type="button"
+        class="page-number"
+        *ngFor="let page of totalPagesArray"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page, $event)"
+      >
+        {{ page }}
+      </button>
+
+      <button type="button" class="page-button" [disabled]="currentPage === totalPages" (click)="nextPage($event)">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </nav>
   </div>
 </div>
 

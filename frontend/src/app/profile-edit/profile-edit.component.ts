@@ -56,7 +56,7 @@ export class ProfileEditComponent
         '',
         [Validators.required, Validators.pattern(/^\+387[0-9]{8,9}$/)],
       ],
-      location: ['', [Validators.required]],
+      location: [''],
       profilePictureUrl: [''],
     });
 

@@ -28,7 +28,7 @@
 .details-shell {
   background: #fff;
   border: 1px solid #dee2e6;
-  border-radius: 6px;
+  border-radius: 1rem;
   padding: 2rem;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
 }
@@ -140,7 +140,7 @@ h2 {
   z-index: 20;
   min-width: 190px;
   border: 1px solid #dee2e6;
-  border-radius: 6px;
+  border-radius: 1rem;
   background: #fff;
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
   padding: 0.35rem;
@@ -172,7 +172,7 @@ h2 {
 
 .detail-item {
   border: 1px solid #e9ecef;
-  border-radius: 6px;
+  border-radius: 1rem;
   padding: 1rem;
   background: #fbfcfd;
 }
@@ -230,7 +230,7 @@ h2 {
   max-height: min(760px, calc(100vh - 2rem));
   overflow: auto;
   border: 1px solid #dee2e6;
-  border-radius: 8px;
+  border-radius: 1rem;
   background: #fff;
   color: #212529;
   padding: 1.25rem;

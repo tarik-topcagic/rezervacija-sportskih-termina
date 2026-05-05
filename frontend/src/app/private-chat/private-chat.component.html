@@ -75,7 +75,7 @@
             <div class="user-summary-text">
               <p class="section-label">{{ 'messages' | translate }}</p>
               <h1>{{ conversation.otherFullName }}</h1>
-              <p *ngIf="isOtherUserPresenceKnown" class="presence-line" [class.online]="isOtherUserOnline">
+              <p *ngIf="canShowOtherUserPresence && isOtherUserPresenceKnown" class="presence-line" [class.online]="isOtherUserOnline">
                 <span class="presence-dot" [class.online]="isOtherUserOnline"></span>
                 {{ (isOtherUserOnline ? 'activeNow' : 'offline') | translate }}
               </p>

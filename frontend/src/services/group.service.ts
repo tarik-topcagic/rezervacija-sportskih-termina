@@ -25,6 +25,12 @@ export class GroupService {
     return this.http.put(`${this.apiUrl}/${groupId}/update`, updateData);
   }
 
+  deleteGroup(groupId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${groupId}`).pipe(
+      tap(() => this.notifyMembershipChanged()),
+    );
+  }
+
   getGroupDetails(groupId: number): Observable<GroupDetails> {
     return this.http.get<GroupDetails>(`${this.apiUrl}/${groupId}`);
   }

@@ -63,6 +63,19 @@ namespace SportskiTerminiAPI.Services
             return ServiceResult.Ok(GroupMappingHelper.ToGroupDto(updatedGroup));
         }
 
+        public async Task<ServiceResult> DeleteGroupAsync(string userId, int groupId)
+        {
+            var group = await _groupRepository.GetGroupByIdAsync(groupId);
+            if (group == null)
+                return ServiceResult.NotFound("Group not found");
+
+            if (group.AdminId != userId)
+                return ServiceResult.Forbid("Only admin can delete the group");
+
+            await _groupRepository.DeleteGroupAsync(groupId);
+            return ServiceResult.Ok(new { message = "Group deleted successfully" });
+        }
+
         public async Task<GroupDetailsDto?> GetGroupDetailsAsync(string userId, int groupId)
         {
             var group = await _groupRepository.GetGroupByIdAsync(groupId);

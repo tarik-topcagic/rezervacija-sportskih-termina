@@ -157,6 +157,13 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     this.loadGroup(updatedGroup.id);
   }
 
+  onGroupDeleted(): void {
+    this.closeEditGroupModal();
+    this.router.navigate(['/grupe'], {
+      state: { successMessageKey: 'groupDeleted' },
+    });
+  }
+
   openInviteMembersModal(): void {
     if (!this.group?.isAdmin) {
       return;
@@ -290,7 +297,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       description: group.description,
       grad: group.grad,
       kategorijaSporta: group.kategorijaSporta,
-      adminId: '',
+      adminId: group.currentUserId,
       imageUrl: group.imageUrl,
       createdAt: group.dateCreated,
       dateCreated: group.dateCreated,

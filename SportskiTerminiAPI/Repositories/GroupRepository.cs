@@ -25,6 +25,84 @@ namespace SportskiTerminiAPI.Repositories
             return group;
         }
 
+        public async Task DeleteGroupAsync(int groupId)
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            var group = await _context.Groups.FirstOrDefaultAsync(g => g.Id == groupId);
+            if (group == null)
+            {
+                return;
+            }
+
+            var memberships = await _context.GroupMemberships
+                .Where(membership => membership.GroupId == groupId)
+                .Select(membership => membership.Id)
+                .ToListAsync();
+
+            var groupMessageIds = await _context.GroupMessages
+                .Where(message => message.GroupId == groupId)
+                .Select(message => message.Id)
+                .ToListAsync();
+
+            var notifications = await _context.Notifications
+                .Where(notification => notification.GroupId == groupId
+                    || (notification.MembershipId.HasValue && memberships.Contains(notification.MembershipId.Value)))
+                .ToListAsync();
+
+            if (notifications.Count > 0)
+            {
+                _context.Notifications.RemoveRange(notifications);
+            }
+
+            var groupReadStates = await _context.GroupChatReadStates
+                .Where(readState => readState.GroupId == groupId)
+                .ToListAsync();
+
+            if (groupReadStates.Count > 0)
+            {
+                _context.GroupChatReadStates.RemoveRange(groupReadStates);
+            }
+
+            if (groupMessageIds.Count > 0)
+            {
+                var messageReceipts = await _context.GroupMessageReceipts
+                    .Where(receipt => groupMessageIds.Contains(receipt.GroupMessageId))
+                    .ToListAsync();
+
+                if (messageReceipts.Count > 0)
+                {
+                    _context.GroupMessageReceipts.RemoveRange(messageReceipts);
+                }
+
+                var groupMessages = await _context.GroupMessages
+                    .Where(message => groupMessageIds.Contains(message.Id))
+                    .ToListAsync();
+
+                if (groupMessages.Count > 0)
+                {
+                    _context.GroupMessages.RemoveRange(groupMessages);
+                }
+            }
+
+            if (memberships.Count > 0)
+            {
+                var groupMemberships = await _context.GroupMemberships
+                    .Where(membership => memberships.Contains(membership.Id))
+                    .ToListAsync();
+
+                if (groupMemberships.Count > 0)
+                {
+                    _context.GroupMemberships.RemoveRange(groupMemberships);
+                }
+            }
+
+            _context.Groups.Remove(group);
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+
         public async Task<IEnumerable<Group>> GetAllGroupsAsync()
         {
             return await _context.Groups

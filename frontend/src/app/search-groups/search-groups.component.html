@@ -1,178 +1,206 @@
 <app-navbar></app-navbar>
-<div class="container mt-4" [ngClass]="{'blur' : showCreateGroupModal || showEditGroupModal}">
-  <div class="row mb-5 justify-content-center">
-    <div class="col-md-8">
-      <h2 class="text-center mb-4">{{ 'searchGroupsTitle' | translate }}</h2>
-      <div class="input-group">
+<div class="search-page" [ngClass]="{'blur' : showCreateGroupModal || showEditGroupModal}">
+  <div class="search-shell">
+    <section class="hero-copy hero-header">
+      <div>
+        <h1>{{ 'searchGroupsTitle' | translate }}</h1>
+        <p>{{ 'searchGroupsSubtitle' | translate }}</p>
+      </div>
+
+      <button type="button" class="create-button" (click)="openCreateGroupModal()">
+        <i class="bi bi-plus-lg"></i>
+        {{ 'createGroup' | translate }}
+      </button>
+    </section>
+
+    <section class="search-panel">
+      <div class="search-bar">
+        <i class="bi bi-search"></i>
         <input
           type="text"
           [(ngModel)]="searchQuery"
-          class="form-control"
           [placeholder]="'enterGroupName' | translate"
+          (ngModelChange)="onSearchQueryChange()"
+          (keyup.enter)="searchGroups()"
         />
-        <button class="btn btn-primary" (click)="searchGroups()">
+        <button type="button" class="btn btn-primary primary-search-button" (click)="searchGroups()">
           {{ 'search' | translate }}
         </button>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <div class="row" *ngIf="searchedGroups && searchedGroups.length">
-    <div class="col-12 mb-4">
-      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-6 g-4">
-        <div class="col" *ngFor="let group of pagedGroups">
-          <div class="card h-100 border-0 modern-card group-card">
-            <div class="card-body text-center">
-              <div class="group-image-container mx-auto">
-                <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultPlaceholder">
-                  <img [src]="group.imageUrl" [alt]="group.name" class="rounded-circle group-image" />
-                </ng-container>
-                <ng-template #defaultPlaceholder>
-                  <div class="default-placeholder">
-                    <i class="bi bi-people" style="font-size: 2rem; color: #aaa;"></i>
-                  </div>
-                </ng-template>
-                <div class="overlay">
-                  <div class="overlay-icons">
-                    <ng-container *ngIf="isMyGroup(group)">
-                      <div class="icon-square" [title]="'viewGroup' | translate" (click)="viewGroup(group)">
-                        <i class="bi bi-eye"></i>
-                      </div>
-                      <div class="icon-square" [title]="'editGroup' | translate" (click)="openEditGroupModal(group)">
-                        <i class="bi bi-pencil"></i>
-                      </div>
-                    </ng-container>
-                    <ng-container *ngIf="!isMyGroup(group) && isMemberGroup(group)">
-                      <div class="icon-square" [title]="'viewGroup' | translate" (click)="viewGroup(group)">
-                        <i class="bi bi-eye"></i>
-                      </div>
-                    </ng-container>
-                    <ng-container *ngIf="!isMyGroup(group) && !isMemberGroup(group)">
-                      <div class="icon-square" [title]="'viewGroup' | translate" (click)="viewGroup(group)">
-                        <i class="bi bi-eye"></i>
-                      </div>
-                    </ng-container>
-                  </div>
-                </div>
-              </div>
-              <h6 class="mt-2 mb-2">{{ group.name }}</h6>
-              <small class="text-muted mb-2" style="display:block;">{{ group.description }}</small>
-              <small class="text-muted" style="font-size: 12px;">
-                {{ group.membersCount > 0 ? (group.membersCount + ' ' + ('members' | translate)) : ('noMembers' | translate) }}
-              </small>
-            </div>
+    <section class="toolbar">
+      <div *ngIf="successMessage" class="alert alert-success">
+        {{ successMessage }}
+      </div>
+
+      <div class="toolbar-row">
+        <div class="select-shell filter-dropdown-shell">
+          <span>{{ 'filter' | translate }}</span>
+          <button
+            type="button"
+            class="filter-dropdown-trigger"
+            (click)="toggleFilterMenu($event)"
+            [attr.aria-expanded]="showFilterMenu"
+          >
+            <span>
+              {{
+                activeFilter === 'all'
+                  ? ('allGroups' | translate)
+                  : activeFilter === 'admin'
+                    ? ('admin' | translate)
+                    : ('membership' | translate)
+              }}
+            </span>
+            <i class="bi" [ngClass]="showFilterMenu ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </button>
+
+          <div class="filter-dropdown-menu" *ngIf="showFilterMenu" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="filter-dropdown-option"
+              [class.active]="activeFilter === 'all'"
+              (click)="selectFilter('all', $event)"
+            >
+              {{ 'allGroups' | translate }}
+            </button>
+            <button
+              type="button"
+              class="filter-dropdown-option"
+              [class.active]="activeFilter === 'admin'"
+              (click)="selectFilter('admin', $event)"
+            >
+              {{ 'admin' | translate }}
+            </button>
+            <button
+              type="button"
+              class="filter-dropdown-option"
+              [class.active]="activeFilter === 'membership'"
+              (click)="selectFilter('membership', $event)"
+            >
+              {{ 'membership' | translate }}
+            </button>
+          </div>
+        </div>
+
+        <div class="select-shell sort-dropdown-shell">
+          <span>{{ 'sortBy' | translate }}</span>
+          <button
+            type="button"
+            class="sort-dropdown-trigger"
+            (click)="toggleSortMenu($event)"
+            [attr.aria-expanded]="showSortMenu"
+          >
+            <span>{{ 'alphabetical' | translate }}</span>
+            <i class="bi" [ngClass]="showSortMenu ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </button>
+
+          <div class="sort-dropdown-menu" *ngIf="showSortMenu" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="sort-dropdown-option"
+              [class.active]="activeSort === 'asc'"
+              (click)="selectSortDirection('asc', $event)"
+            >
+              {{ 'alphabeticalAsc' | translate }}
+            </button>
+            <button
+              type="button"
+              class="sort-dropdown-option"
+              [class.active]="activeSort === 'desc'"
+              (click)="selectSortDirection('desc', $event)"
+            >
+              {{ 'alphabeticalDesc' | translate }}
+            </button>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="row mt-4 mb-4">
-      <div class="col d-flex justify-content-center">
-        <nav [attr.aria-label]="'searchGroupsTitle' | translate">
-          <ul class="pagination flex-nowrap" style="cursor: pointer;">
-            <li class="page-item" [class.disabled]="currentPage === 1">
-              <a class="page-link" (click)="previousPage($event)">{{ 'previous' | translate }}</a>
-            </li>
-            <li class="page-item" *ngFor="let page of getTotalPagesArray()" [class.active]="page === currentPage">
-              <a class="page-link" (click)="goToPage(page, $event)">{{ page }}</a>
-            </li>
-            <li class="page-item" [class.disabled]="currentPage === totalPages">
-              <a class="page-link" (click)="nextPage($event)">{{ 'next' | translate }}</a>
-            </li>
-          </ul>
-        </nav>
-      </div>
-    </div>
-  </div>
+      <p class="results-label">{{ filteredGroups.length }} {{ 'groupsFound' | translate }}</p>
+    </section>
 
-  <div class="row mb-5">
-    <div class="col-12 d-flex justify-content-between align-items-center mb-4">
-      <h3>{{ 'myGroups' | translate }}</h3>
-      <button class="btn btn-success" (click)="openCreateGroupModal()">
-        <i class="bi bi-plus-lg"></i> {{ 'createGroup' | translate }}
-      </button>
-    </div>
-    <div class="col-12" *ngIf="myGroups && myGroups.length; else noAdminGroups">
-      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-6 g-4">
-        <div class="col" *ngFor="let group of myGroups">
-          <div class="card h-100 border-0 modern-card group-card">
-            <div class="card-body text-center">
-              <div class="group-image-container mx-auto">
-                <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultPlaceholderAdmin">
-                  <img [src]="group.imageUrl" [alt]="group.name" class="rounded-circle group-image" />
-                </ng-container>
-                <ng-template #defaultPlaceholderAdmin>
-                  <div class="default-placeholder">
-                    <i class="bi bi-people" style="font-size: 2rem; color: #aaa;"></i>
-                  </div>
-                </ng-template>
-                <div class="overlay">
-                  <div class="overlay-icons">
-                    <div class="icon-square" [title]="'viewGroup' | translate" (click)="viewGroup(group)">
-                      <i class="bi bi-eye"></i>
-                    </div>
-                    <div class="icon-square" [title]="'editGroup' | translate" (click)="openEditGroupModal(group)">
-                      <i class="bi bi-pencil"></i>
-                    </div>
-                  </div>
-                </div>
+    <section class="results-card" *ngIf="pagedGroups.length; else emptyGroupsState">
+      <article class="result-row" *ngFor="let group of pagedGroups">
+        <div class="result-main">
+          <div class="avatar-shell">
+            <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultGroupPlaceholder">
+              <img [src]="group.imageUrl" [alt]="group.name" class="avatar-image" />
+            </ng-container>
+            <ng-template #defaultGroupPlaceholder>
+              <div class="avatar-fallback">
+                <i class="bi bi-people"></i>
               </div>
-              <h6 class="mt-2 mb-2">{{ group.name }}</h6>
-              <small class="text-muted mb-2" style="display:block;">{{ group.description }}</small>
-              <small style="font-size: 12px;" class="text-muted">
-                {{ (group.membersCount ?? 0) > 0 ? ((group.membersCount ?? 0) + ' ' + ('members' | translate)) : ('noMembers' | translate) }}
-              </small>
-            </div>
+            </ng-template>
+          </div>
+
+          <div class="result-copy">
+            <h2>{{ group.name }}</h2>
+            <p class="group-meta">{{ group.grad || ('notSet' | translate) }}</p>
+            <p class="meta-text">{{ group.description || ('notSet' | translate) }}</p>
+            <p class="members-text">
+              {{ (group.membersCount ?? 0) > 0 ? ((group.membersCount ?? 0) + ' ' + ('members' | translate)) : ('noMembers' | translate) }}
+            </p>
           </div>
         </div>
-      </div>
-    </div>
-    <ng-template #noAdminGroups>
-      <p class="text-center">{{ 'noAdminGroups' | translate }}</p>
+
+        <div class="result-actions">
+          <button type="button" class="outline-button" (click)="viewGroup(group)">
+            {{ 'viewGroup' | translate }}
+          </button>
+
+          <button
+            *ngIf="canMessageGroup(group)"
+            type="button"
+            class="icon-button"
+            [title]="'groupChat' | translate"
+            (click)="openGroupChat($event, group)"
+          >
+            <i class="bi bi-chat-dots"></i>
+          </button>
+
+          <button
+            *ngIf="isMyGroup(group)"
+            type="button"
+            class="icon-button"
+            [title]="'editGroup' | translate"
+            (click)="openEditGroupModal(group)"
+          >
+            <i class="bi bi-pencil"></i>
+          </button>
+        </div>
+      </article>
+    </section>
+
+    <ng-template #emptyGroupsState>
+      <section class="empty-state">
+        <p *ngIf="isLoadingGroups">{{ 'loading' | translate }}</p>
+        <p *ngIf="!isLoadingGroups">{{ getEmptyStateKey() | translate }}</p>
+      </section>
     </ng-template>
-  </div>
 
-  <div class="row mb-5">
-    <div class="mb-4">
-      <h3>{{ 'memberships' | translate }}</h3>
-    </div>
-    <div class="col-12 mb-4">
-      <div *ngIf="memberGroups && memberGroups.length; else noMemberGroups">
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-6 g-4">
-          <div class="col" *ngFor="let group of memberGroups">
-            <div class="card h-100 border-0 modern-card group-card">
-              <div class="card-body text-center">
-                <div class="group-image-container mx-auto">
-                  <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultPlaceholderMember">
-                    <img [src]="group.imageUrl" [alt]="group.name" class="rounded-circle group-image" />
-                  </ng-container>
-                  <ng-template #defaultPlaceholderMember>
-                    <div class="default-placeholder">
-                      <i class="bi bi-people" style="font-size: 2rem; color: #aaa;"></i>
-                    </div>
-                  </ng-template>
-                  <div class="overlay">
-                    <div class="overlay-icons">
-                      <div class="icon-square" [title]="'viewGroup' | translate" (click)="viewGroup(group)">
-                        <i class="bi bi-eye"></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <h6 class="mt-2 mb-2">{{ group.name }}</h6>
-                <small class="text-muted mb-2" style="display:block;">{{ group.description }}</small>
-                <small class="text-muted" style="font-size: 12px;">
-                  {{ (group.membersCount ?? 0) > 0 ? ((group.membersCount ?? 0) + ' ' + ('members' | translate)) : ('noMembers' | translate) }}
-                </small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <ng-template #noMemberGroups>
-        <p class="text-center">{{ 'noMemberGroups' | translate }}</p>
-      </ng-template>
-    </div>
+    <nav
+      class="pagination-shell"
+      [attr.aria-label]="'searchGroupsTitle' | translate"
+      *ngIf="totalPages > 1"
+    >
+      <button type="button" class="page-button" [disabled]="currentPage === 1" (click)="previousPage($event)">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+
+      <button
+        type="button"
+        class="page-number"
+        *ngFor="let page of getTotalPagesArray()"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page, $event)"
+      >
+        {{ page }}
+      </button>
+
+      <button type="button" class="page-button" [disabled]="currentPage === totalPages" (click)="nextPage($event)">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </nav>
   </div>
 </div>
 
@@ -187,4 +215,5 @@
   [group]="selectedGroupToEdit!"
   (close)="closeEditGroupModal()"
   (groupUpdated)="onGroupUpdated($event)"
+  (groupDeleted)="onGroupDeleted()"
 ></app-edit-group-modal>

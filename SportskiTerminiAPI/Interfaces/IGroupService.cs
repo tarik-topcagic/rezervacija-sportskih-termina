@@ -7,6 +7,7 @@ namespace SportskiTerminiAPI.Interfaces
     {
         Task<ServiceResult> CreateGroupAsync(string userId, CreateGroupDto groupDto);
         Task<ServiceResult> UpdateGroupAsync(string userId, int groupId, UpdateGroupDto updateGroupDto);
+        Task<ServiceResult> DeleteGroupAsync(string userId, int groupId);
         Task<GroupDetailsDto?> GetGroupDetailsAsync(string userId, int groupId);
         Task<IEnumerable<GroupDto>> GetAdminGroupsAsync(string userId);
         Task<IEnumerable<GroupDto>> GetMemberGroupsAsync(string userId);

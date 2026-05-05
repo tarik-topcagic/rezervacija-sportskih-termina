@@ -183,6 +183,7 @@
   [group]="selectedGroupToEdit"
   (close)="closeEditGroupModal()"
   (groupUpdated)="onGroupUpdated($event)"
+  (groupDeleted)="onGroupDeleted()"
 ></app-edit-group-modal>
 
 <app-group-invite-members-modal

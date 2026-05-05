@@ -46,6 +46,17 @@ namespace SportskiTerminiAPI.Controllers
             return StatusCode(result.StatusCode, result.Payload);
         }
 
+        [HttpDelete("{groupId:int}")]
+        public async Task<IActionResult> DeleteGroup(int groupId)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _groupService.DeleteGroupAsync(userId, groupId);
+            return StatusCode(result.StatusCode, result.Payload);
+        }
+
         [HttpGet("{groupId:int}")]
         public async Task<IActionResult> GetGroupDetails(int groupId)
         {

@@ -2,7 +2,7 @@ import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, catchError, forkJoin, of } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { ChatRealtimeService } from '../../services/chat-realtime.service';
 import { ChatInboxService } from '../../services/chat-inbox.service';
@@ -10,6 +10,7 @@ import { LanguageService } from '../../services/language.service';
 import { PresenceService } from '../../services/presence.service';
 import { PrivateChatService } from '../../services/private-chat.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
+import { GroupService } from '../../services/group.service';
 import {
   appendMessageIfNotExists,
   applyStatusUpdateToMessages,
@@ -36,6 +37,7 @@ import { ChatMessageStatusUpdate } from '../interfaces/chat-message-status-updat
 import { ChatTypingEvent } from '../interfaces/chat-typing-event.model';
 import { PrivateConversation, PrivateMessage } from '../interfaces/private-chat.model';
 import { UserPresence } from '../interfaces/user-presence.model';
+import { Group, GroupDetails } from '../interfaces/group.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
@@ -60,6 +62,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   errorMessage = '';
   isOtherUserOnline = false;
   isOtherUserPresenceKnown = false;
+  canShowOtherUserPresence = false;
   privateChatListPresenceByUserId = new Map<string, boolean>();
   groupChatListPresenceByGroupId = new Map<number, boolean>();
   private currentUserId: string | null = null;
@@ -88,6 +91,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     private privateChatNotificationService: PrivateChatNotificationService,
     private languageService: LanguageService,
     private presenceService: PresenceService,
+    private groupService: GroupService,
   ) {}
 
   ngOnInit(): void {
@@ -313,7 +317,6 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         this.conversation = conversation;
-        this.loadConversationPresence(conversation.otherUserId);
         this.loadMessages(conversationId);
       },
       error: (error) => {
@@ -329,6 +332,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (messages) => {
         this.messages = messages;
         this.isLoading = false;
+        this.resolveConversationPresenceVisibility();
         this.markConversationAsRead(conversationId);
         this.scrollMessagesToBottom();
         this.acknowledgeLoadedMessages();
@@ -352,6 +356,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.errorMessage = '';
     this.isOtherUserOnline = false;
     this.isOtherUserPresenceKnown = false;
+    this.canShowOtherUserPresence = false;
     this.privateChatListPresenceByUserId.clear();
     this.groupChatListPresenceByGroupId.clear();
     this.highlightedChatListKeys.clear();
@@ -504,7 +509,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handlePresenceUpdate(update: UserPresence): void {
-    if (this.conversation && update.userId === this.conversation.otherUserId) {
+    if (this.conversation && this.canShowOtherUserPresence && update.userId === this.conversation.otherUserId) {
       this.isOtherUserPresenceKnown = true;
       this.isOtherUserOnline = update.isOnline;
     }
@@ -515,15 +520,88 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   private loadConversationPresence(userId: string): void {
     this.presenceService.getUserPresence(userId).subscribe({
       next: (presence) => {
+        this.canShowOtherUserPresence = true;
         this.isOtherUserPresenceKnown = true;
         this.isOtherUserOnline = presence.isOnline;
       },
       error: (error) => {
+        this.canShowOtherUserPresence = false;
         this.isOtherUserPresenceKnown = false;
         this.isOtherUserOnline = false;
         console.error('Error loading private chat presence state:', error);
       },
     });
+  }
+
+  private resolveConversationPresenceVisibility(): void {
+    const otherUserId = this.conversation?.otherUserId;
+
+    if (!otherUserId) {
+      this.canShowOtherUserPresence = false;
+      this.isOtherUserPresenceKnown = false;
+      this.isOtherUserOnline = false;
+      return;
+    }
+
+    if (this.hasPrivateChatHistory()) {
+      this.loadConversationPresence(otherUserId);
+      return;
+    }
+
+    forkJoin({
+      adminGroups: this.groupService.getMyGroups().pipe(catchError(() => of([] as Group[]))),
+      memberGroups: this.groupService.getMemberGroups().pipe(catchError(() => of([] as Group[]))),
+    }).subscribe({
+      next: ({ adminGroups, memberGroups }) => {
+        const uniqueGroupIds = Array.from(
+          new Set([...adminGroups, ...memberGroups].map((group) => group.id)),
+        );
+
+        if (!uniqueGroupIds.length) {
+          this.canShowOtherUserPresence = false;
+          this.isOtherUserPresenceKnown = false;
+          this.isOtherUserOnline = false;
+          return;
+        }
+
+        forkJoin(
+          uniqueGroupIds.map((groupId) =>
+            this.groupService.getGroupDetails(groupId).pipe(
+              catchError(() => of(null as GroupDetails | null)),
+            ),
+          ),
+        ).subscribe({
+          next: (details) => {
+            const hasCommonGroup = details
+              .filter((group): group is GroupDetails => group !== null)
+              .some((group) => group.members.some((member) => member.userId === otherUserId));
+
+            if (!hasCommonGroup) {
+              this.canShowOtherUserPresence = false;
+              this.isOtherUserPresenceKnown = false;
+              this.isOtherUserOnline = false;
+              return;
+            }
+
+            this.loadConversationPresence(otherUserId);
+          },
+          error: () => {
+            this.canShowOtherUserPresence = false;
+            this.isOtherUserPresenceKnown = false;
+            this.isOtherUserOnline = false;
+          },
+        });
+      },
+      error: () => {
+        this.canShowOtherUserPresence = false;
+        this.isOtherUserPresenceKnown = false;
+        this.isOtherUserOnline = false;
+      },
+    });
+  }
+
+  private hasPrivateChatHistory(): boolean {
+    return this.messages.length > 0;
   }
 
   private scheduleTypingStop(): void {
