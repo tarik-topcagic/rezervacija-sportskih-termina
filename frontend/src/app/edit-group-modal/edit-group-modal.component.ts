@@ -6,6 +6,7 @@ import { NgIf } from '@angular/common';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { LanguageService } from '../../services/language.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-edit-group-modal',
@@ -31,6 +32,7 @@ export class EditGroupModalComponent implements OnInit {
     private fb: FormBuilder,
     private confirmDialogService: ConfirmDialogService,
     private languageService: LanguageService,
+    private toastService: ToastService,
   ) {
     this.editGroupForm = this.fb.group({
       name: ['', Validators.required],
@@ -118,6 +120,9 @@ export class EditGroupModalComponent implements OnInit {
     this.groupService.deleteGroup(this.group.id).subscribe({
       next: () => {
         this.isSubmitting = false;
+        this.toastService.showSuccess(
+          this.languageService.translate('groupDeleted'),
+        );
         this.groupDeleted.emit(this.group.id);
         this.close.emit();
       },
@@ -149,6 +154,9 @@ export class EditGroupModalComponent implements OnInit {
     this.groupService.updateGroup(this.group.id, data).subscribe(
       (response) => {
         this.isSubmitting = false;
+        this.toastService.showSuccess(
+          this.languageService.translate('groupUpdatedSuccessfully'),
+        );
         this.groupUpdated.emit(response);
       },
       (error) => {

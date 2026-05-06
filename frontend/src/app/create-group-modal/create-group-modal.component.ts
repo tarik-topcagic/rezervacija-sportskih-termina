@@ -5,6 +5,7 @@ import { NgIf } from '@angular/common';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { LanguageService } from '../../services/language.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-create-group-modal',
@@ -27,6 +28,7 @@ export class CreateGroupModalComponent {
     private fb: FormBuilder,
     private confirmDialogService: ConfirmDialogService,
     private languageService: LanguageService,
+    private toastService: ToastService,
   ) {
     this.createGroupForm = this.fb.group({
       name: ['', Validators.required],
@@ -73,6 +75,9 @@ export class CreateGroupModalComponent {
     this.groupService.createGroup(data).subscribe(
       (response) => {
         this.isSubmitting = false;
+        this.toastService.showSuccess(
+          this.languageService.translate('groupCreatedSuccessfully'),
+        );
         this.groupCreated.emit(response);
       },
       (error) => {

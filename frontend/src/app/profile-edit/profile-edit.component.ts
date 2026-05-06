@@ -16,6 +16,7 @@ import { CanComponentDeactivate } from '../guards/can-component-deactivate';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { LanguageService } from '../../services/language.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-profile-edit',
@@ -46,6 +47,7 @@ export class ProfileEditComponent
     private router: Router,
     private confirmDialogService: ConfirmDialogService,
     private languageService: LanguageService,
+    private toastService: ToastService,
   ) {}
 
   ngOnInit(): void {
@@ -182,6 +184,7 @@ export class ProfileEditComponent
       next: () => {
         this.userService.refreshProfile();
         this.successMessage = this.languageService.translate('profileUpdated');
+        this.toastService.showSuccess(this.successMessage);
         this.editForm.markAsPristine();
         setTimeout(() => {
           this.router.navigate(['/moj-profil']);

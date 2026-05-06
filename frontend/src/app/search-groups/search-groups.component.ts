@@ -11,7 +11,6 @@ import { Router } from '@angular/router';
 import { Subscription, catchError, forkJoin, of } from 'rxjs';
 import { paginate } from '../helpers/pagination.helper';
 import { matchesSearchQuery, SearchSortDirection, sortItemsByText } from '../helpers/search.helper';
-import { LanguageService } from '../../services/language.service';
 
 @Component({
   selector: 'app-search-groups',
@@ -33,7 +32,6 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
   showEditGroupModal = false;
   selectedGroupToEdit: Group | null = null;
   isLoadingGroups = false;
-  successMessage = '';
 
   currentPage = 1;
   pageSize = 6;
@@ -46,7 +44,6 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
   constructor(
     private groupService: GroupService,
     private router: Router,
-    private languageService: LanguageService,
   ) {
     this.membershipChangedSubscription = this.groupService.membershipChanged$.subscribe(() => {
       this.loadGroupCollections();
@@ -54,11 +51,6 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const navigationState = history.state as { successMessageKey?: string } | undefined;
-    if (navigationState?.successMessageKey) {
-      this.successMessage = this.languageService.translate(navigationState.successMessageKey);
-    }
-
     this.loadGroupCollections();
   }
 
@@ -153,7 +145,6 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
   }
 
   openCreateGroupModal(): void {
-    this.successMessage = '';
     this.showCreateGroupModal = true;
   }
 
@@ -168,7 +159,6 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
   }
 
   openEditGroupModal(group: Group): void {
-    this.successMessage = '';
     this.selectedGroupToEdit = group;
     this.showEditGroupModal = true;
   }
@@ -194,7 +184,6 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
   }
 
   onGroupDeleted(): void {
-    this.successMessage = this.languageService.translate('groupDeleted');
     this.closeEditGroupModal();
   }
 

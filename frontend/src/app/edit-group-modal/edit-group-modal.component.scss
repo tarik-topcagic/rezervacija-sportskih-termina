@@ -98,6 +98,11 @@
   border: 1px solid #ced4da;
 }
 
+.image-remove-button-left {
+  top: 0.25rem;
+  left: -4.5rem;
+}
+
 :host-context(body.dark-mode) .modal-content {
   background: #1f2328;
   color: #f1f3f5;
@@ -162,5 +167,9 @@
   .group-actions-menu {
     left: auto;
     right: -3rem;
+  }
+
+  .image-remove-button-left {
+    left: -3.5rem;
   }
 }

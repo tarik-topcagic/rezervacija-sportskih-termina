@@ -12,10 +12,12 @@ namespace SportskiTerminiAPI.Controllers
     public class GroupController : ControllerBase
     {
         private readonly IGroupService _groupService;
+        private readonly ILogger<GroupController> _logger;
 
-        public GroupController(IGroupService groupService)
+        public GroupController(IGroupService groupService, ILogger<GroupController> logger)
         {
             _groupService = groupService;
+            _logger = logger;
         }
 
         [HttpPost("create")]
@@ -53,8 +55,25 @@ namespace SportskiTerminiAPI.Controllers
             if (userId == null)
                 return Unauthorized();
 
-            var result = await _groupService.DeleteGroupAsync(userId, groupId);
-            return StatusCode(result.StatusCode, result.Payload);
+            try
+            {
+                var result = await _groupService.DeleteGroupAsync(userId, groupId);
+                return StatusCode(result.StatusCode, result.Payload);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Unhandled exception while deleting group {GroupId} for user {UserId}. Message: {Message}. InnerException: {InnerException}. StackTrace: {StackTrace}",
+                    groupId,
+                    userId,
+                    ex.Message,
+                    ex.InnerException?.ToString(),
+                    ex.StackTrace
+                );
+
+                return StatusCode(500, "An error occurred while deleting the group.");
+            }
         }
 
         [HttpGet("{groupId:int}")]

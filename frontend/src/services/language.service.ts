@@ -1267,6 +1267,16 @@ export class LanguageService {
       fr: 'Une erreur est survenue lors de la creation du groupe.',
       it: 'Errore durante la creazione del gruppo.',
     },
+    groupCreatedSuccessfully: {
+      en: 'Group created successfully.',
+      de: 'Gruppe erfolgreich erstellt.',
+      bs: 'Grupa je uspješno kreirana.',
+      hr: 'Grupa je uspješno kreirana.',
+      sr: 'Grupa je uspešno kreirana.',
+      es: 'Grupo creado correctamente.',
+      fr: 'Groupe cree avec succes.',
+      it: 'Gruppo creato con successo.',
+    },
     updateGroupError: {
       en: 'An error occurred while updating the group.',
       de: 'Beim Aktualisieren der Gruppe ist ein Fehler aufgetreten.',
@@ -1276,6 +1286,16 @@ export class LanguageService {
       es: 'Ocurrio un error al actualizar el grupo.',
       fr: 'Une erreur est survenue lors de la mise a jour du groupe.',
       it: 'Errore durante aggiornamento del gruppo.',
+    },
+    groupUpdatedSuccessfully: {
+      en: 'Group updated successfully.',
+      de: 'Gruppe erfolgreich aktualisiert.',
+      bs: 'Grupa je uspješno ažurirana.',
+      hr: 'Grupa je uspješno ažurirana.',
+      sr: 'Grupa je uspešno ažurirana.',
+      es: 'Grupo actualizado correctamente.',
+      fr: 'Groupe mis a jour avec succes.',
+      it: 'Gruppo aggiornato con successo.',
     },
     viewGroup: {
       en: 'View group',

@@ -14,6 +14,7 @@ import { GroupInviteMembersModalComponent } from '../group-invite-members-modal/
 import { GroupMembersModalComponent } from '../group-members-modal/group-members-modal.component';
 import { GroupPresence } from '../interfaces/group-presence.model';
 import { UserPresence } from '../interfaces/user-presence.model';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-group-details',
@@ -47,6 +48,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     private languageService: LanguageService,
     private confirmDialogService: ConfirmDialogService,
     private presenceService: PresenceService,
+    private toastService: ToastService,
   ) {}
 
   ngOnInit(): void {
@@ -320,6 +322,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
         }
       : null;
     this.successMessage = this.languageService.translate('memberRemovedFromGroup');
+    this.toastService.showSuccess(this.successMessage);
   }
 
   onMembersModalError(message: string): void {

@@ -27,8 +27,8 @@ namespace SportskiTerminiAPI
             {
                 options.AddPolicy("AllowFrontend",
                     policy => policy.WithOrigins(
-                                        "http://localhost:4200",
-                                        "https://jolly-snickerdoodle-2557ba.netlify.app"
+                                        "http://localhost:4200",                                    
+                                        "https://sport-booking-app.netlify.app"
                                     )
                                     .AllowAnyHeader()
                                     .AllowAnyMethod()

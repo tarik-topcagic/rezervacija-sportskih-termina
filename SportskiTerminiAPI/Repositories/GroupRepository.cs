@@ -8,9 +8,12 @@ namespace SportskiTerminiAPI.Repositories
     public class GroupRepository : IGroupRepository
     {
         private readonly ApplicationDBContext _context;
-        public GroupRepository(ApplicationDBContext context)
+        private readonly ILogger<GroupRepository> _logger;
+
+        public GroupRepository(ApplicationDBContext context, ILogger<GroupRepository> logger)
         {
             _context = context;
+            _logger = logger;
         }
         public async Task AddMembershipAsync(GroupMembership membership)
         {
@@ -27,80 +30,68 @@ namespace SportskiTerminiAPI.Repositories
 
         public async Task DeleteGroupAsync(int groupId)
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-
-            var group = await _context.Groups.FirstOrDefaultAsync(g => g.Id == groupId);
-            if (group == null)
+            try
             {
-                return;
-            }
+                var executionStrategy = _context.Database.CreateExecutionStrategy();
 
-            var memberships = await _context.GroupMemberships
-                .Where(membership => membership.GroupId == groupId)
-                .Select(membership => membership.Id)
-                .ToListAsync();
-
-            var groupMessageIds = await _context.GroupMessages
-                .Where(message => message.GroupId == groupId)
-                .Select(message => message.Id)
-                .ToListAsync();
-
-            var notifications = await _context.Notifications
-                .Where(notification => notification.GroupId == groupId
-                    || (notification.MembershipId.HasValue && memberships.Contains(notification.MembershipId.Value)))
-                .ToListAsync();
-
-            if (notifications.Count > 0)
-            {
-                _context.Notifications.RemoveRange(notifications);
-            }
-
-            var groupReadStates = await _context.GroupChatReadStates
-                .Where(readState => readState.GroupId == groupId)
-                .ToListAsync();
-
-            if (groupReadStates.Count > 0)
-            {
-                _context.GroupChatReadStates.RemoveRange(groupReadStates);
-            }
-
-            if (groupMessageIds.Count > 0)
-            {
-                var messageReceipts = await _context.GroupMessageReceipts
-                    .Where(receipt => groupMessageIds.Contains(receipt.GroupMessageId))
-                    .ToListAsync();
-
-                if (messageReceipts.Count > 0)
+                await executionStrategy.ExecuteAsync(async () =>
                 {
-                    _context.GroupMessageReceipts.RemoveRange(messageReceipts);
-                }
+                    await using var transaction = await _context.Database.BeginTransactionAsync();
 
-                var groupMessages = await _context.GroupMessages
-                    .Where(message => groupMessageIds.Contains(message.Id))
-                    .ToListAsync();
+                    var groupExists = await _context.Groups.AnyAsync(g => g.Id == groupId);
+                    if (!groupExists)
+                    {
+                        return;
+                    }
 
-                if (groupMessages.Count > 0)
-                {
-                    _context.GroupMessages.RemoveRange(groupMessages);
-                }
+                    await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                        DELETE FROM GroupMessageReceipts
+                        WHERE GroupMessageId IN (
+                            SELECT Id FROM GroupMessages WHERE GroupId = {groupId}
+                        )");
+
+                    await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                        DELETE FROM GroupMessages
+                        WHERE GroupId = {groupId}");
+
+                    await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                        DELETE FROM GroupChatReadStates
+                        WHERE GroupId = {groupId}");
+
+                    await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                        DELETE FROM Notifications
+                        WHERE GroupId = {groupId}");
+
+                    await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                        DELETE FROM Notifications
+                        WHERE MembershipId IN (
+                            SELECT Id FROM GroupMemberships WHERE GroupId = {groupId}
+                        )");
+
+                    await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                        DELETE FROM GroupMemberships
+                        WHERE GroupId = {groupId}");
+
+                    await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                        DELETE FROM Groups
+                        WHERE Id = {groupId}");
+
+                    await transaction.CommitAsync();
+                });
             }
-
-            if (memberships.Count > 0)
+            catch (Exception ex)
             {
-                var groupMemberships = await _context.GroupMemberships
-                    .Where(membership => memberships.Contains(membership.Id))
-                    .ToListAsync();
+                _logger.LogError(
+                    ex,
+                    "Error in GroupRepository.DeleteGroupAsync for group {GroupId}. Message: {Message}. InnerException: {InnerException}. StackTrace: {StackTrace}",
+                    groupId,
+                    ex.Message,
+                    ex.InnerException?.ToString(),
+                    ex.StackTrace
+                );
 
-                if (groupMemberships.Count > 0)
-                {
-                    _context.GroupMemberships.RemoveRange(groupMemberships);
-                }
+                throw;
             }
-
-            _context.Groups.Remove(group);
-
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
         }
 
         public async Task<IEnumerable<Group>> GetAllGroupsAsync()

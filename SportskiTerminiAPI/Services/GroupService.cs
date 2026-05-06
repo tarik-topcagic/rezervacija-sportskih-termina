@@ -8,10 +8,12 @@ namespace SportskiTerminiAPI.Services
     public class GroupService : IGroupService
     {
         private readonly IGroupRepository _groupRepository;
+        private readonly ILogger<GroupService> _logger;
 
-        public GroupService(IGroupRepository groupRepository)
+        public GroupService(IGroupRepository groupRepository, ILogger<GroupService> logger)
         {
             _groupRepository = groupRepository;
+            _logger = logger;
         }
 
         public async Task<ServiceResult> CreateGroupAsync(string userId, CreateGroupDto groupDto)
@@ -65,15 +67,32 @@ namespace SportskiTerminiAPI.Services
 
         public async Task<ServiceResult> DeleteGroupAsync(string userId, int groupId)
         {
-            var group = await _groupRepository.GetGroupByIdAsync(groupId);
-            if (group == null)
-                return ServiceResult.NotFound("Group not found");
+            try
+            {
+                var group = await _groupRepository.GetGroupByIdAsync(groupId);
+                if (group == null)
+                    return ServiceResult.NotFound("Group not found");
 
-            if (group.AdminId != userId)
-                return ServiceResult.Forbid("Only admin can delete the group");
+                if (group.AdminId != userId)
+                    return ServiceResult.Forbid("Only admin can delete the group");
 
-            await _groupRepository.DeleteGroupAsync(groupId);
-            return ServiceResult.Ok(new { message = "Group deleted successfully" });
+                await _groupRepository.DeleteGroupAsync(groupId);
+                return ServiceResult.Ok(new { message = "Group deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error in GroupService.DeleteGroupAsync for group {GroupId} and user {UserId}. Message: {Message}. InnerException: {InnerException}. StackTrace: {StackTrace}",
+                    groupId,
+                    userId,
+                    ex.Message,
+                    ex.InnerException?.ToString(),
+                    ex.StackTrace
+                );
+
+                throw;
+            }
         }
 
         public async Task<GroupDetailsDto?> GetGroupDetailsAsync(string userId, int groupId)
