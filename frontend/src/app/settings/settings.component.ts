@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { LanguageService } from '../../services/language.service';
+import { ToastService } from '../../services/toast.service';
 import { UserService, UserSettings } from '../../services/user.service';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
@@ -21,7 +22,6 @@ export class SettingsComponent implements OnInit {
   darkModeEnabled = false;
   selectedLanguage = 'bs';
   newUsername = '';
-  successMessage = '';
   errorMessage = '';
 
   constructor(
@@ -29,6 +29,7 @@ export class SettingsComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private languageService: LanguageService,
+    private toastService: ToastService,
   ) {}
 
   ngOnInit(): void {
@@ -62,7 +63,9 @@ export class SettingsComponent implements OnInit {
             this.settings.emailNotificationsEnabled =
               this.emailNotificationsEnabled;
           }
-          this.successMessage = this.languageService.translate('notificationsSaved');
+          this.toastService.showSuccess(
+            this.languageService.translate('notificationsSaved'),
+          );
         },
         error: () => {
           this.errorMessage = this.languageService.translate('notificationsSaveError');
@@ -97,7 +100,9 @@ export class SettingsComponent implements OnInit {
           fullName: response.fullName,
         });
         this.userService.refreshProfile();
-        this.successMessage = this.languageService.translate('usernameChanged');
+        this.toastService.showSuccess(
+          this.languageService.translate('usernameChanged'),
+        );
       },
       error: (error) => {
         this.errorMessage =
@@ -116,7 +121,9 @@ export class SettingsComponent implements OnInit {
   saveLanguage(): void {
     this.clearMessages();
     this.languageService.setLanguage(this.selectedLanguage);
-    this.successMessage = this.languageService.translate('languageSaved');
+    this.toastService.showSuccess(
+      this.languageService.translate('languageSaved'),
+    );
   }
 
   get selectedLanguageName(): string {
@@ -131,7 +138,6 @@ export class SettingsComponent implements OnInit {
   }
 
   private clearMessages(): void {
-    this.successMessage = '';
     this.errorMessage = '';
   }
 }

@@ -6,6 +6,7 @@ import { User } from '../interfaces/user';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { GroupService } from '../../services/group.service';
 import { LanguageService } from '../../services/language.service';
+import { ToastService } from '../../services/toast.service';
 import {
   getMembershipInviteIcon,
   getMembershipInviteLabel,
@@ -39,6 +40,7 @@ export class ChooseGroupModalComponent implements OnChanges {
   constructor(
     private groupService: GroupService,
     private languageService: LanguageService,
+    private toastService: ToastService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -160,7 +162,7 @@ export class ChooseGroupModalComponent implements OnChanges {
       () => {
         this.invitingGroupIds.delete(group.id);
         this.groupStatuses.set(group.id, MembershipStatus.PendingInvitation);
-        this.inviteSuccessMessage = this.languageService.translate('invitationSent');
+        this.toastService.showSuccess(this.languageService.translate('invitationSent'));
       },
       (error) => {
         this.invitingGroupIds.delete(group.id);
@@ -190,7 +192,7 @@ export class ChooseGroupModalComponent implements OnChanges {
         this.cancelingInvitationGroupIds.delete(group.id);
         this.groupStatuses.delete(group.id);
         this.groupMembershipIds.delete(group.id);
-        this.inviteSuccessMessage = this.languageService.translate('invitationCancelled');
+        this.toastService.showSuccess(this.languageService.translate('invitationCancelled'));
       },
       (error) => {
         this.cancelingInvitationGroupIds.delete(group.id);

@@ -7,6 +7,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 import { GroupService } from '../../services/group.service';
 import { UserService } from '../../services/user.service';
 import { LanguageService } from '../../services/language.service';
+import { ToastService } from '../../services/toast.service';
 import {
   getMembershipInviteIcon,
   getMembershipInviteLabel,
@@ -42,6 +43,7 @@ export class GroupInviteMembersModalComponent implements OnChanges {
     private groupService: GroupService,
     private userService: UserService,
     private languageService: LanguageService,
+    private toastService: ToastService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -83,7 +85,9 @@ export class GroupInviteMembersModalComponent implements OnChanges {
       () => {
         this.invitingUserIds.delete(user.id);
         this.invitationStatuses.set(user.id, MembershipStatus.PendingInvitation);
-        this.inviteModalMessage = this.languageService.translate('invitationSent');
+        this.toastService.showSuccess(
+          this.languageService.translate('invitationSent'),
+        );
       },
       (error) => {
         this.invitingUserIds.delete(user.id);
@@ -114,7 +118,9 @@ export class GroupInviteMembersModalComponent implements OnChanges {
         this.cancelingInvitationUserIds.delete(user.id);
         this.invitationStatuses.delete(user.id);
         this.membershipsByUserId.delete(user.id);
-        this.inviteModalMessage = this.languageService.translate('invitationCancelled');
+        this.toastService.showSuccess(
+          this.languageService.translate('invitationCancelled'),
+        );
       },
       (error) => {
         this.cancelingInvitationUserIds.delete(user.id);

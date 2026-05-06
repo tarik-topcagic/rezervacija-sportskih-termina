@@ -99,7 +99,9 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       () => {
         this.isRequestingAccess = false;
         this.group = this.group ? { ...this.group, hasPendingJoinRequest: true } : null;
-        this.successMessage = this.languageService.translate('accessRequested');
+        this.toastService.showSuccess(
+          this.languageService.translate('accessRequested'),
+        );
       },
       (error) => {
         this.isRequestingAccess = false;
@@ -122,7 +124,9 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       () => {
         this.isCancelingAccessRequest = false;
         this.group = this.group ? { ...this.group, hasPendingJoinRequest: false } : null;
-        this.successMessage = this.languageService.translate('joinRequestCancelled');
+        this.toastService.showSuccess(
+          this.languageService.translate('joinRequestCancelled'),
+        );
       },
       (error) => {
         this.isCancelingAccessRequest = false;
@@ -321,8 +325,9 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
           membersCount: Math.max(0, this.group.membersCount - 1),
         }
       : null;
-    this.successMessage = this.languageService.translate('memberRemovedFromGroup');
-    this.toastService.showSuccess(this.successMessage);
+    this.toastService.showSuccess(
+      this.languageService.translate('memberRemovedFromGroup'),
+    );
   }
 
   onMembersModalError(message: string): void {

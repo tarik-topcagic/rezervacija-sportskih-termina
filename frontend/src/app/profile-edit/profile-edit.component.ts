@@ -183,8 +183,9 @@ export class ProfileEditComponent
     this.userService.updateProfile(this.editForm.value).subscribe({
       next: () => {
         this.userService.refreshProfile();
-        this.successMessage = this.languageService.translate('profileUpdated');
-        this.toastService.showSuccess(this.successMessage);
+        this.toastService.showSuccess(
+          this.languageService.translate('profileUpdated'),
+        );
         this.editForm.markAsPristine();
         setTimeout(() => {
           this.router.navigate(['/moj-profil']);
