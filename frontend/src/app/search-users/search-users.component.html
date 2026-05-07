@@ -89,7 +89,9 @@
         </div>
       </div>
 
-      <p class="results-label">{{ filteredUsers.length }} {{ 'usersFound' | translate }}</p>
+      <p class="results-label" *ngIf="searchQuery.trim()">
+        {{ filteredUsers.length }} {{ 'usersFound' | translate }}
+      </p>
     </section>
 
     <section class="results-card" *ngIf="pagedUsers.length; else emptyUsersState">

@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, HostListener } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { NgClass, NgIf } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
@@ -24,6 +24,7 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
     private authService: AuthService,
     private userService: UserService,
     private router: Router,
+    private elementRef: ElementRef<HTMLElement>,
   ) {}
 
   ngOnInit(): void {
@@ -60,6 +61,18 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isDropdownOpen = !this.isDropdownOpen;
   }
 
+  @HostListener('document:click', ['$event'])
+  handleDocumentClick(event: Event): void {
+    const target = event.target as Node | null;
+
+    if (!target || this.elementRef.nativeElement.contains(target)) {
+      return;
+    }
+
+    this.closeMobileNavbarCollapse();
+    this.isDropdownOpen = false;
+  }
+
   closeProfileDropdown(): void {
     const dropdownToggle = document.getElementById('userDropdown');
     const dropdownContainer = dropdownToggle?.closest('.dropdown');
@@ -69,6 +82,18 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
     dropdownContainer?.classList.remove('show');
     dropdownMenu?.classList.remove('show');
     dropdownMenu?.removeAttribute('data-bs-popper');
+  }
+
+  private closeMobileNavbarCollapse(): void {
+    const navbarCollapse = document.getElementById('navbarColor01');
+    const navbarToggler = this.elementRef.nativeElement.querySelector('.navbar-toggler');
+
+    if (!navbarCollapse?.classList.contains('show')) {
+      return;
+    }
+
+    navbarCollapse.classList.remove('show');
+    navbarToggler?.setAttribute('aria-expanded', 'false');
   }
 
   getUserProfileImage() {

@@ -112,7 +112,9 @@
         </div>
       </div>
 
-      <p class="results-label">{{ filteredGroups.length }} {{ 'groupsFound' | translate }}</p>
+      <p class="results-label" *ngIf="searchQuery.trim()">
+        {{ filteredGroups.length }} {{ 'groupsFound' | translate }}
+      </p>
     </section>
 
     <section class="results-card" *ngIf="pagedGroups.length; else emptyGroupsState">

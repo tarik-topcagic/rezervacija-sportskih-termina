@@ -281,7 +281,7 @@ body.bottom-groups-visible :is(app-private-chat .private-chat-page, app-group-ch
     }
 
     body.bottom-groups-visible :is(app-private-chat .private-chat-page, app-group-chat .group-chat-page) {
-        height: calc(100vh - 120px - env(safe-area-inset-bottom));
+        height: calc(100dvh - 120px - env(safe-area-inset-bottom));
     }
 
     :is(app-private-chat, app-group-chat) .chat-composer {
@@ -292,11 +292,19 @@ body.bottom-groups-visible :is(app-private-chat .private-chat-page, app-group-ch
         padding-bottom: calc(1.65rem + env(safe-area-inset-bottom));
         scroll-padding-bottom: calc(1.65rem + env(safe-area-inset-bottom));
     }
+
+    body.bottom-groups-visible :is(app-private-chat, app-group-chat) .chat-composer {
+        margin-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    }
 }
 
 @media (min-width: 768px) and (max-width: 991.98px) {
     body.bottom-groups-visible :is(app-private-chat .private-chat-page, app-group-chat .group-chat-page) {
         inset: 56px 0 72px;
+    }
+
+    body.bottom-groups-visible :is(app-private-chat, app-group-chat) .chat-composer {
+        margin-bottom: 32px;
     }
 
     :is(app-private-chat .chat-shell, app-group-chat .chat-shell) {
@@ -622,13 +630,15 @@ body.dark-mode .app-success-toast {
 @media (max-width: 991.98px) {
     .app-success-toast-stack {
         top: 3.75rem;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
     }
 }
 
 @media (max-width: 575.98px) {
     .app-success-toast-stack {
         top: 3.65rem;
-        right: 0.75rem;
         width: min(340px, calc(100vw - 1.5rem));
     }
 }
