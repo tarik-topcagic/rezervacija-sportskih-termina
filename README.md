@@ -1,8 +1,24 @@
 # 🏟️ Sports Facility Booking App
 
-A full-stack web application for managing sports groups, memberships, and future booking of sports facilities.
+A full-stack web application for managing sports groups, memberships, real-time communication, and future booking of sports facilities.
 
-⚠️ **Note:** This project is currently under active development. Core group and user management features are implemented, while key functionalities such as facility (arena) management, time slot booking, and payments are still in progress.
+⚠️ **Note:** This project is currently under active development. Core authentication, group management, membership, messaging, notifications, and online/offline activity features are implemented, while facility (arena) management, time slot booking, and payments are still in progress.
+
+---
+
+## 🌐 Live Demo
+
+- **Frontend:** https://sport-booking-app.netlify.app/
+- **Backend API / Swagger:** https://sport-booking-api-gaeebqg7bvf7g8h7.austriaeast-01.azurewebsites.net/swagger
+
+### Demo Access
+
+You can explore the application by registering a new account or by using the existing demo account:
+
+```text
+Username: Tarik
+Password: z@Rekreaciju07
+```
 
 ---
 
@@ -11,14 +27,17 @@ A full-stack web application for managing sports groups, memberships, and future
 ### Backend
 - ASP.NET Core (.NET 8)
 - Entity Framework Core
-- SQL Server
+- SQL Server / Azure SQL Database
 - REST API
+- SignalR
+- Azure App Service
 
 ### Frontend
 - Angular
 - TypeScript
 - Bootstrap
 - SCSS
+- Netlify
 
 ---
 
@@ -26,57 +45,72 @@ A full-stack web application for managing sports groups, memberships, and future
 
 ### 🔐 Authentication & Security
 - JWT-based authentication
-- User registration & login
+- User registration and login
 - Protected API endpoints
+- Authorization for secured application features
 
 ### 👥 Group Management
-- Create and edit groups
+- Create, edit, and delete groups
 - Add group photo, description, city, and sport category
 - View group details
 - View group members
+- Admin can remove members from a group
 
 ### 📩 Invitations & Join Requests
 - Admin can invite users to groups
-- Users can:
-  - Accept or decline invitations
+- Users can accept or decline invitations
 - Users can request to join groups
-- Admin can:
-  - Accept join requests
-  - Reject join requests
+- Admin can accept or reject join requests
+
+### 💬 Messaging System
+- Private chat between users
+- Group chat between group members
+- Real-time messaging using SignalR
+- Live typing indicator for private and group chat
+- Delivered and seen message status tracking
+- Message notifications without page refresh
+- Separate chat inbox notifications for group and private messages
 
 ### 🔔 Notifications System
 - Bell icon in the top-right navbar
+- Persistent notifications stored in the database
+- Mark notifications as read
+- Live system notifications using SignalR
 - Notifications for:
-  - received invitations
+  - received group invitations
   - accepted invitations
   - join requests
-- Persistent notifications (stored in database)
-- Mark notifications as read
+  - accepted join requests
+  - chat/message activity
+
+### 🟢 User & Group Activity Status
+- Real-time online/offline user activity status
+- Group activity status based on member presence
+- Live presence updates without page refresh
 
 ### 👤 User Profiles
 - View user profiles
 - Navigate to profile pages
-- UI prepared for future messaging feature
+- Display user information and profile photo
+- Access messaging options from user-related views
 
 ### 📊 Group Members
 - Popup displaying group members
 - Admin highlighted
 - Actions:
-  - "View Profile"
-  - "Message" (UI placeholder)
+  - View profile
+  - Send message
 - Admin can remove members
 
 ### 🚪 Membership Management
 - Leave group functionality
-- Confirmation dialogs for actions
+- Confirmation dialogs for important actions
 
 ### 📱 Navigation
-- Top navbar (notifications, profile)
-- Bottom navbar:
-  - displays user’s groups
-  - horizontal scroll (no visible scrollbar)
-  - fixed to bottom
-  - smooth animation on load
+- Top navbar with notifications and profile access
+- Bottom navbar displaying the user’s groups
+- Horizontally scrollable group navigation
+- Fixed bottom navigation with smooth loading animation
 
 ---
 
@@ -98,11 +132,7 @@ The following features are planned and currently under development:
 
 ### 💳 Payment System
 - Payment for reservations
-- Integration with payment providers (planned)
-
-### 💬 Messaging System
-- Direct messaging between users
-- Group communication
+- Integration with payment providers
 
 ---
 
@@ -126,6 +156,8 @@ RezervacijaSportskihTermina/
 ├── SportskiTerminiAPI.sln
 └── .gitignore
 ```
+
+---
 
 ## ⚙️ Getting Started
 
@@ -152,5 +184,8 @@ npm start
 dotnet ef database update
 ```
 
-### 📄 License
+---
+
+## 📄 License
+
 This project is developed for educational and portfolio purposes.
