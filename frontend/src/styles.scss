@@ -276,8 +276,21 @@ body.bottom-groups-visible :is(app-private-chat .private-chat-page, app-group-ch
     }
 
     body.bottom-groups-visible :is(app-private-chat .private-chat-page, app-group-chat .group-chat-page) {
-        inset: 56px 0 64px;
+        inset: 56px 0 calc(64px + env(safe-area-inset-bottom, 0px));
         padding-bottom: 0;
+    }
+
+    body.bottom-groups-visible :is(app-private-chat .private-chat-page, app-group-chat .group-chat-page) {
+        height: calc(100vh - 120px - env(safe-area-inset-bottom));
+    }
+
+    :is(app-private-chat, app-group-chat) .chat-composer {
+        padding-bottom: calc(0.76rem + env(safe-area-inset-bottom));
+    }
+
+    :is(app-private-chat, app-group-chat) .messages-panel {
+        padding-bottom: calc(1.65rem + env(safe-area-inset-bottom));
+        scroll-padding-bottom: calc(1.65rem + env(safe-area-inset-bottom));
     }
 }
 

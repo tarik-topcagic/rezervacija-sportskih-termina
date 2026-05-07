@@ -433,10 +433,6 @@
     height: calc(100vh - 56px);
   }
 
-  :host-context(body.bottom-groups-visible) .private-chat-page {
-    height: calc(100vh - 56px - 64px);
-  }
-
   .chat-header {
     padding: 0.9rem 1rem;
   }
@@ -447,18 +443,11 @@
     flex-basis: 46px;
   }
 
-  .messages-panel {
-    padding: 0.9rem 0.9rem 1.65rem;
-    scroll-padding-bottom: 1.65rem;
-  }
-
   .message-row {
     max-width: 100%;
   }
 
-  .chat-composer {
-    padding: 0.62rem 0.82rem 0.76rem;
-  }
+  .chat-composer { padding: 0.62rem 0.82rem 0.76rem; }
 
   .typing-indicator {
     margin-top: 0.18rem;
@@ -500,7 +489,5 @@
 }
 
 @media (min-width: 768px) and (max-width: 991.98px) {
-  :host-context(body.bottom-groups-visible) .chat-composer {
-    margin-bottom: 80px;
-  }
+  :host-context(body.bottom-groups-visible) .chat-composer { margin-bottom: 80px; }
 }

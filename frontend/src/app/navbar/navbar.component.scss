@@ -32,6 +32,14 @@
   align-items: center;
   gap: 0.55rem;
   margin-left: auto;
+  flex-shrink: 0;
+}
+
+.mobile-navbar-topline {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
 }
 
 .mobile-profile-menu {
@@ -50,17 +58,29 @@
 }
   
 @media (max-width: 991.98px) {
-  .navbar-brand {
-    font-size: 18px;
-    }
-
-    .navbar-actions {
-      width: 100%;
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 0.35rem;
-    }
+  .mobile-navbar-topline {
+    flex-wrap: nowrap;
   }
+
+  .navbar-brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: block;
+    max-width: none;
+    font-size: clamp(0.78rem, 3.15vw, 1.125rem);
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .navbar-actions {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+}
   
 
   

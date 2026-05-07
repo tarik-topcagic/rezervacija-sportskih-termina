@@ -1,24 +1,26 @@
 <nav class="navbar navbar-expand-lg bg-primary fixed-top" data-bs-theme="dark">
   <div class="container-fluid custom-navbar-container">
-    <a class="navbar-brand" routerLink="/pocetna" style="font-weight: bold">
-      {{ 'appTitle' | translate }}
-    </a>
+    <div class="mobile-navbar-topline">
+      <a class="navbar-brand" routerLink="/pocetna" style="font-weight: bold">
+        {{ 'appTitle' | translate }}
+      </a>
 
-    <div class="mobile-navbar-actions d-lg-none">
-      <app-notification-dropdown *ngIf="username" mode="mobile"></app-notification-dropdown>
-      <app-message-dropdown *ngIf="username" mode="mobile"></app-message-dropdown>
+      <div class="mobile-navbar-actions d-lg-none">
+        <app-notification-dropdown *ngIf="username" mode="mobile"></app-notification-dropdown>
+        <app-message-dropdown *ngIf="username" mode="mobile"></app-message-dropdown>
 
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navbarColor01"
-        aria-controls="navbarColor01"
-        aria-expanded="false"
-        [attr.aria-label]="'toggleNavigation' | translate"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarColor01"
+          aria-controls="navbarColor01"
+          aria-expanded="false"
+          [attr.aria-label]="'toggleNavigation' | translate"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
     </div>
 
     <div class="collapse navbar-collapse" id="navbarColor01">

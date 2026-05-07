@@ -95,7 +95,6 @@
   word-break: break-word;
 }
 
-
 .messages-panel {
   position: relative;
   flex: 1 1 auto;
@@ -443,8 +442,6 @@
   background: #76a8ff;
 }
 
-
-
 :host-context(body.dark-mode) .message-bubble {
   background: #262626;
   border-color: #3a3a3a;
@@ -477,13 +474,7 @@
 }
 
 @media (max-width: 767.98px) {
-  .group-chat-page {
-    height: calc(100vh - 56px);
-  }
-
-  :host-context(body.bottom-groups-visible) .group-chat-page {
-    height: calc(100vh - 56px - 64px);
-  }
+  .group-chat-page { height: calc(100vh - 56px); }
 
   .chat-header {
     padding: 0.9rem 1rem;
@@ -495,18 +486,9 @@
     flex-basis: 46px;
   }
 
-  .messages-panel {
-    padding: 0.9rem 0.9rem 1.65rem;
-    scroll-padding-bottom: 1.65rem;
-  }
+  .message-row { max-width: 100%; }
 
-  .message-row {
-    max-width: 100%;
-  }
-
-  .chat-composer {
-    padding: 0.62rem 0.82rem 0.76rem;
-  }
+  .chat-composer { padding: 0.62rem 0.82rem 0.76rem; }
 
   .typing-indicator {
     margin-top: 0.18rem;
@@ -542,13 +524,9 @@
     gap: 0;
   }
 
-  .send-button-label {
-    display: none;
-  }
+  .send-button-label { display: none; }
 }
 
 @media (min-width: 768px) and (max-width: 991.98px) {
-  :host-context(body.bottom-groups-visible) .chat-composer {
-    margin-bottom: 80px;
-  }
+  :host-context(body.bottom-groups-visible) .chat-composer { margin-bottom: 80px; }
 }
