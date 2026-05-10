@@ -38,17 +38,20 @@ import { ChatTypingEvent } from '../interfaces/chat-typing-event.model';
 import { PrivateConversation, PrivateMessage } from '../interfaces/private-chat.model';
 import { UserPresence } from '../interfaces/user-presence.model';
 import { Group, GroupDetails } from '../interfaces/group.model';
+import { insertTextAtSelection } from '../helpers/chat-input.helper';
+import { ChatEmojiPickerComponent } from '../chat-emoji-picker/chat-emoji-picker.component';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-private-chat',
-  imports: [DatePipe, NgIf, NgFor, NgClass, FormsModule, RouterLink, NavbarComponent, TranslatePipe],
+  imports: [DatePipe, NgIf, NgFor, NgClass, FormsModule, RouterLink, NavbarComponent, TranslatePipe, ChatEmojiPickerComponent],
   templateUrl: './private-chat.component.html',
   styleUrl: './private-chat.component.scss',
 })
 export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('messageInput') private messageInput?: ElementRef<HTMLInputElement>;
 
   conversation: PrivateConversation | null = null;
   conversations: PrivateConversation[] = [];
@@ -80,6 +83,8 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   private typingStartTimeoutId?: ReturnType<typeof setTimeout>;
   private typingStopTimeoutId?: ReturnType<typeof setTimeout>;
   private isTypingActive = false;
+  private messageSelectionStart: number | null = null;
+  private messageSelectionEnd: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -229,6 +234,45 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.scheduleTypingStop();
   }
 
+  syncMessageSelection(): void {
+    const input = this.messageInput?.nativeElement;
+
+    if (!input) {
+      return;
+    }
+
+    this.messageSelectionStart = input.selectionStart;
+    this.messageSelectionEnd = input.selectionEnd;
+  }
+
+  insertEmoji(emoji: string): void {
+    const insertionResult = insertTextAtSelection(
+      this.messageText,
+      emoji,
+      this.messageSelectionStart,
+      this.messageSelectionEnd,
+    );
+
+    this.messageText = insertionResult.nextValue;
+    this.messageSelectionStart = insertionResult.nextCursorStart;
+    this.messageSelectionEnd = insertionResult.nextCursorEnd;
+    this.onMessageInputChange();
+
+    queueMicrotask(() => {
+      const input = this.messageInput?.nativeElement;
+
+      if (!input) {
+        return;
+      }
+
+      input.focus();
+      input.setSelectionRange(
+        insertionResult.nextCursorStart,
+        insertionResult.nextCursorEnd,
+      );
+    });
+  }
+
   onMessagesScroll(): void {
     this.syncScrollButtonVisibility();
   }
@@ -362,6 +406,8 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.highlightedChatListKeys.clear();
     this.pendingStatusUpdates.clear();
     this.typingUsers.clear();
+    this.messageSelectionStart = null;
+    this.messageSelectionEnd = null;
   }
 
   private loadChatListItems(): void {

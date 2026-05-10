@@ -1,0 +1,24 @@
+<button
+  type="button"
+  class="emoji-trigger-button"
+  [attr.aria-label]="'openEmojiPicker' | translate"
+  [attr.aria-expanded]="isOpen"
+  title="Emojis"
+  (click)="togglePicker($event)"
+>
+  <i class="bi bi-emoji-smile"></i>
+</button>
+
+<div *ngIf="isOpen" class="emoji-picker-popover" (click)="$event.stopPropagation()">
+  <div class="emoji-picker-header">Emojis</div>
+  <div class="emoji-picker-grid">
+    <button
+      type="button"
+      class="emoji-option"
+      *ngFor="let emoji of emojis"
+      (click)="selectEmoji(emoji, $event)"
+    >
+      {{ emoji }}
+    </button>
+  </div>
+</div>

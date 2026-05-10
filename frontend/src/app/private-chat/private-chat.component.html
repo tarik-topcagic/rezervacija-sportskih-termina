@@ -158,14 +158,20 @@
         <form class="chat-composer" (ngSubmit)="sendMessage()">
           <div class="input-group">
             <input
+              #messageInput
               type="text"
               class="form-control"
               [(ngModel)]="messageText"
               (ngModelChange)="onMessageInputChange()"
+              (click)="syncMessageSelection()"
+              (focus)="syncMessageSelection()"
+              (keyup)="syncMessageSelection()"
+              (select)="syncMessageSelection()"
               name="messageText"
               [placeholder]="'writeMessage' | translate"
               maxlength="1000"
             />
+            <app-chat-emoji-picker (emojiSelected)="insertEmoji($event)"></app-chat-emoji-picker>
             <button type="submit" class="btn btn-primary" [disabled]="!canSendMessage()">
               <i class="bi bi-send"></i>
               <span class="send-button-label">

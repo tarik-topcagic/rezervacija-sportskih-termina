@@ -37,6 +37,16 @@ export class LanguageService {
       fr: 'Reservation de terrains sportifs',
       it: 'Prenotazione campi sportivi',
     },
+    openEmojiPicker: {
+      en: 'Open emoji picker',
+      de: 'Emoji-Auswahl öffnen',
+      bs: 'Otvori izbor emojija',
+      hr: 'Otvori izbor emojija',
+      sr: 'Otvori izbor emodžija',
+      es: 'Abrir selector de emojis',
+      fr: 'Ouvrir le sélecteur d’emojis',
+      it: 'Apri selettore emoji',
+    },
     home: {
       en: 'Home',
       de: 'Startseite',
