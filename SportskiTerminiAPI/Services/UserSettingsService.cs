@@ -7,6 +7,11 @@ namespace SportskiTerminiAPI.Services
 {
     public class UserSettingsService : IUserSettingsService
     {
+        private static readonly HashSet<string> SupportedLanguagePreferences = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "bs", "en", "de", "hr", "sr", "es", "fr", "it"
+        };
+
         private readonly IUserRepository _userRepository;
         private readonly UserManager<AppUser> _userManager;
         private readonly ITokenService _tokenService;
@@ -29,7 +34,8 @@ namespace SportskiTerminiAPI.Services
                 Username = user.UserName ?? string.Empty,
                 Email = user.Email ?? string.Empty,
                 PhoneNumber = user.PhoneNumber ?? string.Empty,
-                EmailNotificationsEnabled = user.EmailNotificationsEnabled
+                EmailNotificationsEnabled = user.EmailNotificationsEnabled,
+                LanguagePreference = NormalizeLanguagePreference(user.LanguagePreference)
             };
         }
 
@@ -46,6 +52,29 @@ namespace SportskiTerminiAPI.Services
                 return ServiceResult.BadRequest(result.Errors);
 
             return ServiceResult.Ok(new { message = "Postavke obavijesti su sačuvane." });
+        }
+
+        public async Task<ServiceResult> UpdateLanguagePreferenceAsync(string userId, UpdateLanguagePreferenceDto dto)
+        {
+            var user = await _userRepository.GetUserByIdAsync(userId);
+            if (user == null)
+                return ServiceResult.NotFound();
+
+            var normalizedLanguagePreference = NormalizeLanguagePreference(dto.LanguagePreference);
+            if (!SupportedLanguagePreferences.Contains(normalizedLanguagePreference))
+                return ServiceResult.BadRequest(new { field = "languagePreference", message = "Nepodržan jezik aplikacije." });
+
+            user.LanguagePreference = normalizedLanguagePreference;
+
+            var result = await _userRepository.UpdateUserAsync(user);
+            if (!result.Succeeded)
+                return ServiceResult.BadRequest(result.Errors);
+
+            return ServiceResult.Ok(new
+            {
+                message = "Jezik aplikacije je sačuvan.",
+                languagePreference = normalizedLanguagePreference
+            });
         }
 
         public async Task<ServiceResult> UpdateUsernameAsync(string userId, UpdateUsernameDto dto)
@@ -93,6 +122,14 @@ namespace SportskiTerminiAPI.Services
                 username = updatedUser.UserName,
                 fullName = updatedUser.FullName
             });
+        }
+
+        private static string NormalizeLanguagePreference(string? languagePreference)
+        {
+            if (string.IsNullOrWhiteSpace(languagePreference))
+                return "bs";
+
+            return languagePreference.Trim().ToLowerInvariant();
         }
     }
 }

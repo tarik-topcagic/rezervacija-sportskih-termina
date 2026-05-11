@@ -1,5 +1,7 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { BehaviorSubject, catchError, map, Observable, of, tap } from 'rxjs';
+import { AuthService } from './auth.service';
+import { UserService } from './user.service';
 
 type LanguageCode = 'en' | 'de' | 'bs' | 'hr' | 'sr' | 'es' | 'fr' | 'it';
 type TranslationDictionary = Record<string, Record<LanguageCode, string>>;
@@ -20,6 +22,8 @@ export class LanguageService {
   ];
 
   private readonly defaultLanguage: LanguageCode = 'bs';
+  private readonly authService = inject(AuthService);
+  private readonly userService = inject(UserService);
   private readonly languageSubject = new BehaviorSubject<LanguageCode>(
     this.getSavedLanguage(),
   );
@@ -586,6 +590,16 @@ export class LanguageService {
       es: 'Idioma guardado.',
       fr: 'Langue enregistree.',
       it: 'Lingua salvata.',
+    },
+    languageSaveError: {
+      en: 'Unable to save app language.',
+      de: 'App-Sprache konnte nicht gespeichert werden.',
+      bs: 'Jezik aplikacije nije moguće sačuvati.',
+      hr: 'Jezik aplikacije nije moguće spremiti.',
+      sr: 'Jezik aplikacije nije moguće sačuvati.',
+      es: 'No se puede guardar el idioma.',
+      fr: 'Impossible d’enregistrer la langue.',
+      it: 'Impossibile salvare la lingua.',
     },
     account: {
       en: 'Account',
@@ -2121,6 +2135,33 @@ export class LanguageService {
 
   get currentLanguage(): LanguageCode {
     return this.languageSubject.value;
+  }
+
+  initializeLanguage(): Observable<void> {
+    if (!this.authService.currentUserValue) {
+      this.setLanguage(this.getSavedLanguage());
+      return of(void 0);
+    }
+
+    return this.syncLanguageFromBackend();
+  }
+
+  syncLanguageFromBackend(): Observable<void> {
+    if (!this.authService.currentUserValue) {
+      this.setLanguage(this.getSavedLanguage());
+      return of(void 0);
+    }
+
+    return this.userService.getSettings().pipe(
+      tap((settings) => {
+        this.setLanguage(settings.languagePreference || this.getSavedLanguage());
+      }),
+      map(() => void 0),
+      catchError(() => {
+        this.setLanguage(this.getSavedLanguage());
+        return of(void 0);
+      }),
+    );
   }
 
   setLanguage(language: string): void {

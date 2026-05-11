@@ -42,11 +42,11 @@ export class GroupMembersModalComponent {
 
     this.closeModal();
     if (this.isCurrentUser(member)) {
-      this.router.navigate(['/moj-profil']);
+      this.router.navigate(['/profile']);
       return;
     }
 
-    this.router.navigate(['/korisnicki-profil', member.username]);
+    this.router.navigate(['/users', member.username]);
   }
 
   canRemoveMember(member: GroupMember): boolean {
@@ -69,7 +69,7 @@ export class GroupMembersModalComponent {
     this.privateChatService.getOrCreateConversation(member.userId).subscribe({
       next: (conversation) => {
         this.closeModal();
-        this.router.navigate(['/poruke/privatno', conversation.id]);
+        this.router.navigate(['/messages/private', conversation.id]);
       },
       error: (error) => {
         this.error.emit(this.languageService.translate('privateChatLoadError'));

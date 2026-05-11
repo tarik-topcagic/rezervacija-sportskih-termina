@@ -26,6 +26,11 @@ namespace SportskiTerminiAPI.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<AppUser>()
+                .Property(user => user.LanguagePreference)
+                .HasDefaultValue("bs")
+                .HasMaxLength(8);
+
             modelBuilder.Entity<Group>()
                 .HasOne(g => g.Admin)
                 .WithMany(u => u.Groups)

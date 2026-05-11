@@ -126,7 +126,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
 
   openNotification(notification: AppNotification): void {
     if (notification.groupId) {
-      this.router.navigate(['/grupe', notification.groupId]);
+      this.router.navigate(['/groups', notification.groupId]);
       this.closeNotifications();
     }
   }

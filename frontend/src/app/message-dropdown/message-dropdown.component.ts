@@ -155,7 +155,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
   toggleMessages(event?: Event): void {
     if (this.mode === 'mobile') {
       event?.stopPropagation();
-      this.router.navigate(['/poruke']);
+      this.router.navigate(['/messages']);
       return;
     }
 
@@ -179,11 +179,11 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
           message.isRead = true;
           message.unreadCount = 0;
           this.groupChatNotificationService.notifyUnreadCountChanged();
-          this.router.navigate(['/grupe', message.groupId, 'chat']);
+          this.router.navigate(['/groups', message.groupId, 'chat']);
           this.closeMessages();
         },
         error: () => {
-          this.router.navigate(['/grupe', message.groupId, 'chat']);
+          this.router.navigate(['/groups', message.groupId, 'chat']);
           this.closeMessages();
         },
       });
@@ -196,11 +196,11 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
           message.isRead = true;
           message.unreadCount = 0;
           this.privateChatNotificationService.notifyUnreadCountChanged();
-          this.router.navigate(['/poruke/privatno', message.conversationId]);
+          this.router.navigate(['/messages/private', message.conversationId]);
           this.closeMessages();
         },
         error: () => {
-          this.router.navigate(['/poruke/privatno', message.conversationId]);
+          this.router.navigate(['/messages/private', message.conversationId]);
           this.closeMessages();
         },
       });
@@ -581,10 +581,10 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
   }
 
   private syncCurrentChatContext(url: string): void {
-    const groupMatch = url.match(/^\/grupe\/(\d+)\/chat(?:$|[?#])/);
+    const groupMatch = url.match(/^\/groups\/(\d+)\/chat(?:$|[?#])/);
     this.currentGroupId = groupMatch ? Number(groupMatch[1]) : null;
 
-    const conversationMatch = url.match(/^\/poruke\/privatno\/(\d+)(?:$|[?#])/);
+    const conversationMatch = url.match(/^\/messages\/private\/(\d+)(?:$|[?#])/);
     this.currentConversationId = conversationMatch ? Number(conversationMatch[1]) : null;
   }
 

@@ -128,7 +128,7 @@ export class UserProfileComponent implements OnDestroy {
   private openConversationByUserId(userId: string): void {
     this.privateChatService.getOrCreateConversation(userId).subscribe({
       next: (conversation) => {
-        this.router.navigate(['/poruke/privatno', conversation.id]);
+        this.router.navigate(['/messages/private', conversation.id]);
       },
       error: (error) => {
         console.error('Error opening private chat from user profile:', error);

@@ -11,7 +11,7 @@
     <a
       *ngFor="let group of groups; trackBy: trackByGroupId"
       class="bottom-group-item"
-      [routerLink]="['/grupe', group.id]"
+      [routerLink]="['/groups', group.id]"
       (click)="handleGroupClick($event)"
     >
       <ng-container *ngIf="group.imageUrl && group.imageUrl !== 'default-group.png'; else defaultGroupImage">

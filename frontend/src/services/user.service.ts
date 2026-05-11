@@ -9,6 +9,7 @@ export interface UserSettings {
   email: string;
   phoneNumber: string;
   emailNotificationsEnabled: boolean;
+  languagePreference: string;
 }
 
 @Injectable({
@@ -42,6 +43,12 @@ export class UserService {
   updateEmailNotifications(emailNotificationsEnabled: boolean): Observable<any> {
     return this.http.put(`${this.apiUrl}/settings/email-notifications`, {
       emailNotificationsEnabled,
+    });
+  }
+
+  updateLanguagePreference(languagePreference: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/settings/language`, {
+      languagePreference,
     });
   }
 

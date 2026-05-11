@@ -188,7 +188,7 @@ export class ProfileEditComponent
         );
         this.editForm.markAsPristine();
         setTimeout(() => {
-          this.router.navigate(['/moj-profil']);
+          this.router.navigate(['/profile']);
         }, 0);
       },
       error: (err) => {

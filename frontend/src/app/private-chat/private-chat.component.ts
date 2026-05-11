@@ -134,7 +134,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
       const conversationId = Number(params.get('conversationId'));
 
       if (!conversationId) {
-        this.router.navigate(['/poruke']);
+        this.router.navigate(['/messages']);
         return;
       }
 
@@ -314,17 +314,17 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.router.navigate(['/poruke/privatno', conversationId]);
+    this.router.navigate(['/messages/private', conversationId]);
   }
 
   openChatListItem(item: ChatInboxItem): void {
     if (item.type === 'private' && item.conversationId) {
-      void this.router.navigate(['/poruke/privatno', item.conversationId]);
+      void this.router.navigate(['/messages/private', item.conversationId]);
       return;
     }
 
     if (item.type === 'group' && item.groupId) {
-      void this.router.navigate(['/grupe', item.groupId, 'chat']);
+      void this.router.navigate(['/groups', item.groupId, 'chat']);
     }
   }
 
@@ -356,7 +356,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
         const conversation = conversations.find((item) => item.id === conversationId);
 
         if (!conversation) {
-          this.router.navigate(['/poruke']);
+          this.router.navigate(['/messages']);
           return;
         }
 

@@ -43,6 +43,17 @@ namespace SportskiTerminiAPI.Controllers
             return StatusCode(result.StatusCode, result.Payload);
         }
 
+        [HttpPut("settings/language")]
+        public async Task<IActionResult> UpdateLanguagePreference([FromBody] UpdateLanguagePreferenceDto dto)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _userSettingsService.UpdateLanguagePreferenceAsync(userId, dto);
+            return StatusCode(result.StatusCode, result.Payload);
+        }
+
         [HttpPut("settings/username")]
         public async Task<IActionResult> UpdateUsername([FromBody] UpdateUsernameDto dto)
         {

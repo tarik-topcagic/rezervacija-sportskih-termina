@@ -98,10 +98,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
           message.isRead = true;
           message.unreadCount = 0;
           this.groupChatNotificationService.notifyUnreadCountChanged();
-          this.router.navigate(['/grupe', message.groupId, 'chat']);
+          this.router.navigate(['/groups', message.groupId, 'chat']);
         },
         error: () => {
-          this.router.navigate(['/grupe', message.groupId, 'chat']);
+          this.router.navigate(['/groups', message.groupId, 'chat']);
         },
       });
       return;
@@ -113,10 +113,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
           message.isRead = true;
           message.unreadCount = 0;
           this.privateChatNotificationService.notifyUnreadCountChanged();
-          this.router.navigate(['/poruke/privatno', message.conversationId]);
+          this.router.navigate(['/messages/private', message.conversationId]);
         },
         error: () => {
-          this.router.navigate(['/poruke/privatno', message.conversationId]);
+          this.router.navigate(['/messages/private', message.conversationId]);
         },
       });
     }

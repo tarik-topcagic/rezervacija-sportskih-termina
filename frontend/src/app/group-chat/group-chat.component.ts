@@ -129,7 +129,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       const groupId = Number(params.get('id'));
 
       if (!groupId) {
-        this.router.navigate(['/grupe']);
+        this.router.navigate(['/groups']);
         return;
       }
 
@@ -343,12 +343,12 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openChatListItem(item: ChatInboxItem): void {
     if (item.type === 'group' && item.groupId) {
-      void this.router.navigate(['/grupe', item.groupId, 'chat']);
+      void this.router.navigate(['/groups', item.groupId, 'chat']);
       return;
     }
 
     if (item.type === 'private' && item.conversationId) {
-      void this.router.navigate(['/poruke/privatno', item.conversationId]);
+      void this.router.navigate(['/messages/private', item.conversationId]);
     }
   }
 
@@ -377,7 +377,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.groupService.getGroupDetails(groupId).subscribe({
       next: (group) => {
         if (!group.isMember) {
-          this.router.navigate(['/grupe', groupId]);
+          this.router.navigate(['/groups', groupId]);
           return;
         }
 

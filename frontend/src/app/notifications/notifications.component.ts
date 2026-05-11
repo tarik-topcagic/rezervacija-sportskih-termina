@@ -79,9 +79,9 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       this.notificationService.markAsRead(notification.id).subscribe({
         next: () => {
           notification.isRead = true;
-          this.router.navigate(['/grupe', notification.groupId]);
+          this.router.navigate(['/groups', notification.groupId]);
         },
-        error: () => this.router.navigate(['/grupe', notification.groupId]),
+        error: () => this.router.navigate(['/groups', notification.groupId]),
       });
     }
   }

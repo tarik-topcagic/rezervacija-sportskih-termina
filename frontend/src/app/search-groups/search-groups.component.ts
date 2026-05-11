@@ -164,12 +164,12 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
   }
 
   viewGroup(group: Group): void {
-    this.router.navigate(['/grupe', group.id]);
+    this.router.navigate(['/groups', group.id]);
   }
 
   openGroupChat(event: Event, group: Group): void {
     event.stopPropagation();
-    this.router.navigate(['/grupe', group.id, 'chat'], { fragment: 'chat-composer-anchor' });
+    this.router.navigate(['/groups', group.id, 'chat'], { fragment: 'chat-composer-anchor' });
   }
 
   closeEditGroupModal(): void {

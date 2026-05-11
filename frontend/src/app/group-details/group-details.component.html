@@ -2,7 +2,7 @@
 
 <main class="group-details-page">
   <div class="container">
-    <a class="back-link" routerLink="/grupe">
+    <a class="back-link" routerLink="/groups">
       <i class="bi bi-arrow-left"></i>
       {{ 'backToGroups' | translate }}
     </a>
@@ -60,7 +60,7 @@
             *ngIf="group.isMember"
             type="button"
             class="btn btn-outline-primary chat-group-action"
-            [routerLink]="['/grupe', group.id, 'chat']"
+            [routerLink]="['/groups', group.id, 'chat']"
             fragment="chat-composer-anchor"
           >
             <i class="bi bi-chat-dots"></i>

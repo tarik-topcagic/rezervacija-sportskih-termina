@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { LanguageService } from '../../services/language.service';
 
 @Component({
   selector: 'app-login',
@@ -22,6 +23,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private router: Router,
+    private languageService: LanguageService,
   ) {}
   ngOnInit(): void {
     document.body.classList.add('login-page');
@@ -30,8 +32,10 @@ export class LoginComponent implements OnInit, OnDestroy {
   login() {
     this.authService.login(this.loginModel).subscribe(
       (user) => {
-        this.router.navigate(['/pocetna']);
-        console.log('Login successful');
+        this.languageService.syncLanguageFromBackend().subscribe(() => {
+          this.router.navigate(['/home']);
+          console.log('Login successful');
+        });
       },
       (error) => {
         console.error('Login error:', error);
@@ -48,4 +52,3 @@ export class LoginComponent implements OnInit, OnDestroy {
     document.body.classList.remove('login-page');
   }
 }
-

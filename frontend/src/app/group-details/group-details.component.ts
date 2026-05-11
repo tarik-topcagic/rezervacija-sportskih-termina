@@ -56,7 +56,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       const groupId = Number(params.get('id'));
 
       if (!groupId) {
-        this.router.navigate(['/grupe']);
+        this.router.navigate(['/groups']);
         return;
       }
 
@@ -165,7 +165,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
 
   onGroupDeleted(): void {
     this.closeEditGroupModal();
-    this.router.navigate(['/grupe'], {
+    this.router.navigate(['/groups'], {
       state: { successMessageKey: 'groupDeleted' },
     });
   }

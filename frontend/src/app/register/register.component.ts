@@ -4,6 +4,7 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { LanguageService } from '../../services/language.service';
 
 @Component({
   selector: 'app-register',
@@ -27,7 +28,11 @@ export class RegisterComponent implements OnInit, OnDestroy {
   phoneNumberTakenError = false;
   usernameSpaceError = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private languageService: LanguageService,
+  ) {}
   
   ngOnInit(): void {
     document.body.classList.add('register-page');
@@ -81,7 +86,9 @@ export class RegisterComponent implements OnInit, OnDestroy {
         this.authService.login({ username: this.registerModel.username, password: this.registerModel.password })
           .subscribe({
             next: () => {
-              this.router.navigate(['/pocetna']); 
+              this.languageService.syncLanguageFromBackend().subscribe(() => {
+                this.router.navigate(['/home']);
+              });
             },
             error: (error) => {
               console.error('Login error:', error);

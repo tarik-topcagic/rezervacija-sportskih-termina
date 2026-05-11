@@ -161,13 +161,13 @@ export class SearchUsersComponent implements OnInit {
   }
 
   goToProfile(user: User): void {
-    this.router.navigate(['/korisnicki-profil', user.username]);
+    this.router.navigate(['/users', user.username]);
   }
 
   viewProfile(event: Event, user: User): void {
     event.stopPropagation();
     if (user.username === this.currentUsername) {
-      this.router.navigate(['/moj-profil']);
+      this.router.navigate(['/profile']);
       return;
     }
 
@@ -177,7 +177,7 @@ export class SearchUsersComponent implements OnInit {
   editProfile(event: Event, user: User): void {
     event.stopPropagation();
     if (user.username === this.currentUsername) {
-      this.router.navigate(['/postavke-profila']);
+      this.router.navigate(['/profile/edit']);
     }
   }
 
@@ -230,7 +230,7 @@ export class SearchUsersComponent implements OnInit {
   private openConversationByUserId(userId: string): void {
     this.privateChatService.getOrCreateConversation(userId).subscribe({
       next: (conversation) => {
-        this.router.navigate(['/poruke/privatno', conversation.id]);
+        this.router.navigate(['/messages/private', conversation.id]);
       },
       error: (error) => {
         console.error('Error opening private chat from user search:', error);

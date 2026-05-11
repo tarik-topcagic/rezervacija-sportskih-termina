@@ -45,7 +45,9 @@ export class SettingsComponent implements OnInit {
       next: (settings) => {
         this.settings = settings;
         this.emailNotificationsEnabled = settings.emailNotificationsEnabled;
+        this.selectedLanguage = settings.languagePreference || this.languageService.currentLanguage;
         this.newUsername = settings.username;
+        this.languageService.setLanguage(this.selectedLanguage);
       },
       error: () => {
         this.errorMessage = this.languageService.translate('settingsLoadError');
@@ -120,10 +122,31 @@ export class SettingsComponent implements OnInit {
 
   saveLanguage(): void {
     this.clearMessages();
+    const previousLanguage = this.languageService.currentLanguage;
     this.languageService.setLanguage(this.selectedLanguage);
-    this.toastService.showSuccess(
-      this.languageService.translate('languageSaved'),
-    );
+
+    this.userService.updateLanguagePreference(this.selectedLanguage).subscribe({
+      next: (response) => {
+        const persistedLanguage =
+          response.languagePreference || this.selectedLanguage;
+
+        this.selectedLanguage = persistedLanguage;
+        this.languageService.setLanguage(persistedLanguage);
+
+        if (this.settings) {
+          this.settings.languagePreference = persistedLanguage;
+        }
+
+        this.toastService.showSuccess(
+          this.languageService.translate('languageSaved'),
+        );
+      },
+      error: () => {
+        this.selectedLanguage = previousLanguage;
+        this.languageService.setLanguage(previousLanguage);
+        this.errorMessage = this.languageService.translate('languageSaveError');
+      },
+    });
   }
 
   get selectedLanguageName(): string {
