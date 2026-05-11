@@ -41,18 +41,32 @@
     <section class="settings-section">
       <h4>{{ 'appLanguage' | translate }}</h4>
       <label for="language" class="form-label">{{ 'selectedLanguage' | translate }}</label>
-      <div class="input-group settings-form">
-        <select
-          id="language"
-          name="language"
-          class="form-select"
-          [(ngModel)]="selectedLanguage"
-          (change)="saveLanguage()"
-        >
-          <option *ngFor="let language of languages" [value]="language.code">
-            {{ language.name }}
-          </option>
-        </select>
+      <div class="settings-form language-settings-form">
+        <div class="select-shell language-dropdown-shell">
+          <span>{{ 'appLanguage' | translate }}</span>
+          <button
+            id="language"
+            type="button"
+            class="language-dropdown-trigger"
+            (click)="toggleLanguageMenu($event)"
+            [attr.aria-expanded]="showLanguageMenu"
+          >
+            <span>{{ selectedLanguageName }}</span>
+            <i class="bi" [class.bi-chevron-up]="showLanguageMenu" [class.bi-chevron-down]="!showLanguageMenu"></i>
+          </button>
+
+          <div class="language-dropdown-menu" *ngIf="showLanguageMenu" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="language-dropdown-option"
+              *ngFor="let language of languages"
+              [class.active]="selectedLanguage === language.code"
+              (click)="selectLanguage(language.code, $event)"
+            >
+              {{ language.name }}
+            </button>
+          </div>
+        </div>
       </div>
       <p class="mt-2 mb-0 text-secondary">
         {{ 'currentLanguage' | translate }}: {{ selectedLanguageName }}
@@ -72,7 +86,7 @@
             [(ngModel)]="newUsername"
             required
           />
-          <button type="submit" class="btn btn-primary">
+          <button type="submit" class="btn btn-primary" [disabled]="!canSubmitUsernameChange">
             {{ 'changeUsername' | translate }}
           </button>
         </div>

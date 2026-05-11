@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -21,6 +21,7 @@ export class SettingsComponent implements OnInit {
   emailNotificationsEnabled = false;
   darkModeEnabled = false;
   selectedLanguage = 'bs';
+  showLanguageMenu = false;
   newUsername = '';
   errorMessage = '';
 
@@ -149,11 +150,36 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  toggleLanguageMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.showLanguageMenu = !this.showLanguageMenu;
+  }
+
+  selectLanguage(languageCode: string, event?: Event): void {
+    event?.stopPropagation();
+
+    if (this.selectedLanguage === languageCode) {
+      this.showLanguageMenu = false;
+      return;
+    }
+
+    this.selectedLanguage = languageCode;
+    this.showLanguageMenu = false;
+    this.saveLanguage();
+  }
+
   get selectedLanguageName(): string {
     return (
       this.languages.find((language) => language.code === this.selectedLanguage)
         ?.name || this.languageService.getLanguageName('bs')
     );
+  }
+
+  get canSubmitUsernameChange(): boolean {
+    const username = this.newUsername.trim();
+    const currentUsername = this.settings?.username?.trim() || '';
+
+    return !!username && username !== currentUsername;
   }
 
   private applyDarkMode(): void {
@@ -162,5 +188,10 @@ export class SettingsComponent implements OnInit {
 
   private clearMessages(): void {
     this.errorMessage = '';
+  }
+
+  @HostListener('document:click')
+  closeLanguageMenu(): void {
+    this.showLanguageMenu = false;
   }
 }
