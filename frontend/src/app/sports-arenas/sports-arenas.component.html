@@ -1,0 +1,169 @@
+<app-navbar></app-navbar>
+<div class="search-page">
+  <div class="search-shell">
+    <section class="hero-copy">
+      <h1>{{ 'sportsArenasTitle' | translate }}</h1>
+      <p>{{ 'sportsArenasSubtitle' | translate }}</p>
+    </section>
+
+    <section class="search-panel">
+      <div class="search-bar">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          [placeholder]="'searchArenasPlaceholder' | translate"
+          (ngModelChange)="onSearchQueryChange()"
+          (keyup.enter)="searchArenas()"
+        />
+        <button type="button" class="btn btn-primary primary-search-button" (click)="searchArenas()">
+          {{ 'search' | translate }}
+        </button>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="toolbar-row">
+        <div class="toolbar-slot toolbar-slot-start">
+          <div class="select-shell filter-dropdown-shell">
+            <span>{{ 'city' | translate }}</span>
+            <button
+              type="button"
+              class="filter-dropdown-trigger"
+              (click)="toggleCityMenu($event)"
+              [attr.aria-expanded]="showCityMenu"
+            >
+              <span>{{ getCityLabel() | translate }}</span>
+              <i class="bi" [ngClass]="showCityMenu ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </button>
+
+            <div class="filter-dropdown-menu" *ngIf="showCityMenu" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                class="filter-dropdown-option"
+                [class.active]="!activeCityFilter"
+                (click)="clearCityFilter($event)"
+              >
+                {{ 'allCities' | translate }}
+              </button>
+              <button
+                type="button"
+                class="filter-dropdown-option"
+                *ngFor="let city of cityOptions"
+                [class.active]="activeCityFilter === city"
+                (click)="selectCityFilter(city, $event)"
+              >
+                {{ city }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar-slot toolbar-slot-end">
+          <div class="select-shell filter-dropdown-shell">
+            <span>{{ 'sport' | translate }}</span>
+            <button
+              type="button"
+              class="filter-dropdown-trigger"
+              (click)="toggleSportMenu($event)"
+              [attr.aria-expanded]="showSportMenu"
+            >
+              <span>{{ getSportLabel() | translate }}</span>
+              <i class="bi" [ngClass]="showSportMenu ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </button>
+
+            <div class="filter-dropdown-menu" *ngIf="showSportMenu" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                class="filter-dropdown-option"
+                [class.active]="!activeSportFilter"
+                (click)="clearSportFilter($event)"
+              >
+                {{ 'allSports' | translate }}
+              </button>
+              <button
+                type="button"
+                class="filter-dropdown-option"
+                *ngFor="let sport of sportOptions"
+                [class.active]="activeSportFilter === sport"
+                (click)="selectSportFilter(sport, $event)"
+              >
+                {{ sport | translate }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="results-label" *ngIf="searchQuery.trim()">
+        {{ filteredArenas.length }} {{ 'arenasFound' | translate }}
+      </p>
+    </section>
+
+    <div *ngIf="errorMessage" class="empty-state error-state">
+      <p>{{ errorMessage | translate }}</p>
+    </div>
+
+    <section class="results-card" *ngIf="pagedArenas.length && !errorMessage; else emptyArenasState">
+      <article class="result-row arena-row" *ngFor="let arena of pagedArenas">
+        <div class="result-main arena-main">
+          <div class="arena-image-shell">
+            <img
+              [src]="getArenaImageUrl(arena)"
+              [alt]="arena.name"
+              class="arena-image"
+            />
+          </div>
+
+          <div class="result-copy">
+            <h2>{{ arena.name }}</h2>
+            <p class="group-meta">{{ arena.city }}</p>
+            <p class="sport-meta">{{ arena.sportType | translate }}</p>
+            <p class="meta-text description-preview">{{ getDescriptionPreview(arena) | translate }}</p>
+          </div>
+        </div>
+
+        <div class="result-actions">
+          <button type="button" class="outline-button" (click)="viewDetails(arena)">
+            {{ 'viewDetails' | translate }}
+          </button>
+
+          <button type="button" class="secondary-button" disabled [title]="'reservationComingSoon' | translate">
+            {{ 'makeReservation' | translate }}
+          </button>
+        </div>
+      </article>
+    </section>
+
+    <ng-template #emptyArenasState>
+      <section class="empty-state" *ngIf="!errorMessage">
+        <p *ngIf="isLoadingArenas">{{ 'loading' | translate }}</p>
+        <p *ngIf="!isLoadingArenas">{{ 'noArenasFound' | translate }}</p>
+      </section>
+    </ng-template>
+
+    <nav
+      class="pagination-shell"
+      [attr.aria-label]="'sportsArenasTitle' | translate"
+      *ngIf="totalPages > 1"
+    >
+      <button type="button" class="page-button" [disabled]="currentPage === 1" (click)="previousPage($event)">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+
+      <button
+        type="button"
+        class="page-number"
+        *ngFor="let page of totalPagesArray"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page, $event)"
+      >
+        {{ page }}
+      </button>
+
+      <button type="button" class="page-button" [disabled]="currentPage === totalPages" (click)="nextPage($event)">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </nav>
+  </div>
+</div>

@@ -1,0 +1,424 @@
+<app-navbar></app-navbar>
+
+<div class="arena-details-page">
+  <div class="arena-details-shell">
+    <button type="button" class="back-button" (click)="goBack()">
+      <i class="bi bi-arrow-left"></i>
+      {{ 'backToArenas' | translate }}
+    </button>
+
+    <section class="arena-experience" *ngIf="arena; else stateBlock">
+      <section class="hero-card details-card">
+        <img
+          [src]="getArenaImageUrl()"
+          [alt]="arena.name"
+          class="hero-image"
+        />
+        <div class="hero-overlay"></div>
+
+        <div class="hero-content">
+          <div class="hero-copy">
+            <p class="eyebrow">{{ 'sportsFields' | translate }}</p>
+            <h1>{{ arena.name }}</h1>
+
+            <p class="hero-location">
+              <i class="bi bi-geo-alt"></i>
+              <span>{{ arena.address }}</span>
+            </p>
+
+            <div class="hero-pill-row">
+              <span class="hero-pill">
+                <i class="bi bi-building"></i>
+                {{ arena.city }}
+              </span>
+              <span class="hero-pill">
+                <i class="bi bi-dribbble"></i>
+                {{ arena.sportType | translate }}
+              </span>
+              <span class="hero-pill">
+                <i class="bi bi-calendar-check"></i>
+                {{ 'reservationPreviewMode' | translate }}
+              </span>
+            </div>
+          </div>
+
+          <div class="hero-preview-card">
+            <div class="hero-preview-image-shell">
+              <img
+                [src]="getArenaImageUrl()"
+                [alt]="arena.name"
+                class="hero-preview-image"
+              />
+            </div>
+
+            <button
+              type="button"
+              class="preview-button"
+              (click)="openGallery()"
+            >
+              <i class="bi bi-images"></i>
+              {{ 'viewArenaPhoto' | translate }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div class="content-grid">
+        <div class="content-main">
+          <section class="schedule-card details-card">
+            <div class="section-header">
+              <div>
+                <p class="section-kicker">{{ 'reservationPreviewMode' | translate }}</p>
+                <h2>{{ 'selectDateAndTime' | translate }}</h2>
+                <p>{{ 'chooseReservationSlot' | translate }}</p>
+              </div>
+
+              <button type="button" class="week-toggle-button" (click)="toggleWeekView()">
+                <i class="bi bi-calendar3"></i>
+                {{ (showFullWeek ? 'showLess' : 'showFullWeek') | translate }}
+              </button>
+            </div>
+
+            <div class="legend-row">
+              <span class="legend-item">
+                <span class="legend-dot available"></span>
+                {{ 'available' | translate }}
+              </span>
+              <span class="legend-item">
+                <span class="legend-dot booked"></span>
+                {{ 'booked' | translate }}
+              </span>
+              <span class="legend-item">
+                <span class="legend-dot selected"></span>
+                {{ 'yourSelection' | translate }}
+              </span>
+            </div>
+
+            <div
+              class="mobile-calendar-scroll"
+              [class.desktop-week-scroll]="showFullWeek && !isMobileLayout"
+            >
+              <div
+                class="schedule-grid calendar-grid"
+                [style.gridTemplateColumns]="getScheduleGridTemplate()"
+              >
+                <div class="grid-corner"></div>
+
+                <button
+                  type="button"
+                  class="day-card"
+                  *ngFor="let day of visibleDays; trackBy: trackDay"
+                  [ngClass]="{ active: selectedDateIndex === day.index }"
+                  (click)="selectDay(day.index)"
+                >
+                  <span>{{ formatDayLabel(day.date) }}</span>
+                  <strong>{{ formatDayDate(day.date) }}</strong>
+                </button>
+
+                <ng-container *ngFor="let slotStart of timeSlots; trackBy: trackTime">
+                  <div class="time-label">{{ formatTimeLabel(slotStart) }}</div>
+
+                  <button
+                    type="button"
+                    class="slot-button"
+                    *ngFor="let day of visibleDays; trackBy: trackDay"
+                    [disabled]="!isSlotAvailable(day.index, slotStart)"
+                    [ngClass]="{
+                      available: isSlotAvailable(day.index, slotStart),
+                      booked: !isSlotAvailable(day.index, slotStart),
+                      selected: isSelectedSlot(day.index, slotStart)
+                    }"
+                    (click)="selectSlot(day.index, slotStart)"
+                  >
+                    {{ formatTimeRange(slotStart) }}
+                  </button>
+                </ng-container>
+              </div>
+            </div>
+          </section>
+
+          <section class="details-copy details-card">
+            <div class="section-header compact">
+              <div>
+                <p class="section-kicker">{{ 'sportsFields' | translate }}</p>
+                <h2>{{ 'arenaOverview' | translate }}</h2>
+              </div>
+            </div>
+
+            <div class="info-grid">
+              <div class="info-item">
+                <span>{{ 'city' | translate }}</span>
+                <strong>{{ arena.city }}</strong>
+              </div>
+              <div class="info-item">
+                <span>{{ 'sport' | translate }}</span>
+                <strong>{{ arena.sportType | translate }}</strong>
+              </div>
+              <div class="info-item info-item-wide">
+                <span>{{ 'address' | translate }}</span>
+                <strong>{{ arena.address }}</strong>
+              </div>
+            </div>
+
+            <div class="description-card">
+              <p class="section-kicker">{{ 'description' | translate }}</p>
+              <p class="description-text">{{ getArenaDescription() | translate }}</p>
+            </div>
+          </section>
+        </div>
+
+        <aside *ngIf="!isMobileLayout" class="summary-card details-card">
+          <div class="summary-header">
+            <p class="section-kicker">{{ 'reservationPreviewMode' | translate }}</p>
+            <h2>{{ 'reservationSummary' | translate }}</h2>
+          </div>
+
+          <div class="summary-list">
+            <div class="summary-item">
+              <i class="bi bi-building"></i>
+              <div>
+                <span>{{ 'sportsFields' | translate }}</span>
+                <strong>{{ arena.name }}</strong>
+              </div>
+            </div>
+
+            <div class="summary-item">
+              <i class="bi bi-calendar-event"></i>
+              <div>
+                <span>{{ 'selectedDate' | translate }}</span>
+                <strong>{{ formatFullDate(selectedDay?.date || null) }}</strong>
+              </div>
+            </div>
+
+            <div class="summary-item">
+              <i class="bi bi-clock-history"></i>
+              <div>
+                <span>{{ 'selectedTime' | translate }}</span>
+                <strong>{{ formatTimeRange(selectedSlotStart) }}</strong>
+              </div>
+            </div>
+
+            <div class="summary-item">
+              <i class="bi bi-dribbble"></i>
+              <div>
+                <span>{{ 'sport' | translate }}</span>
+                <strong>{{ arena.sportType | translate }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="summary-divider"></div>
+
+          <div class="price-block">
+            <div class="price-row">
+              <span>{{ 'hourlySession' | translate }}</span>
+              <strong>{{ formatPrice(estimatedPrice) }}</strong>
+            </div>
+
+            <div class="price-row total">
+              <span>{{ 'total' | translate }}</span>
+              <strong>{{ formatPrice(estimatedPrice) }}</strong>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="primary-cta"
+            disabled
+            [title]="'reservationComingSoon' | translate"
+          >
+            {{ 'makeReservation' | translate }}
+          </button>
+
+          <button
+            type="button"
+            class="secondary-cta"
+            disabled
+            [title]="'reservationComingSoon' | translate"
+          >
+            <i class="bi bi-heart"></i>
+            {{ 'saveToFavorites' | translate }}
+          </button>
+
+          <div class="summary-note">
+            <i class="bi bi-info-circle"></i>
+            <p>{{ 'reservationPreviewNote' | translate }}</p>
+          </div>
+        </aside>
+
+        <button
+          *ngIf="isMobileLayout && selectedSlotStart !== null"
+          type="button"
+          class="mobile-summary-trigger"
+          (click)="openMobileSummary()"
+        >
+          <span>{{ 'reservationSummary' | translate }}</span>
+          <strong>{{ formatTimeRange(selectedSlotStart) }}</strong>
+        </button>
+      </div>
+    </section>
+
+    <ng-template #stateBlock>
+      <section class="state-card">
+        <p *ngIf="isLoading">{{ 'loading' | translate }}</p>
+        <p *ngIf="!isLoading">{{ errorMessage | translate }}</p>
+      </section>
+    </ng-template>
+  </div>
+</div>
+
+<div
+  class="mobile-summary-overlay"
+  *ngIf="isMobileLayout && isMobileSummaryOpen"
+  (click)="closeMobileSummary()"
+>
+  <div class="mobile-summary-sheet details-card" (click)="$event.stopPropagation()">
+    <div class="mobile-summary-handle"></div>
+
+    <div class="mobile-summary-topline">
+      <div>
+        <p class="section-kicker">{{ 'reservationPreviewMode' | translate }}</p>
+        <h2>{{ 'reservationSummary' | translate }}</h2>
+      </div>
+
+      <button
+        type="button"
+        class="mobile-summary-close"
+        (click)="closeMobileSummary()"
+        [attr.aria-label]="'cancel' | translate"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="summary-list">
+      <div class="summary-item">
+        <i class="bi bi-building"></i>
+        <div>
+          <span>{{ 'sportsFields' | translate }}</span>
+          <strong>{{ arena?.name }}</strong>
+        </div>
+      </div>
+
+      <div class="summary-item">
+        <i class="bi bi-calendar-event"></i>
+        <div>
+          <span>{{ 'selectedDate' | translate }}</span>
+          <strong>{{ formatFullDate(selectedDay?.date || null) }}</strong>
+        </div>
+      </div>
+
+      <div class="summary-item">
+        <i class="bi bi-clock-history"></i>
+        <div>
+          <span>{{ 'selectedTime' | translate }}</span>
+          <strong>{{ formatTimeRange(selectedSlotStart) }}</strong>
+        </div>
+      </div>
+
+      <div class="summary-item">
+        <i class="bi bi-dribbble"></i>
+        <div>
+          <span>{{ 'sport' | translate }}</span>
+          <strong>{{ (arena?.sportType || '') | translate }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-divider"></div>
+
+    <div class="price-block">
+      <div class="price-row">
+        <span>{{ 'hourlySession' | translate }}</span>
+        <strong>{{ formatPrice(estimatedPrice) }}</strong>
+      </div>
+
+      <div class="price-row total">
+        <span>{{ 'total' | translate }}</span>
+        <strong>{{ formatPrice(estimatedPrice) }}</strong>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="primary-cta"
+      disabled
+      [title]="'reservationComingSoon' | translate"
+    >
+      {{ 'makeReservation' | translate }}
+    </button>
+
+    <button
+      type="button"
+      class="secondary-cta"
+      disabled
+      [title]="'reservationComingSoon' | translate"
+    >
+      <i class="bi bi-heart"></i>
+      {{ 'saveToFavorites' | translate }}
+    </button>
+  </div>
+</div>
+
+<div
+  class="gallery-overlay"
+  *ngIf="isGalleryOpen"
+  (click)="closeGallery()"
+>
+  <div
+    class="gallery-dialog"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'viewArenaPhoto' | translate"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      type="button"
+      class="gallery-close"
+      (click)="closeGallery()"
+      [attr.aria-label]="'cancel' | translate"
+    >
+      <i class="bi bi-x-lg"></i>
+    </button>
+
+    <button
+      *ngIf="galleryImages.length > 1"
+      type="button"
+      class="gallery-nav prev"
+      (click)="showPreviousImage()"
+      [attr.aria-label]="'previous' | translate"
+    >
+      <i class="bi bi-chevron-left"></i>
+    </button>
+
+    <div class="gallery-stage">
+      <img
+        [src]="activeGalleryImage"
+        [alt]="arena?.name || ('sportsFields' | translate)"
+        class="gallery-image"
+      />
+    </div>
+
+    <button
+      *ngIf="galleryImages.length > 1"
+      type="button"
+      class="gallery-nav next"
+      (click)="showNextImage()"
+      [attr.aria-label]="'next' | translate"
+    >
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+    <div class="gallery-strip" *ngIf="galleryImages.length > 1">
+      <button
+        type="button"
+        class="gallery-thumb"
+        *ngFor="let imageUrl of galleryImages; let imageIndex = index; trackBy: trackImage"
+        [ngClass]="{ active: activeGalleryIndex === imageIndex }"
+        (click)="openGallery(imageIndex)"
+      >
+        <img [src]="imageUrl" [alt]="arena?.name || ('sportsFields' | translate)" />
+      </button>
+    </div>
+  </div>
+</div>

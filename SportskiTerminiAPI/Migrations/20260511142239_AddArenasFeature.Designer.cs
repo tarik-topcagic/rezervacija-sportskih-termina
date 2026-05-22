@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SportskiTerminiAPI.Data;
 
@@ -11,9 +12,11 @@ using SportskiTerminiAPI.Data;
 namespace SportskiTerminiAPI.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260511142239_AddArenasFeature")]
+    partial class AddArenasFeature
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -342,7 +345,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Sarajevo",
                             CreatedAt = new DateTime(2026, 5, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Otvoreni teren smješten tik uz gradske saobraćajnice i nekoliko kafića, pa je pogodan za rekreativne i takmičarske termine. Reflektori pružaju vrlo dobro večernje osvjetljenje, a teren se redovno održava tokom cijele sezone. Na raspolaganju su svlačionice, manji tribinski prostor i parking u neposrednoj blizini.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20modern%20outdoor%20football%20arena%20in%20Sarajevo%2C%20Balkan%20sports%20center%20architecture%2C%20empty%20artificial%20turf%20field%2C%20stadium%20lights%2C%20small%20seating%20area%2C%20fences%2C%20evening%20atmosphere%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1001&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1518604666860-9ed391f76460?auto=format&fit=crop&w=1200&q=80",
                             Name = "Arena Koševo Center",
                             SportType = "Football"
                         },
@@ -353,7 +356,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Sarajevo",
                             CreatedAt = new DateTime(2026, 5, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Moderna dvorana sa parketom pogodnim za treninge klubova, škola košarke i rekreativne mečeve. Unutrašnji prostor je dobro ventilisan, a gledalište omogućava ugodno praćenje utakmica za manju publiku. U objektu se nalaze svlačionice, sanitarni čvorovi i recepcijski prostor.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20indoor%20basketball%20hall%20in%20Sarajevo%2C%20modern%20European%20sports%20facility%2C%20polished%20wooden%20court%2C%20seating%20stands%2C%20ceiling%20lights%2C%20empty%20arena%2C%20realistic%20architecture%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1002&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80",
                             Name = "Skenderija Basket Hall",
                             SportType = "Basketball"
                         },
@@ -364,7 +367,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Sarajevo",
                             CreatedAt = new DateTime(2026, 5, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Padel centar otvorenog tipa sa kvalitetnom podlogom i zaštitnim staklenim panelima koji dobro drže ritam igre. Arena ima večernju rasvjetu, rezervisana parking mjesta i lounge zonu za odmor između termina. Lokacija je praktična za dolazak iz više dijelova grada.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20outdoor%20padel%20court%20complex%20in%20Sarajevo%2C%20glass%20walls%2C%20modern%20Balkan%20sports%20center%2C%20evening%20lighting%2C%20spectator%20benches%2C%20fenced%20courts%2C%20empty%20facility%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1003&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=1200&q=80",
                             Name = "Padel Vista Marijin Dvor",
                             SportType = "Padel"
                         },
@@ -375,7 +378,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Mostar",
                             CreatedAt = new DateTime(2026, 5, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Otvoreni nogometni kompleks s prirodnim osjećajem terena i uredno obilježenim linijama za rekreativne lige. Prostor je osvijetljen za večernje termine, a uz teren se nalazi nekoliko klupa i manja natkrivena zona za gledaoce. Arena je posebno popularna među ekipama koje žele termin u mirnijem dijelu grada.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20outdoor%20football%20sports%20park%20in%20Mostar%2C%20Balkan%20urban%20setting%2C%20green%20field%2C%20floodlights%2C%20fences%2C%20modest%20grandstand%2C%20warm%20stone%20architecture%2C%20empty%20facility%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1004&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1486286701208-1d58e9338013?auto=format&fit=crop&w=1200&q=80",
                             Name = "Velež Sport Park",
                             SportType = "Football"
                         },
@@ -386,7 +389,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Mostar",
                             CreatedAt = new DateTime(2026, 5, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Zatvorena košarkaška dvorana sa stabilnom rasvjetom i vrlo dobrim akustičnim uslovima za trening i turnire. Parket je redovno održavan, a uz salu su dostupne svlačionice, tuševi i manja tribina. U blizini se nalaze parking mjesta i nekoliko ugostiteljskih objekata.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20indoor%20basketball%20arena%20in%20Mostar%2C%20modern%20sports%20hall%2C%20hardwood%20court%2C%20bright%20roof%20lighting%2C%20compact%20spectator%20area%2C%20clean%20European%20design%2C%20empty%20facility%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1005&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1519861531473-9200262188bf?auto=format&fit=crop&w=1200&q=80",
                             Name = "Neretva Basket House",
                             SportType = "Basketball"
                         },
@@ -397,7 +400,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Mostar",
                             CreatedAt = new DateTime(2026, 5, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Mirniji padel kompleks smješten nedaleko od gradskog jezgra, idealan za rekreativce i manje turnire. Tereni su na otvorenom, imaju snažno noćno osvjetljenje i dovoljno prostora oko staklenih ograda za sigurnu igru. Gostima su na raspolaganju parking, svlačionice i terasa za odmor.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20outdoor%20padel%20club%20in%20Mostar%2C%20glass%20padel%20courts%2C%20Mediterranean%20Balkan%20atmosphere%2C%20modern%20lighting%2C%20lounge%20terrace%2C%20clean%20fences%2C%20empty%20facility%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1006&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1200&q=80",
                             Name = "Padel Club Buna",
                             SportType = "Padel"
                         },
@@ -408,7 +411,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Tuzla",
                             CreatedAt = new DateTime(2026, 5, 4, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Nogometni teren sa umjetnom travom projektovan za dinamične termine malog fudbala i treninge mlađih selekcija. Reflektori pokrivaju čitavu površinu, a pored terena postoji dovoljno prostora za zagrijavanje i kratki odmor. Kompleks nudi svlačionice, parking i pristup glavnim gradskim saobraćajnicama.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20small%20football%20arena%20in%20Tuzla%2C%20empty%20synthetic%20turf%20field%2C%20floodlights%2C%20fences%2C%20parking%20nearby%2C%20modern%20Bosnian%20sports%20facility%2C%20overcast%20daylight%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1007&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80",
                             Name = "Tušanj Arena 5+",
                             SportType = "Football"
                         },
@@ -419,7 +422,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Tuzla",
                             CreatedAt = new DateTime(2026, 5, 4, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Višenamjenska dvorana sa kvalitetnim parketom i odličnom preglednošću terena iz gledališta. Prostor je pogodan za treninge, prijateljske utakmice i školske turnire, uz uredne svlačionice i pomoćne prostorije. Lokacija u sportskom centru olakšava pristup i organizaciju događaja.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20indoor%20basketball%20sports%20hall%20in%20Tuzla%2C%20clean%20wooden%20court%2C%20bright%20lighting%2C%20tiered%20seating%2C%20modern%20Balkan%20civic%20arena%2C%20empty%20facility%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1008&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1518063319789-7217e6706b04?auto=format&fit=crop&w=1200&q=80",
                             Name = "Mejdan Basket Arena",
                             SportType = "Basketball"
                         },
@@ -430,7 +433,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Tuzla",
                             CreatedAt = new DateTime(2026, 5, 5, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Padel teren u modernom rekreativnom kompleksu, poznat po urednoj podlozi i prijatnom ambijentu tokom cijelog dana. Reflektori omogućavaju stabilnu igru i u kasnijim večernjim satima, a gostima su dostupni garderoberi i caffe zona. Posebna prednost je blizina parkinga i centra grada.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20outdoor%20padel%20arena%20in%20Tuzla%2C%20modern%20glass%20courts%2C%20evening%20lights%2C%20urban%20recreational%20zone%2C%20fenced%20facility%2C%20empty%20courts%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1009&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=1200&q=80",
                             Name = "Padel Panonika",
                             SportType = "Padel"
                         },
@@ -441,7 +444,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Banja Luka",
                             CreatedAt = new DateTime(2026, 5, 5, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Otvorena arena za mali fudbal sa čvrstom umjetnom travom i vrlo dobrom drenažom nakon kiše. Teren je osvijetljen, ograda je uredna i sigurna, a uz objekat se nalaze svlačionice i prostor za kraće zadržavanje ekipa. Arena često okuplja rekreativne lige i vikend turnire.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20football%20hub%20in%20Banja%20Luka%2C%20empty%20artificial%20grass%20pitch%2C%20European%20sports%20facility%2C%20perimeter%20fences%2C%20floodlights%2C%20modest%20stands%2C%20modern%20architecture%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1010&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1508098682722-e99c643e7485?auto=format&fit=crop&w=1200&q=80",
                             Name = "Krajina Football Hub",
                             SportType = "Football"
                         },
@@ -452,7 +455,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Banja Luka",
                             CreatedAt = new DateTime(2026, 5, 6, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Košarkaška dvorana poznata po ravnomjernom osvjetljenju i dobro održavanom parketu koji odgovara i intenzivnijim treninzima. U sklopu objekta nalaze se svlačionice, prostor za trenere i manja zona za gledaoce. U neposrednoj blizini postoji više parking mjesta i pristup glavnim ulicama.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20indoor%20basketball%20court%20in%20Banja%20Luka%2C%20bright%20sports%20hall%20lighting%2C%20polished%20parquet%2C%20spectator%20seating%2C%20contemporary%20Balkan%20arena%20interior%2C%20empty%20facility%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1011&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1515523110800-9415d13b84a8?auto=format&fit=crop&w=1200&q=80",
                             Name = "Borik Basket Zone",
                             SportType = "Basketball"
                         },
@@ -463,7 +466,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Banja Luka",
                             CreatedAt = new DateTime(2026, 5, 6, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Padel centar sa otvorenim terenima i prijatnim ambijentom uz rijeku, što ga čini popularnim za popodnevne i večernje termine. Podloga je brza, staklene ograde su kvalitetne, a osvjetljenje ravnomjerno raspoređeno. Gosti imaju pristup parkingu, garderoberima i zoni za osvježenje.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20outdoor%20padel%20complex%20near%20river%20in%20Banja%20Luka%2C%20modern%20glass%20courts%2C%20elegant%20lighting%2C%20landscaped%20sports%20center%2C%20empty%20facility%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1012&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=1200&q=80",
                             Name = "Padel Riverside Vrbas",
                             SportType = "Padel"
                         },
@@ -474,7 +477,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Bihać",
                             CreatedAt = new DateTime(2026, 5, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Nogometni teren u mirnijem dijelu Bihaća, pogodan za termine prijateljskih ekipa i školskih sekcija. Reflektori pružaju dobru vidljivost, a uz teren postoje klupe za igrače i mali prostor za gledaoce. Površina terena je uredna i pogodna za cjelogodišnje korištenje.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20outdoor%20football%20terrain%20in%20Bihac%2C%20empty%20field%2C%20fences%2C%20tribune%20benches%2C%20clean%20Balkan%20sports%20center%2C%20natural%20daylight%2C%20parking%20and%20trees%20nearby%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1013&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1494172961521-33799ddd43a5?auto=format&fit=crop&w=1200&q=80",
                             Name = "Una Football Point",
                             SportType = "Football"
                         },
@@ -485,7 +488,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Bihać",
                             CreatedAt = new DateTime(2026, 5, 7, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Zatvoreni košarkaški prostor sa ugodnom atmosferom i parketom koji dobro podnosi česte treninge. Arena je pogodna za omladinske selekcije i rekreativne mečeve, uz svlačionice i pristojan prostor za publiku. Lokacija je lako dostupna i u blizini ima dovoljno parking mjesta.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20indoor%20basketball%20hall%20in%20Bihac%2C%20hardwood%20court%2C%20bright%20ceiling%20lighting%2C%20modest%20stands%2C%20local%20European%20sports%20facility%2C%20empty%20arena%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1014&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1505666287802-931dc83948e9?auto=format&fit=crop&w=1200&q=80",
                             Name = "Dvorana Sokol Basket",
                             SportType = "Basketball"
                         },
@@ -496,7 +499,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Bihać",
                             CreatedAt = new DateTime(2026, 5, 8, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Otvoreni padel kompleks sa čistim linijama terena i dobro održavanom podlogom za rekreativnu i takmičarsku igru. Prostor ima rasvjetu za noćne termine, svlačionice i manji lounge kutak za ekipe nakon meča. Blizina zelenih zona daje cijelom centru opušten i prijatan dojam.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20outdoor%20padel%20gardens%20in%20Bihac%2C%20glass%20wall%20courts%2C%20green%20surroundings%2C%20evening%20lights%2C%20modern%20recreational%20center%2C%20empty%20facility%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1015&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1200&q=80",
                             Name = "Padel Una Gardens",
                             SportType = "Padel"
                         },
@@ -507,7 +510,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Zenica",
                             CreatedAt = new DateTime(2026, 5, 8, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Arena za mali fudbal sa kvalitetnom umjetnom travom i vrlo dobrom preglednošću cijele površine. Reflektori i zaštitna ograda omogućavaju sigurne večernje termine, a u sklopu centra nalaze se svlačionice i parking. Često je izbor ekipa koje traže centralnu lokaciju u Zenici.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20football%20arena%20in%20Zenica%2C%20empty%20artificial%20turf%2C%20powerful%20floodlights%2C%20fences%2C%20compact%20stands%2C%20urban%20Balkan%20sports%20facility%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1016&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1459865264687-595d652de67e?auto=format&fit=crop&w=1200&q=80",
                             Name = "Bilino Football Arena",
                             SportType = "Football"
                         },
@@ -518,7 +521,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Zenica",
                             CreatedAt = new DateTime(2026, 5, 9, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Unutrašnja dvorana sa profesionalnim osjećajem prostora, pogodna za treninge klubova i rekreativne utakmice. Parket je u dobrom stanju, rasvjeta je ravnomjerna, a manja tribina omogućava prisustvo publike bez gužve. Korisnicima su dostupne svlačionice, sanitarni čvorovi i prateći sadržaji.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20indoor%20basketball%20arena%20in%20Zenica%2C%20polished%20wood%20floor%2C%20balanced%20lighting%2C%20spectator%20tribune%2C%20contemporary%20European%20sports%20hall%2C%20empty%20facility%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1017&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?auto=format&fit=crop&w=1200&q=80",
                             Name = "Arena Kamberovića Basket",
                             SportType = "Basketball"
                         },
@@ -529,7 +532,7 @@ namespace SportskiTerminiAPI.Migrations
                             City = "Zenica",
                             CreatedAt = new DateTime(2026, 5, 9, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Savremeni padel teren sa urednim staklenim panelima, kvalitetnim osvjetljenjem i dovoljno prostora oko terena za udobno kretanje igrača. Centar je pogodan i za početnike i za naprednije rekreativce, a uz teren se nalaze parking i zona za odmor. Atmosfera je mirna, ali dovoljno živahna za turnirske dane.",
-                            ImageUrl = "https://image.pollinations.ai/prompt/photorealistic%20modern%20padel%20center%20in%20Zenica%2C%20empty%20glass%20courts%2C%20evening%20lights%2C%20fences%2C%20sleek%20Balkan%20sports%20architecture%2C%20realistic%20facility%20atmosphere%2C%20no%20players%2C%20no%20logos?width=1280&height=720&seed=1018&model=flux&nologo=true&private=true",
+                            ImageUrl = "https://images.unsplash.com/photo-1552667466-07770ae110d0?auto=format&fit=crop&w=1200&q=80",
                             Name = "Padel City Zen",
                             SportType = "Padel"
                         });

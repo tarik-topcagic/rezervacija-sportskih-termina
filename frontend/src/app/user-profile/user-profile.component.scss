@@ -101,6 +101,10 @@
   color: #c5c8cc !important;
 }
 
+:host-context(body.dark-mode) .back-link {
+  color: #2fa4e7;
+}
+
 :host-context(body.dark-mode) hr {
   border-color: #3a3a3a;
 }

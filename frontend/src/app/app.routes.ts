@@ -10,9 +10,11 @@ import { PendingChangesGuard } from './guards/pending-changes.guard';
 import { SearchUsersComponent } from './search-users/search-users.component';
 import { UserProfileComponent } from './user-profile/user-profile.component';
 import { SearchGroupsComponent } from './search-groups/search-groups.component';
+import { SportsArenasComponent } from './sports-arenas/sports-arenas.component';
 import { SettingsComponent } from './settings/settings.component';
 import { GroupDetailsComponent } from './group-details/group-details.component';
 import { NotificationsComponent } from './notifications/notifications.component';
+import { ArenaDetailsComponent } from './arena-details/arena-details.component';
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
@@ -24,6 +26,8 @@ export const routes: Routes = [
     { path: 'settings', component: SettingsComponent, canActivate: [AuthGuard] },
     { path: 'users', component: SearchUsersComponent, canActivate: [AuthGuard] },
     { path: 'users/:username', component: UserProfileComponent, canActivate: [AuthGuard] },
+    { path: 'sports-arenas', component: SportsArenasComponent, canActivate: [AuthGuard] },
+    { path: 'sports-arenas/:id', component: ArenaDetailsComponent, canActivate: [AuthGuard] },
     { path: 'groups', component: SearchGroupsComponent, canActivate: [AuthGuard] },
     { path: 'groups/:id', component: GroupDetailsComponent, canActivate: [AuthGuard] },
     {
@@ -49,6 +53,7 @@ export const routes: Routes = [
     { path: 'postavke-profila', redirectTo: 'profile/edit', pathMatch: 'full' },
     { path: 'postavke', redirectTo: 'settings', pathMatch: 'full' },
     { path: 'pretraga-korisnika', redirectTo: 'users', pathMatch: 'full' },
+    { path: 'sportski-tereni', redirectTo: 'sports-arenas', pathMatch: 'full' },
     { path: 'korisnicki-profil/:username', redirectTo: 'users/:username', pathMatch: 'full' },
     { path: 'grupe', redirectTo: 'groups', pathMatch: 'full' },
     { path: 'grupe/:id', redirectTo: 'groups/:id', pathMatch: 'full' },
