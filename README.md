@@ -2,14 +2,14 @@
 
 A full-stack web application for managing sports groups, memberships, real-time communication, and future booking of sports facilities.
 
-⚠️ **Note:** This project is currently under active development. Core authentication, group management, membership, messaging, notifications, and online/offline activity features are implemented, while facility (arena) management, time slot booking, and payments are still in progress.
+⚠️ **Note:** This project is currently under active development. Core authentication, group management, facility (arena) management, membership, messaging, notifications, and online/offline activity features are implemented, while time slot booking, and payments are still in progress.
 
 ---
 
 ## 🌐 Live Demo
 
 - **Frontend:** https://sport-booking-app.netlify.app/
-- **Backend API / Swagger:** https://sport-booking-api-gaeebqg7bvf7g8h7.austriaeast-01.azurewebsites.net/swagger
+- **Backend API / Swagger:** https://rezervacija-sportskih-termina-production.up.railway.app/swagger
 
 ### Demo Access
 
@@ -27,10 +27,10 @@ Password: z@Rekreaciju07
 ### Backend
 - ASP.NET Core (.NET 8)
 - Entity Framework Core
-- SQL Server / Azure SQL Database
+- PostgreSQL
 - REST API
 - SignalR
-- Azure App Service
+- Railway
 
 ### Frontend
 - Angular
@@ -106,6 +106,13 @@ Password: z@Rekreaciju07
 - Leave group functionality
 - Confirmation dialogs for important actions
 
+### 🏟️ Sports Arenas
+- Browse available sports arenas
+- Arena details page
+- Arena filtering by city and sport
+- Arena image gallery
+- Responsive arena details view
+
 ### 📱 Navigation
 - Top navbar with notifications and profile access
 - Bottom navbar displaying the user’s groups
@@ -117,14 +124,6 @@ Password: z@Rekreaciju07
 ## 🚧 Work in Progress (Upcoming Features)
 
 The following features are planned and currently under development:
-
-### 🏟️ Facility (Arena) Management
-- Create and manage sports facilities
-- Define available arenas/fields
-
-### ⏱️ Time Slots & Availability
-- Define available time slots
-- Display free and occupied slots
 
 ### 📅 Booking System
 - Reserve sports terms
