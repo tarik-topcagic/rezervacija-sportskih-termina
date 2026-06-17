@@ -1,4 +1,4 @@
 export const environment = {
     production: false,
-    apiUrl: 'https://sportbookingapi.runasp.net/api'
+    apiUrl: 'https://rezervacija-sportskih-termina-production.up.railway.app/api'
 }
