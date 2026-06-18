@@ -45,36 +45,36 @@ namespace SportskiTerminiAPI.Repositories
                     }
 
                     await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                        DELETE FROM GroupMessageReceipts
-                        WHERE GroupMessageId IN (
-                            SELECT Id FROM GroupMessages WHERE GroupId = {groupId}
-                        )");
+                        DELETE FROM ""GroupMessageReceipts""
+                        WHERE ""GroupMessageId"" IN (
+                        SELECT ""Id"" FROM ""GroupMessages"" WHERE ""GroupId"" = {groupId}
+                    )");
 
                     await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                        DELETE FROM GroupMessages
-                        WHERE GroupId = {groupId}");
+                        DELETE FROM ""GroupMessages""
+                        WHERE ""GroupId"" = {groupId}");
 
                     await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                        DELETE FROM GroupChatReadStates
-                        WHERE GroupId = {groupId}");
+                        DELETE FROM ""GroupChatReadStates""
+                        WHERE ""GroupId"" = {groupId}");
 
                     await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                        DELETE FROM Notifications
-                        WHERE GroupId = {groupId}");
+                        DELETE FROM ""Notifications""
+                        WHERE ""GroupId"" = {groupId}");
 
                     await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                        DELETE FROM Notifications
-                        WHERE MembershipId IN (
-                            SELECT Id FROM GroupMemberships WHERE GroupId = {groupId}
-                        )");
+                        DELETE FROM ""Notifications""
+                        WHERE ""MembershipId"" IN (
+                        SELECT ""Id"" FROM ""GroupMemberships"" WHERE ""GroupId"" = {groupId}
+                    )");
 
                     await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                        DELETE FROM GroupMemberships
-                        WHERE GroupId = {groupId}");
+                        DELETE FROM ""GroupMemberships""
+                        WHERE ""GroupId"" = {groupId}");
 
                     await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                        DELETE FROM Groups
-                        WHERE Id = {groupId}");
+                        DELETE FROM ""Groups""
+                        WHERE ""Id"" = {groupId}");
 
                     await transaction.CommitAsync();
                 });
@@ -123,6 +123,15 @@ namespace SportskiTerminiAPI.Repositories
             return await _context.Groups
                 .Include(g => g.Memberships)
                 .Where(g => g.Memberships.Any(m => m.UserId == userId && m.Status == MembershipStatus.Accepted) && g.AdminId != userId)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Group>> GetPendingJoinRequestGroupsAsync(string userId)
+        {
+            return await _context.Groups
+                .Include(g => g.Memberships)
+                .Where(g => g.AdminId != userId
+                    && g.Memberships.Any(m => m.UserId == userId && m.Status == MembershipStatus.PendingJoinRequest))
                 .ToListAsync();
         }
 
@@ -211,7 +220,9 @@ namespace SportskiTerminiAPI.Repositories
         {
             return await _context.Groups
                 .Include(g => g.Memberships)
-                .Where(g => g.AdminId != userId && !g.Memberships.Any(m => m.UserId == userId && m.Status != MembershipStatus.Declined))
+                .Where(g => g.AdminId != userId
+                    && !g.Memberships.Any(m => m.UserId == userId
+                        && (m.Status == MembershipStatus.Accepted || m.Status == MembershipStatus.PendingInvitation)))
                 .ToListAsync();
         }
 

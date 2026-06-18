@@ -112,6 +112,17 @@ namespace SportskiTerminiAPI.Controllers
             return Ok(groups);
         }
 
+        [HttpGet("pending-requests")]
+        public async Task<IActionResult> GetPendingJoinRequestGroups()
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var groups = await _groupService.GetPendingJoinRequestGroupsAsync(userId);
+            return Ok(groups);
+        }
+
         [HttpGet("search-groups")]
         public async Task<IActionResult> SearchGroups([FromQuery] string? query)
         {

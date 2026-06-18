@@ -313,6 +313,19 @@
   background: var(--search-surface-strong);
   color: var(--search-primary);
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.request-access-button,
+.pending-access-button {
+  justify-content: center;
+}
+
+.pending-access-button {
+  border-color: rgba(108, 117, 125, 0.35);
+  color: var(--search-muted);
 }
 
 .icon-button {
@@ -343,6 +356,10 @@
 .outline-button:hover,
 .icon-button:hover {
   border-color: rgba(13, 110, 253, 0.45);
+}
+
+.pending-access-button:hover {
+  border-color: rgba(108, 117, 125, 0.45);
 }
 
 .empty-state {

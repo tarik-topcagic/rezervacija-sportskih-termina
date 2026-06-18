@@ -11,6 +11,13 @@ import { Router } from '@angular/router';
 import { Subscription, catchError, forkJoin, of } from 'rxjs';
 import { paginate } from '../helpers/pagination.helper';
 import { matchesSearchQuery, SearchSortDirection, sortItemsByText } from '../helpers/search.helper';
+import { GroupDetails } from '../interfaces/group.model';
+import { LanguageService } from '../../services/language.service';
+import { ToastService } from '../../services/toast.service';
+import {
+  cancelGroupAccessRequest,
+  requestGroupAccess,
+} from '../helpers/group-membership-actions.helper';
 
 @Component({
   selector: 'app-search-groups',
@@ -32,6 +39,10 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
   showEditGroupModal = false;
   selectedGroupToEdit: Group | null = null;
   isLoadingGroups = false;
+  pendingJoinRequestGroupIds = new Set<number>();
+  pendingInvitationGroupIds = new Set<number>();
+  requestingAccessGroupIds = new Set<number>();
+  cancelingAccessRequestGroupIds = new Set<number>();
 
   currentPage = 1;
   pageSize = 6;
@@ -44,6 +55,8 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
   constructor(
     private groupService: GroupService,
     private router: Router,
+    private languageService: LanguageService,
+    private toastService: ToastService,
   ) {
     this.membershipChangedSubscription = this.groupService.membershipChanged$.subscribe(() => {
       this.loadGroupCollections();
@@ -196,6 +209,76 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
       || this.memberGroups.some((candidate) => candidate.id === group.id);
   }
 
+  isMemberGroup(group: Group): boolean {
+    return this.memberGroups.some((candidate) => candidate.id === group.id);
+  }
+
+  canShowRequestAccessButton(group: Group): boolean {
+    return !this.isMyGroup(group)
+      && !this.isMemberGroup(group)
+      && !this.hasPendingInvitation(group);
+  }
+
+  hasPendingJoinRequest(group: Group): boolean {
+    return this.pendingJoinRequestGroupIds.has(group.id);
+  }
+
+  hasPendingInvitation(group: Group): boolean {
+    return this.pendingInvitationGroupIds.has(group.id);
+  }
+
+  isRequestingAccess(group: Group): boolean {
+    return this.requestingAccessGroupIds.has(group.id);
+  }
+
+  isCancelingAccessRequest(group: Group): boolean {
+    return this.cancelingAccessRequestGroupIds.has(group.id);
+  }
+
+  requestAccess(group: Group): void {
+    if (!this.canShowRequestAccessButton(group) || this.hasPendingJoinRequest(group) || this.isRequestingAccess(group)) {
+      return;
+    }
+
+    this.requestingAccessGroupIds.add(group.id);
+
+    requestGroupAccess(this.groupService, group.id, {
+      languageService: this.languageService,
+      toastService: this.toastService,
+      successKey: 'accessRequested',
+      onSuccess: () => {
+        this.requestingAccessGroupIds.delete(group.id);
+        this.pendingJoinRequestGroupIds.add(group.id);
+      },
+      onError: (error) => {
+        this.requestingAccessGroupIds.delete(group.id);
+        console.error('Error requesting group access from search page:', error);
+      },
+    });
+  }
+
+  cancelAccessRequest(group: Group): void {
+    if (!this.canShowRequestAccessButton(group) || !this.hasPendingJoinRequest(group) || this.isCancelingAccessRequest(group)) {
+      return;
+    }
+
+    this.cancelingAccessRequestGroupIds.add(group.id);
+
+    cancelGroupAccessRequest(this.groupService, group.id, {
+      languageService: this.languageService,
+      toastService: this.toastService,
+      successKey: 'joinRequestCancelled',
+      onSuccess: () => {
+        this.cancelingAccessRequestGroupIds.delete(group.id);
+        this.pendingJoinRequestGroupIds.delete(group.id);
+      },
+      onError: (error) => {
+        this.cancelingAccessRequestGroupIds.delete(group.id);
+        console.error('Error cancelling group access request from search page:', error);
+      },
+    });
+  }
+
   getEmptyStateKey(): string {
     if (this.activeFilter === 'all') {
       return 'noGroupsFound';
@@ -211,11 +294,12 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
       allGroups: this.groupService.searchGroups().pipe(catchError(() => of([] as Group[]))),
       adminGroups: this.groupService.getMyGroups().pipe(catchError(() => of([] as Group[]))),
       memberGroups: this.groupService.getMemberGroups().pipe(catchError(() => of([] as Group[]))),
+      pendingJoinRequestGroups: this.groupService.getPendingJoinRequestGroups().pipe(catchError(() => of([] as Group[]))),
     }).subscribe({
-      next: ({ allGroups, adminGroups, memberGroups }) => {
+      next: ({ allGroups, adminGroups, memberGroups, pendingJoinRequestGroups }) => {
         this.myGroups = adminGroups;
         this.memberGroups = memberGroups;
-        this.allGroups = this.mergeUniqueGroups(allGroups, adminGroups, memberGroups);
+        this.allGroups = this.mergeUniqueGroups(allGroups, adminGroups, memberGroups, pendingJoinRequestGroups);
 
         if (!this.myGroups.length && !this.memberGroups.length) {
           this.activeFilter = 'all';
@@ -225,14 +309,15 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
           this.activeFilter = 'membership';
         }
 
-        this.isLoadingGroups = false;
-        this.applyFiltersAndSort();
+        this.syncAccessRequestStates();
       },
       error: (error) => {
         console.error('Error loading group collections for search groups page:', error);
         this.allGroups = [];
         this.myGroups = [];
         this.memberGroups = [];
+        this.pendingJoinRequestGroupIds.clear();
+        this.pendingInvitationGroupIds.clear();
         this.isLoadingGroups = false;
         this.applyFiltersAndSort();
       },
@@ -273,5 +358,56 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
 
     this.filteredGroups = nextGroups;
     this.setupPagination();
+  }
+
+  private syncAccessRequestStates(): void {
+    const candidateGroups = this.allGroups.filter((group) => !this.isMyGroup(group) && !this.isMemberGroup(group));
+
+    if (!candidateGroups.length) {
+      this.pendingJoinRequestGroupIds.clear();
+      this.pendingInvitationGroupIds.clear();
+      this.isLoadingGroups = false;
+      this.applyFiltersAndSort();
+      return;
+    }
+
+    forkJoin(
+      candidateGroups.map((group) =>
+        this.groupService.getGroupDetails(group.id).pipe(
+          catchError(() => of(null as GroupDetails | null)),
+        ),
+      ),
+    ).subscribe({
+      next: (groupDetails) => {
+        this.pendingJoinRequestGroupIds.clear();
+        this.pendingInvitationGroupIds.clear();
+
+        groupDetails.forEach((details, index) => {
+          if (!details) {
+            return;
+          }
+
+          const groupId = candidateGroups[index].id;
+
+          if (details.hasPendingJoinRequest) {
+            this.pendingJoinRequestGroupIds.add(groupId);
+          }
+
+          if (details.hasPendingInvitation) {
+            this.pendingInvitationGroupIds.add(groupId);
+          }
+        });
+
+        this.isLoadingGroups = false;
+        this.applyFiltersAndSort();
+      },
+      error: (error) => {
+        console.error('Error loading access request states for search groups page:', error);
+        this.pendingJoinRequestGroupIds.clear();
+        this.pendingInvitationGroupIds.clear();
+        this.isLoadingGroups = false;
+        this.applyFiltersAndSort();
+      },
+    });
   }
 }

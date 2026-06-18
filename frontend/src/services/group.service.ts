@@ -18,7 +18,9 @@ export class GroupService {
 
   createGroup(data: any): Observable<any> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post(`${this.apiUrl}/create`, data, { headers });
+    return this.http.post(`${this.apiUrl}/create`, data, { headers }).pipe(
+      tap(() => this.notifyMembershipChanged()),
+    );
   }
 
   updateGroup(groupId: number, updateData: any): Observable<any> {
@@ -99,6 +101,10 @@ export class GroupService {
 
   getMemberGroups(): Observable<Group[]> {
     return this.http.get<Group[]>(`${this.apiUrl}/membership`);
+  }
+
+  getPendingJoinRequestGroups(): Observable<Group[]> {
+    return this.http.get<Group[]>(`${this.apiUrl}/pending-requests`);
   }
 
   searchGroups(query: string = ''): Observable<Group[]> {

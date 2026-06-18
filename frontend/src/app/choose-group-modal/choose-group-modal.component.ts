@@ -15,6 +15,11 @@ import {
   isPendingInvitation,
   isPendingJoinRequest,
 } from '../helpers/membership-ui.helper';
+import {
+  cancelGroupInvitation,
+  respondToGroupJoinRequest,
+  sendGroupInvitation,
+} from '../helpers/group-membership-actions.helper';
 
 @Component({
   selector: 'app-choose-group-modal',
@@ -158,13 +163,15 @@ export class ChooseGroupModalComponent implements OnChanges {
     this.inviteSuccessMessage = '';
     this.inviteErrorMessage = '';
 
-    this.groupService.sendInvite(group.id, this.user.id).subscribe(
-      () => {
+    sendGroupInvitation(this.groupService, group.id, this.user.id, {
+      languageService: this.languageService,
+      toastService: this.toastService,
+      successKey: 'invitationSent',
+      onSuccess: () => {
         this.invitingGroupIds.delete(group.id);
         this.groupStatuses.set(group.id, MembershipStatus.PendingInvitation);
-        this.toastService.showSuccess(this.languageService.translate('invitationSent'));
       },
-      (error) => {
+      onError: (error) => {
         this.invitingGroupIds.delete(group.id);
 
         if (error?.status === 400) {
@@ -175,7 +182,7 @@ export class ChooseGroupModalComponent implements OnChanges {
 
         console.error('Error sending group invitation:', error);
       },
-    );
+    });
   }
 
   private cancelGroupInvitation(group: Group): void {
@@ -187,19 +194,21 @@ export class ChooseGroupModalComponent implements OnChanges {
     this.inviteSuccessMessage = '';
     this.inviteErrorMessage = '';
 
-    this.groupService.cancelInvitation(group.id, this.user.id).subscribe(
-      () => {
+    cancelGroupInvitation(this.groupService, group.id, this.user.id, {
+      languageService: this.languageService,
+      toastService: this.toastService,
+      successKey: 'invitationCancelled',
+      onSuccess: () => {
         this.cancelingInvitationGroupIds.delete(group.id);
         this.groupStatuses.delete(group.id);
         this.groupMembershipIds.delete(group.id);
-        this.toastService.showSuccess(this.languageService.translate('invitationCancelled'));
       },
-      (error) => {
+      onError: (error) => {
         this.cancelingInvitationGroupIds.delete(group.id);
         this.inviteErrorMessage = this.languageService.translate('cancelInvitationError');
         console.error('Error cancelling group invitation:', error);
       },
-    );
+    });
   }
 
   private canInviteToGroup(group: Group): boolean {
@@ -219,8 +228,8 @@ export class ChooseGroupModalComponent implements OnChanges {
     this.inviteSuccessMessage = '';
     this.inviteErrorMessage = '';
 
-    this.groupService.respondJoinRequest(group.id, membershipId, accept).subscribe(
-      () => {
+    respondToGroupJoinRequest(this.groupService, group.id, membershipId, accept, {
+      onSuccess: () => {
         this.respondingJoinRequestGroupIds.delete(group.id);
 
         if (accept) {
@@ -232,12 +241,12 @@ export class ChooseGroupModalComponent implements OnChanges {
           this.inviteSuccessMessage = this.languageService.translate('joinRequestDeclined');
         }
       },
-      (error) => {
+      onError: (error) => {
         this.respondingJoinRequestGroupIds.delete(group.id);
         this.inviteErrorMessage = this.languageService.translate('joinRequestResponseError');
         console.error('Error responding to join request:', error);
       },
-    );
+    });
   }
 
   private isPendingJoinRequestForGroup(group: Group): boolean {

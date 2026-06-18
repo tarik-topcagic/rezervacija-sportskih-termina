@@ -147,6 +147,29 @@
           </button>
 
           <button
+            *ngIf="canShowRequestAccessButton(group) && !hasPendingJoinRequest(group)"
+            type="button"
+            class="outline-button request-access-button"
+            [disabled]="isRequestingAccess(group)"
+            (click)="requestAccess(group)"
+          >
+            <i class="bi bi-door-open"></i>
+            {{ (isRequestingAccess(group) ? 'requestingAccess' : 'requestAccess') | translate }}
+          </button>
+
+          <button
+            *ngIf="canShowRequestAccessButton(group) && hasPendingJoinRequest(group)"
+            type="button"
+            class="outline-button pending-access-button"
+            [disabled]="isCancelingAccessRequest(group)"
+            [title]="'cancelJoinRequest' | translate"
+            (click)="cancelAccessRequest(group)"
+          >
+            <i class="bi bi-x-circle"></i>
+            {{ (isCancelingAccessRequest(group) ? 'canceling' : 'pending') | translate }}
+          </button>
+
+          <button
             *ngIf="canMessageGroup(group)"
             type="button"
             class="icon-button"

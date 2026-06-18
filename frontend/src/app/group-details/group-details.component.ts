@@ -15,6 +15,11 @@ import { GroupMembersModalComponent } from '../group-members-modal/group-members
 import { GroupPresence } from '../interfaces/group-presence.model';
 import { UserPresence } from '../interfaces/user-presence.model';
 import { ToastService } from '../../services/toast.service';
+import {
+  cancelGroupAccessRequest,
+  requestGroupAccess,
+  respondToGroupInvitation,
+} from '../helpers/group-membership-actions.helper';
 
 @Component({
   selector: 'app-group-details',
@@ -95,20 +100,20 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.groupService.requestToJoin(this.group.id).subscribe(
-      () => {
+    requestGroupAccess(this.groupService, this.group.id, {
+      languageService: this.languageService,
+      toastService: this.toastService,
+      successKey: 'accessRequested',
+      onSuccess: () => {
         this.isRequestingAccess = false;
         this.group = this.group ? { ...this.group, hasPendingJoinRequest: true } : null;
-        this.toastService.showSuccess(
-          this.languageService.translate('accessRequested'),
-        );
       },
-      (error) => {
+      onError: (error) => {
         this.isRequestingAccess = false;
         this.errorMessage = this.languageService.translate('requestAccessError');
         console.error('Error requesting group access:', error);
       },
-    );
+    });
   }
 
   cancelAccessRequest(): void {
@@ -120,20 +125,20 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.groupService.cancelJoinRequest(this.group.id).subscribe(
-      () => {
+    cancelGroupAccessRequest(this.groupService, this.group.id, {
+      languageService: this.languageService,
+      toastService: this.toastService,
+      successKey: 'joinRequestCancelled',
+      onSuccess: () => {
         this.isCancelingAccessRequest = false;
         this.group = this.group ? { ...this.group, hasPendingJoinRequest: false } : null;
-        this.toastService.showSuccess(
-          this.languageService.translate('joinRequestCancelled'),
-        );
       },
-      (error) => {
+      onError: (error) => {
         this.isCancelingAccessRequest = false;
         this.errorMessage = this.languageService.translate('cancelJoinRequestError');
         console.error('Error cancelling join request:', error);
       },
-    );
+    });
   }
 
   acceptInvitation(): void {
@@ -282,16 +287,22 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.groupService.respondInvite(this.group.pendingInvitationMembershipId, accept, this.group.id).subscribe(
-      () => {
+    respondToGroupInvitation(
+      this.groupService,
+      this.group.pendingInvitationMembershipId,
+      accept,
+      this.group.id,
+      {
+        onSuccess: () => {
         this.isRespondingToInvitation = false;
         this.successMessage = this.languageService.translate(accept ? 'invitationAccepted' : 'invitationDeclined');
         this.loadGroup(this.group!.id);
       },
-      (error) => {
+        onError: (error) => {
         this.isRespondingToInvitation = false;
         this.errorMessage = this.languageService.translate('invitationResponseError');
         console.error('Error responding to group invitation:', error);
+      },
       },
     );
   }

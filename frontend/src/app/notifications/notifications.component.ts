@@ -12,6 +12,10 @@ import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { NotificationTimeService } from '../../services/notification-time.service';
 import { createHighlightedSet, prependIfNotExists } from '../helpers/dropdown-ui.helper';
+import {
+  respondToGroupInvitation,
+  respondToGroupJoinRequest,
+} from '../helpers/group-membership-actions.helper';
 
 @Component({
   selector: 'app-notifications',
@@ -214,18 +218,24 @@ export class NotificationsComponent implements OnInit, OnDestroy {
 
     this.respondingInvitationIds.add(notification.membershipId);
 
-    this.groupService.respondInvite(notification.membershipId, accept, notification.groupId ?? undefined).subscribe({
-      next: () => {
+    respondToGroupInvitation(
+      this.groupService,
+      notification.membershipId,
+      accept,
+      notification.groupId ?? undefined,
+      {
+        onSuccess: () => {
         this.respondingInvitationIds.delete(notification.membershipId!);
         notification.invitationStatus = accept ? MembershipStatus.Accepted : MembershipStatus.Declined;
         notification.isRead = true;
         this.loadNotifications();
       },
-      error: (error) => {
+        onError: (error) => {
         this.respondingInvitationIds.delete(notification.membershipId!);
         console.error('Error responding to invitation:', error);
       },
-    });
+      },
+    );
   }
 
   private respondToJoinRequest(notification: AppNotification, accept: boolean): void {
@@ -235,18 +245,24 @@ export class NotificationsComponent implements OnInit, OnDestroy {
 
     this.respondingJoinRequestIds.add(notification.membershipId);
 
-    this.groupService.respondJoinRequest(notification.groupId, notification.membershipId, accept).subscribe({
-      next: () => {
+    respondToGroupJoinRequest(
+      this.groupService,
+      notification.groupId,
+      notification.membershipId,
+      accept,
+      {
+        onSuccess: () => {
         this.respondingJoinRequestIds.delete(notification.membershipId!);
         notification.membershipStatus = accept ? MembershipStatus.Accepted : MembershipStatus.Declined;
         notification.isRead = true;
         this.loadNotifications();
       },
-      error: (error) => {
+        onError: (error) => {
         this.respondingJoinRequestIds.delete(notification.membershipId!);
         console.error('Error responding to join request:', error);
       },
-    });
+      },
+    );
   }
 
   private interpolate(key: string, values: Record<string, string>): string {
