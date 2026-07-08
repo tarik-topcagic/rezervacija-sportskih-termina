@@ -132,9 +132,13 @@
     display: block;
   }
 
+  .settings-form .form-floating {
+    width: 100%;
+  }
+
   .settings-form .form-control,
   .settings-form .btn {
-    border-radius: 0.375rem !important;
+    border-radius: var(--app-control-radius) !important;
     width: 100%;
   }
 
