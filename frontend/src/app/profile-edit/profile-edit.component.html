@@ -55,15 +55,15 @@
           <div *ngIf="fileError" class="text-danger mt-2">{{ fileError }}</div>
         </div>
 
-        <div class="mb-3">
-          <label for="fullName" class="form-label">{{ 'fullName' | translate }}</label>
+        <div class="mb-3 form-floating">
           <input
             type="text"
             id="fullName"
             formControlName="fullName"
             class="form-control"
-            [placeholder]="'enterFullName' | translate"
+            [placeholder]="'fullName' | translate"
           />
+          <label for="fullName">{{ 'fullName' | translate }}</label>
           <div
             *ngIf="
               editForm.get('fullName')?.invalid &&
@@ -75,16 +75,16 @@
           </div>
         </div>
 
-        <div class="mb-3 position-relative">
-          <label for="location" class="form-label">{{ 'location' | translate }}</label>
+        <div class="mb-3 position-relative form-floating">
           <input
             type="text"
             id="location"
             formControlName="location"
             class="form-control"
-            [placeholder]="'enterCity' | translate"
+            [placeholder]="'location' | translate"
             (focus)="showDropdown = true"
           />
+          <label for="location">{{ 'location' | translate }}</label>
 
           <ul
             *ngIf="showDropdown && (filteredCities$ | async)?.length"
@@ -101,15 +101,15 @@
           </ul>
         </div>
 
-        <div class="mb-3">
-          <label for="phoneNumber" class="form-label">{{ 'phoneNumber' | translate }}</label>
+        <div class="mb-3 form-floating">
           <input
             type="text"
             id="phoneNumber"
             formControlName="phoneNumber"
             class="form-control"
-            placeholder="+387XXXXXXXX"
+            placeholder="{{ 'phoneNumber' | translate }}"
           />
+          <label for="phoneNumber">{{ 'phoneNumber' | translate }}</label>
           <div
             *ngIf="
               editForm.get('phoneNumber')?.errors &&

@@ -101,6 +101,11 @@ input.form-control {
     border-bottom-right-radius: 0 !important;
 }
 
+.input-group > .form-floating:not(:last-child) > .form-control {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
 .modal-backdrop,
 .modal-backdrop-custom,
 .confirm-backdrop {
@@ -138,6 +143,42 @@ body.dark-mode .settings-section {
 
 body.dark-mode .form-control::placeholder {
     color: #adb5bd;
+}
+
+body.dark-mode .form-floating > .form-control::placeholder {
+    color: transparent;
+}
+
+body.dark-mode .form-floating > label {
+    color: #adb5bd;
+}
+
+body.dark-mode .form-floating > .form-control:focus ~ label::after,
+body.dark-mode .form-floating > .form-control:not(:placeholder-shown) ~ label::after {
+    background-color: #1f1f1f;
+}
+
+.form-control:-webkit-autofill,
+.form-control:-webkit-autofill:hover,
+.form-control:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    -webkit-text-fill-color: #212529 !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.form-floating > .form-control:-webkit-autofill ~ label::after {
+    background-color: #ffffff;
+}
+
+body.dark-mode .form-control:-webkit-autofill,
+body.dark-mode .form-control:-webkit-autofill:hover,
+body.dark-mode .form-control:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #1f1f1f inset !important;
+    -webkit-text-fill-color: #f1f3f5 !important;
+}
+
+body.dark-mode .form-floating > .form-control:-webkit-autofill ~ label::after {
+    background-color: #1f1f1f;
 }
 
 body.dark-mode .modal-content {

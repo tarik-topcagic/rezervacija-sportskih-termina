@@ -3,17 +3,17 @@
     <h2 class="my-4">{{ 'register' | translate }}</h2>
     <form (ngSubmit)="register(registerForm)" #registerForm="ngForm" class="auth-form" novalidate>
       <div class="mb-3 d-flex flex-column align-items-center">
-        <div class="auth-form-field text-start">
-          <label for="fullName" class="form-label">{{ 'fullName' | translate }}</label>
-          <input type="text" class="form-control" id="fullName" [(ngModel)]="registerModel.fullName" name="fullName" required #fullName="ngModel" style="padding: 10px;" />
+        <div class="auth-form-field form-floating">
+          <input type="text" class="form-control" id="fullName" [(ngModel)]="registerModel.fullName" name="fullName" required #fullName="ngModel" placeholder="{{ 'fullName' | translate }}" />
+          <label for="fullName">{{ 'fullName' | translate }}</label>
           <div *ngIf="fullName.invalid && fullName.touched" class="text-danger">{{ 'requiredField' | translate }}</div>
         </div>
       </div>
 
       <div class="mb-3 d-flex flex-column align-items-center">
-        <div class="auth-form-field text-start">
-          <label for="email" class="form-label">{{ 'email' | translate }}</label>
-          <input type="email" class="form-control" id="email" [(ngModel)]="registerModel.email" (ngModelChange)="clearEmailTakenError()" name="email" required email #email="ngModel" style="padding: 10px;" />
+        <div class="auth-form-field form-floating">
+          <input type="email" class="form-control" id="email" [(ngModel)]="registerModel.email" (ngModelChange)="clearEmailTakenError()" name="email" required email #email="ngModel" placeholder="{{ 'email' | translate }}" />
+          <label for="email">{{ 'email' | translate }}</label>
           <div *ngIf="email.invalid && email.touched" class="text-danger">
             {{ email.errors?.['required'] ? ('requiredField' | translate) : ('invalidEmail' | translate) }}
           </div>
@@ -22,9 +22,9 @@
       </div>
 
       <div class="mb-3 d-flex flex-column align-items-center">
-        <div class="auth-form-field text-start">
-          <label for="phoneNumber" class="form-label">{{ 'phoneNumber' | translate }}</label>
-          <input type="text" class="form-control" placeholder="+387XXXXXXXX" id="phoneNumber" [(ngModel)]="registerModel.phoneNumber" (ngModelChange)="clearPhoneNumberTakenError()" name="phoneNumber" required pattern="^\+387[0-9]{8,9}$" #phoneNumber="ngModel" style="padding: 10px;" />
+        <div class="auth-form-field form-floating">
+          <input type="text" class="form-control" placeholder="{{ 'phoneNumber' | translate }}" id="phoneNumber" [(ngModel)]="registerModel.phoneNumber" (ngModelChange)="clearPhoneNumberTakenError()" name="phoneNumber" required pattern="^\+387[0-9]{8,9}$" #phoneNumber="ngModel" />
+          <label for="phoneNumber">{{ 'phoneNumber' | translate }}</label>
           <div *ngIf="phoneNumber.invalid && phoneNumber.touched" class="text-danger">
             {{ phoneNumber.errors?.['required'] ? ('requiredField' | translate) : ('invalidPhone' | translate) }}
           </div>
@@ -33,9 +33,9 @@
       </div>
 
       <div class="mb-3 d-flex flex-column align-items-center">
-        <div class="auth-form-field text-start">
-          <label for="username" class="form-label">{{ 'username' | translate }}</label>
-          <input type="text" class="form-control" id="username" [(ngModel)]="registerModel.username" (ngModelChange)="validateUsername()" name="username" required minlength="4" pattern="^[^\s]*$" #username="ngModel" style="padding: 10px;" />
+        <div class="auth-form-field form-floating">
+          <input type="text" class="form-control" id="username" [(ngModel)]="registerModel.username" (ngModelChange)="validateUsername()" name="username" required minlength="4" pattern="^[^\s]*$" #username="ngModel" placeholder="{{ 'username' | translate }}" />
+          <label for="username">{{ 'username' | translate }}</label>
           <div *ngIf="username.touched && !usernameSpaceError && !usernameTakenError">
             <span *ngIf="username.errors?.['required']" class="text-danger">{{ 'requiredField' | translate }}</span>
             <span *ngIf="username.errors?.['minlength']" class="text-danger">{{ 'usernameTooShort' | translate }}</span>
@@ -46,14 +46,17 @@
       </div>
 
       <div class="mb-3 d-flex flex-column align-items-center">
-        <div class="auth-form-field text-start">
-          <label for="password" class="form-label">{{ 'password' | translate }}</label>
-          <div class="input-group">
-            <input [type]="passwordVisible ? 'text' : 'password'" class="form-control" id="password" [(ngModel)]="registerModel.password" (ngModelChange)="validatePassword()" name="password" required minlength="6" #password="ngModel" style="padding: 10px;" />
-            <button type="button" class="btn btn-outline-secondary" (click)="togglePasswordVisibility()">
-              <i class="bi" [ngClass]="passwordVisible ? 'bi-eye-slash' : 'bi-eye'"></i>
-            </button>
-          </div>
+        <div class="auth-form-field form-floating">
+          <input [type]="passwordVisible ? 'text' : 'password'" class="form-control" id="password" [(ngModel)]="registerModel.password" (ngModelChange)="validatePassword()" name="password" required minlength="6" #password="ngModel" placeholder="{{ 'password' | translate }}" />
+          <label for="password">{{ 'password' | translate }}</label>
+          <button
+            type="button"
+            class="btn btn-sm password-toggle-btn"
+            *ngIf="registerModel.password"
+            (click)="togglePasswordVisibility()"
+          >
+            <i class="bi" [ngClass]="passwordVisible ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
           <div *ngIf="password.touched">
             <span *ngIf="password.errors?.['required']" class="text-danger">{{ 'requiredField' | translate }}</span>
             <span *ngIf="password.errors?.['minlength']" class="text-danger">{{ 'passwordTooShort' | translate }}</span>

@@ -42,30 +42,30 @@
       />
     </div>
 
-    <div class="mb-3">
-      <label for="groupName" class="form-label">{{ 'groupName' | translate }}</label>
-      <input id="groupName" type="text" formControlName="name" class="form-control" required>
+    <div class="mb-3 form-floating">
+      <input id="groupName" type="text" formControlName="name" class="form-control" required placeholder="{{ 'groupName' | translate }}">
+      <label for="groupName">{{ 'groupName' | translate }}</label>
       <div *ngIf="createGroupForm.get('name')?.touched && createGroupForm.get('name')?.invalid" class="text-danger">
         {{ 'requiredField' | translate }}
       </div>
     </div>
-    <div class="mb-3">
-      <label for="groupCity" class="form-label">{{ 'groupCity' | translate }}</label>
-      <input id="groupCity" type="text" formControlName="grad" class="form-control" required>
+    <div class="mb-3 form-floating">
+      <input id="groupCity" type="text" formControlName="grad" class="form-control" required placeholder="{{ 'groupCity' | translate }}">
+      <label for="groupCity">{{ 'groupCity' | translate }}</label>
       <div *ngIf="createGroupForm.get('grad')?.touched && createGroupForm.get('grad')?.invalid" class="text-danger">
         {{ 'requiredField' | translate }}
       </div>
     </div>
-    <div class="mb-3">
-      <label for="sportCategory" class="form-label">{{ 'sportCategory' | translate }}</label>
-      <input id="sportCategory" type="text" formControlName="kategorijaSporta" class="form-control" required>
+    <div class="mb-3 form-floating">
+      <input id="sportCategory" type="text" formControlName="kategorijaSporta" class="form-control" required placeholder="{{ 'sportCategory' | translate }}">
+      <label for="sportCategory">{{ 'sportCategory' | translate }}</label>
       <div *ngIf="createGroupForm.get('kategorijaSporta')?.touched && createGroupForm.get('kategorijaSporta')?.invalid" class="text-danger">
         {{ 'requiredField' | translate }}
       </div>
     </div>
-    <div class="mb-3">
-      <label for="groupDescription" class="form-label">{{ 'description' | translate }}</label>
-      <textarea id="groupDescription" formControlName="description" class="form-control"></textarea>
+    <div class="mb-3 form-floating">
+      <textarea id="groupDescription" formControlName="description" class="form-control" placeholder="{{ 'description' | translate }}" style="height: 100px"></textarea>
+      <label for="groupDescription">{{ 'description' | translate }}</label>
     </div>
     <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
     <div class="d-flex justify-content-between">

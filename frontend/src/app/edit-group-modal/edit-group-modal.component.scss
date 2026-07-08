@@ -121,6 +121,12 @@
   border-color: #4b5563;
 }
 
+:host-context(body.dark-mode) .form-floating > .form-control:focus ~ label::after,
+:host-context(body.dark-mode) .form-floating > .form-control:not(:placeholder-shown) ~ label::after,
+:host-context(body.dark-mode) .form-floating > .form-control:-webkit-autofill ~ label::after {
+  background-color: #15191e;
+}
+
 :host-context(body.dark-mode) .form-control:focus {
   background-color: #15191e;
   color: #fff;

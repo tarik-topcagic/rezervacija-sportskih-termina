@@ -76,16 +76,19 @@
     <section class="settings-section">
       <h4>{{ 'account' | translate }}</h4>
       <form (ngSubmit)="changeUsername()" class="settings-form">
-        <label for="username" class="form-label">{{ 'username' | translate }}</label>
         <div class="input-group">
-          <input
-            type="text"
-            id="username"
-            name="username"
-            class="form-control"
-            [(ngModel)]="newUsername"
-            required
-          />
+          <div class="form-floating">
+            <input
+              type="text"
+              id="username"
+              name="username"
+              class="form-control"
+              [(ngModel)]="newUsername"
+              required
+              placeholder="{{ 'username' | translate }}"
+            />
+            <label for="username">{{ 'username' | translate }}</label>
+          </div>
           <button type="submit" class="btn btn-primary" [disabled]="!canSubmitUsernameChange">
             {{ 'changeUsername' | translate }}
           </button>

@@ -19,6 +19,30 @@
   min-height: 46px;
 }
 
+.form-floating {
+  position: relative;
+
+  .password-toggle-btn {
+    position: absolute;
+    top: calc(1.75rem + var(--bs-border-width));
+    right: 0.5rem;
+    transform: translateY(-50%);
+    z-index: 5;
+    border: none;
+    background: transparent;
+    padding: 0.25rem 0.5rem;
+    min-height: auto;
+  }
+}
+
+#password.form-control {
+  padding-right: 2.75rem;
+}
+
+#password.form-control.is-invalid {
+  background-image: none;
+}
+
 .auth-form .btn[type='submit'] {
   min-width: 160px;
   padding-inline: 1.5rem;
