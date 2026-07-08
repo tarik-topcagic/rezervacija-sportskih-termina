@@ -55,7 +55,7 @@
             *ngIf="registerModel.password"
             (click)="togglePasswordVisibility()"
           >
-            <i class="bi" [ngClass]="passwordVisible ? 'bi-eye-slash' : 'bi-eye'"></i>
+            <i class="bi" [ngClass]="passwordVisible ? 'bi-eye' : 'bi-eye-slash'"></i>
           </button>
           <div *ngIf="password.touched">
             <span *ngIf="password.errors?.['required']" class="text-danger">{{ 'requiredField' | translate }}</span>

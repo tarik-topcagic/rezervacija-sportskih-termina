@@ -37,7 +37,7 @@
             *ngIf="loginModel.password"
             (click)="togglePasswordVisibility()"
           >
-            <i class="bi" [ngClass]="passwordVisible ? 'bi-eye-slash' : 'bi-eye'"></i>
+            <i class="bi" [ngClass]="passwordVisible ? 'bi-eye' : 'bi-eye-slash'"></i>
           </button>
           <div *ngIf="errorMessageKey" class="invalid-feedback">
             {{ errorMessageKey | translate }}
