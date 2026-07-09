@@ -22,6 +22,7 @@ namespace SportskiTerminiAPI.Data
         public DbSet<PrivateMessage> PrivateMessages { get; set; }
         public DbSet<PrivateChatReadState> PrivateChatReadStates { get; set; }
         public DbSet<AppNotification> Notifications { get; set; }
+        public DbSet<Reservation> Reservations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -200,6 +201,27 @@ namespace SportskiTerminiAPI.Data
 
             modelBuilder.Entity<AppNotification>()
                 .HasIndex(n => new { n.UserId, n.IsRead, n.CreatedAt });
+
+            modelBuilder.Entity<Reservation>()
+                .HasOne(r => r.Arena)
+                .WithMany()
+                .HasForeignKey(r => r.ArenaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Reservation>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Reservation>()
+                .HasIndex(r => new { r.ArenaId, r.StartTime })
+                .IsUnique()
+                .HasFilter("\"Status\" = 0");
+
+            modelBuilder.Entity<Reservation>()
+                .Property(r => r.CardLast4)
+                .HasMaxLength(4);
         }
 
         private static Arena[] GetSeedArenas()

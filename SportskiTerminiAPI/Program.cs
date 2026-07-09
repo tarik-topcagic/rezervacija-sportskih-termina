@@ -151,10 +151,18 @@ namespace SportskiTerminiAPI
             builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddScoped<IGroupNotificationService, GroupNotificationService>();
+            builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+            builder.Services.AddScoped<IReservationService, ReservationService>();
 
             var app = builder.Build();
 
-            app.UseCors("AllowFrontend"); 
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
+                context.Database.Migrate();
+            }
+
+            app.UseCors("AllowFrontend");
 
 
             // Configure the HTTP request pipeline.
