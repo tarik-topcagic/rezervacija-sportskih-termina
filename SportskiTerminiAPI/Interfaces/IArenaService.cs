@@ -6,5 +6,6 @@ namespace SportskiTerminiAPI.Interfaces
     {
         Task<IEnumerable<ArenaDto>> GetArenasAsync(string? city, string? sportType, string? searchTerm);
         Task<ArenaDto?> GetArenaByIdAsync(int id);
+        Task<IEnumerable<TimeRangeDto>?> GetAvailabilityAsync(int arenaId, DateTime dateUtc);
     }
 }

@@ -1,6 +1,7 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
 using SportskiTerminiAPI.Data;
+using SportskiTerminiAPI.DTOs;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
 
@@ -56,6 +57,34 @@ namespace SportskiTerminiAPI.Repositories
             });
 
             return reservation;
+        }
+
+        public async Task<IEnumerable<TimeRangeDto>> GetConfirmedReservationsForArenaOnDateAsync(int arenaId, DateTime dateUtc)
+        {
+            var dayStart = DateTime.SpecifyKind(dateUtc.Date, DateTimeKind.Utc);
+            var dayEnd = dayStart.AddDays(1);
+
+            return await _context.Reservations
+                .Where(r => r.ArenaId == arenaId
+                    && r.Status == ReservationStatus.Confirmed
+                    && r.StartTime < dayEnd
+                    && r.EndTime > dayStart)
+                .Select(r => new TimeRangeDto
+                {
+                    StartTime = r.StartTime,
+                    EndTime = r.EndTime
+                })
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Reservation>> GetConfirmedReservationsStartingBetweenAsync(DateTime fromUtc, DateTime toUtc)
+        {
+            return await _context.Reservations
+                .Include(r => r.Arena)
+                .Where(r => r.Status == ReservationStatus.Confirmed
+                    && r.StartTime > fromUtc
+                    && r.StartTime <= toUtc)
+                .ToListAsync();
         }
 
         public async Task<Reservation?> GetByIdAsync(int id)

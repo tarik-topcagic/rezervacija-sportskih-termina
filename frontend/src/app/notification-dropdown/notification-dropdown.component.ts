@@ -132,6 +132,9 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     if (notification.groupId) {
       this.router.navigate(['/groups', notification.groupId]);
       this.closeNotifications();
+    } else if (notification.reservationId) {
+      this.router.navigate(['/my-reservations']);
+      this.closeNotifications();
     }
   }
 
@@ -157,6 +160,18 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
 
   getNotificationText(notification: AppNotification): string {
     const groupName = this.formatNotificationGroupName(notification.groupName);
+
+    if (notification.type === AppNotificationType.ReservationReminder1Hour) {
+      return this.interpolate('reservationReminder1HourNotification', {
+        arenaName: notification.arenaName || '',
+      });
+    }
+
+    if (notification.type === AppNotificationType.ReservationReminder30Minutes) {
+      return this.interpolate('reservationReminder30MinutesNotification', {
+        arenaName: notification.arenaName || '',
+      });
+    }
 
     if (notification.type === AppNotificationType.GroupInvitationReceived) {
       return this.interpolate('invitationReceivedNotification', { groupName });

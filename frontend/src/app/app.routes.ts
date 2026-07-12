@@ -15,6 +15,8 @@ import { SettingsComponent } from './settings/settings.component';
 import { GroupDetailsComponent } from './group-details/group-details.component';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { ArenaDetailsComponent } from './arena-details/arena-details.component';
+import { ReservationPaymentComponent } from './reservation-payment/reservation-payment.component';
+import { MyReservationsComponent } from './my-reservations/my-reservations.component';
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
@@ -28,6 +30,8 @@ export const routes: Routes = [
     { path: 'users/:username', component: UserProfileComponent, canActivate: [AuthGuard] },
     { path: 'sports-arenas', component: SportsArenasComponent, canActivate: [AuthGuard] },
     { path: 'sports-arenas/:id', component: ArenaDetailsComponent, canActivate: [AuthGuard] },
+    { path: 'payment', component: ReservationPaymentComponent, canActivate: [AuthGuard] },
+    { path: 'my-reservations', component: MyReservationsComponent, canActivate: [AuthGuard] },
     { path: 'groups', component: SearchGroupsComponent, canActivate: [AuthGuard] },
     { path: 'groups/:id', component: GroupDetailsComponent, canActivate: [AuthGuard] },
     {
@@ -54,6 +58,8 @@ export const routes: Routes = [
     { path: 'postavke', redirectTo: 'settings', pathMatch: 'full' },
     { path: 'pretraga-korisnika', redirectTo: 'users', pathMatch: 'full' },
     { path: 'sportski-tereni', redirectTo: 'sports-arenas', pathMatch: 'full' },
+    { path: 'placanje', redirectTo: 'payment', pathMatch: 'full' },
+    { path: 'moje-rezervacije', redirectTo: 'my-reservations', pathMatch: 'full' },
     { path: 'korisnicki-profil/:username', redirectTo: 'users/:username', pathMatch: 'full' },
     { path: 'grupe', redirectTo: 'groups', pathMatch: 'full' },
     { path: 'grupe/:id', redirectTo: 'groups/:id', pathMatch: 'full' },

@@ -30,5 +30,15 @@ namespace SportskiTerminiAPI.Controllers
 
             return Ok(arena);
         }
+
+        [HttpGet("{id:int}/availability")]
+        public async Task<IActionResult> GetAvailability(int id, [FromQuery] DateTime date)
+        {
+            var availability = await _arenaService.GetAvailabilityAsync(id, date);
+            if (availability == null)
+                return NotFound();
+
+            return Ok(availability);
+        }
     }
 }

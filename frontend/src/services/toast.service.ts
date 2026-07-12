@@ -5,6 +5,7 @@ import { Injectable } from '@angular/core';
 })
 export class ToastService {
   private container: HTMLElement | null = null;
+  private errorContainer: HTMLElement | null = null;
 
   showSuccess(message: string, durationMs = 3200): void {
     const container = this.ensureContainer();
@@ -37,6 +38,37 @@ export class ToastService {
     }, durationMs);
   }
 
+  showError(message: string, durationMs = 3200): void {
+    const container = this.ensureErrorContainer();
+    const toast = document.createElement('div');
+    toast.className = 'app-error-toast';
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.innerHTML = `
+      <span class="app-error-toast__icon"><i class="bi bi-x-circle-fill"></i></span>
+      <span class="app-error-toast__message"></span>
+    `;
+
+    const messageNode = toast.querySelector('.app-error-toast__message');
+    if (messageNode) {
+      messageNode.textContent = message;
+    }
+
+    container.appendChild(toast);
+
+    window.setTimeout(() => {
+      toast.classList.add('is-hiding');
+      window.setTimeout(() => {
+        toast.remove();
+        if (!container.childElementCount) {
+          container.remove();
+          this.errorContainer = null;
+        }
+      }, 180);
+    }, durationMs);
+  }
+
   private ensureContainer(): HTMLElement {
     if (this.container && document.body.contains(this.container)) {
       return this.container;
@@ -46,6 +78,18 @@ export class ToastService {
     container.className = 'app-success-toast-stack';
     document.body.appendChild(container);
     this.container = container;
+    return container;
+  }
+
+  private ensureErrorContainer(): HTMLElement {
+    if (this.errorContainer && document.body.contains(this.errorContainer)) {
+      return this.errorContainer;
+    }
+
+    const container = document.createElement('div');
+    container.className = 'app-error-toast-stack';
+    document.body.appendChild(container);
+    this.errorContainer = container;
     return container;
   }
 }

@@ -89,6 +89,10 @@
                 {{ 'booked' | translate }}
               </span>
               <span class="legend-item">
+                <span class="legend-dot mine"></span>
+                {{ 'myReservationDot' | translate }}
+              </span>
+              <span class="legend-item">
                 <span class="legend-dot selected"></span>
                 {{ 'yourSelection' | translate }}
               </span>
@@ -122,11 +126,13 @@
                     type="button"
                     class="slot-button"
                     *ngFor="let day of visibleDays; trackBy: trackDay"
-                    [disabled]="!isSlotAvailable(day.index, slotStart)"
+                    [disabled]="!isSlotAvailable(day.index, slotStart, 1) && !isSelectedSlot(day.index, slotStart)"
                     [ngClass]="{
-                      available: isSlotAvailable(day.index, slotStart),
-                      booked: !isSlotAvailable(day.index, slotStart),
-                      selected: isSelectedSlot(day.index, slotStart)
+                      available: isSlotAvailable(day.index, slotStart, 1),
+                      booked: !isSlotAvailable(day.index, slotStart, 1) && !isSlotMine(day.index, slotStart),
+                      mine: isSlotMine(day.index, slotStart),
+                      selected: isSelectedSlot(day.index, slotStart),
+                      'past-slot': isSlotInPast(day.index, slotStart)
                     }"
                     (click)="selectSlot(day.index, slotStart)"
                   >
@@ -173,88 +179,100 @@
             <h2>{{ 'reservationSummary' | translate }}</h2>
           </div>
 
-          <div class="summary-list">
-            <div class="summary-item">
-              <i class="bi bi-building"></i>
-              <div>
-                <span>{{ 'sportsFields' | translate }}</span>
-                <strong>{{ arena.name }}</strong>
-              </div>
-            </div>
-
-            <div class="summary-item">
-              <i class="bi bi-calendar-event"></i>
-              <div>
-                <span>{{ 'selectedDate' | translate }}</span>
-                <strong>{{ formatFullDate(selectedDay?.date || null) }}</strong>
-              </div>
-            </div>
-
-            <div class="summary-item">
-              <i class="bi bi-clock-history"></i>
-              <div>
-                <span>{{ 'selectedTime' | translate }}</span>
-                <strong>{{ formatTimeRange(selectedSlotStart) }}</strong>
-              </div>
-            </div>
-
-            <div class="summary-item">
-              <i class="bi bi-dribbble"></i>
-              <div>
-                <span>{{ 'sport' | translate }}</span>
-                <strong>{{ arena.sportType | translate }}</strong>
-              </div>
-            </div>
+          <div class="summary-placeholder" *ngIf="reservationCardState === 'placeholder'">
+            <i class="bi bi-calendar-heart"></i>
+            <p>{{ 'selectSuitableSlotPlaceholder' | translate }}</p>
           </div>
 
-          <div class="summary-divider"></div>
-
-          <div class="price-block">
-            <div class="price-row">
-              <span>{{ 'hourlySession' | translate }}</span>
-              <strong>{{ formatPrice(estimatedPrice) }}</strong>
+          <ng-container *ngIf="reservationCardState !== 'placeholder'">
+            <div class="confirmed-badge" *ngIf="reservationCardState === 'confirmed'">
+              <i class="bi bi-check-circle-fill"></i>
+              {{ 'reservationConfirmedBadge' | translate }}
             </div>
 
-            <div class="price-row total">
-              <span>{{ 'total' | translate }}</span>
-              <strong>{{ formatPrice(estimatedPrice) }}</strong>
+            <div class="summary-list">
+              <div class="summary-item">
+                <i class="bi bi-building"></i>
+                <div>
+                  <span>{{ 'sportsFields' | translate }}</span>
+                  <strong>{{ arena.name }}</strong>
+                </div>
+              </div>
+
+              <div class="summary-item">
+                <i class="bi bi-calendar-event"></i>
+                <div>
+                  <span>{{ 'selectedDate' | translate }}</span>
+                  <strong>{{ formatFullDate(displayDate) }}</strong>
+                </div>
+              </div>
+
+              <div class="summary-item">
+                <i class="bi bi-clock-history"></i>
+                <div>
+                  <span>{{ 'selectedTime' | translate }}</span>
+                  <strong>{{ displayTimeRange }}</strong>
+                </div>
+              </div>
+
+              <div class="summary-item">
+                <i class="bi bi-dribbble"></i>
+                <div>
+                  <span>{{ 'sport' | translate }}</span>
+                  <strong>{{ arena.sportType | translate }}</strong>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <button
-            type="button"
-            class="primary-cta"
-            disabled
-            [title]="'reservationComingSoon' | translate"
-          >
-            {{ 'makeReservation' | translate }}
-          </button>
+            <div class="duration-selector" *ngIf="reservationCardState === 'selecting'">
+              <span class="duration-selector-label">{{ 'sessionDuration' | translate }}</span>
+              <div class="duration-options">
+                <button
+                  type="button"
+                  *ngFor="let hours of durationOptions"
+                  class="duration-option"
+                  [ngClass]="{ active: selectedDurationHours === hours }"
+                  [disabled]="!isDurationAvailableForSelectedSlot(hours)"
+                  (click)="selectDuration(hours)"
+                >
+                  {{ hours }}h
+                </button>
+              </div>
+            </div>
 
-          <button
-            type="button"
-            class="secondary-cta"
-            disabled
-            [title]="'reservationComingSoon' | translate"
-          >
-            <i class="bi bi-heart"></i>
-            {{ 'saveToFavorites' | translate }}
-          </button>
+            <div class="summary-divider"></div>
 
-          <div class="summary-note">
-            <i class="bi bi-info-circle"></i>
-            <p>{{ 'reservationPreviewNote' | translate }}</p>
-          </div>
+            <div class="price-block">
+              <div class="price-row">
+                <span>{{ getSessionLabel() }}</span>
+                <strong>{{ formatPrice(displayPrice) }}</strong>
+              </div>
+
+              <div class="price-row total">
+                <span>{{ 'total' | translate }}</span>
+                <strong>{{ formatPrice(displayPrice) }}</strong>
+              </div>
+            </div>
+
+            <button
+              *ngIf="reservationCardState === 'selecting'"
+              type="button"
+              class="primary-cta"
+              (click)="goToPayment()"
+            >
+              {{ 'makeReservation' | translate }}
+            </button>
+
+            <button
+              type="button"
+              class="secondary-cta"
+              (click)="toggleFavorite()"
+            >
+              <i class="bi" [ngClass]="isFavorite ? 'bi-heart-fill' : 'bi-heart'"></i>
+              {{ (isFavorite ? 'removeFromFavorites' : 'saveToFavorites') | translate }}
+            </button>
+          </ng-container>
         </aside>
-
-        <button
-          *ngIf="isMobileLayout && selectedSlotStart !== null"
-          type="button"
-          class="mobile-summary-trigger"
-          (click)="openMobileSummary()"
-        >
-          <span>{{ 'reservationSummary' | translate }}</span>
-          <strong>{{ formatTimeRange(selectedSlotStart) }}</strong>
-        </button>
       </div>
     </section>
 
@@ -291,72 +309,99 @@
       </button>
     </div>
 
-    <div class="summary-list">
-      <div class="summary-item">
-        <i class="bi bi-building"></i>
-        <div>
-          <span>{{ 'sportsFields' | translate }}</span>
-          <strong>{{ arena?.name }}</strong>
-        </div>
-      </div>
-
-      <div class="summary-item">
-        <i class="bi bi-calendar-event"></i>
-        <div>
-          <span>{{ 'selectedDate' | translate }}</span>
-          <strong>{{ formatFullDate(selectedDay?.date || null) }}</strong>
-        </div>
-      </div>
-
-      <div class="summary-item">
-        <i class="bi bi-clock-history"></i>
-        <div>
-          <span>{{ 'selectedTime' | translate }}</span>
-          <strong>{{ formatTimeRange(selectedSlotStart) }}</strong>
-        </div>
-      </div>
-
-      <div class="summary-item">
-        <i class="bi bi-dribbble"></i>
-        <div>
-          <span>{{ 'sport' | translate }}</span>
-          <strong>{{ (arena?.sportType || '') | translate }}</strong>
-        </div>
-      </div>
+    <div class="summary-placeholder" *ngIf="reservationCardState === 'placeholder'">
+      <i class="bi bi-calendar-heart"></i>
+      <p>{{ 'selectSuitableSlotPlaceholder' | translate }}</p>
     </div>
 
-    <div class="summary-divider"></div>
-
-    <div class="price-block">
-      <div class="price-row">
-        <span>{{ 'hourlySession' | translate }}</span>
-        <strong>{{ formatPrice(estimatedPrice) }}</strong>
+    <ng-container *ngIf="reservationCardState !== 'placeholder'">
+      <div class="confirmed-badge" *ngIf="reservationCardState === 'confirmed'">
+        <i class="bi bi-check-circle-fill"></i>
+        {{ 'reservationConfirmedBadge' | translate }}
       </div>
 
-      <div class="price-row total">
-        <span>{{ 'total' | translate }}</span>
-        <strong>{{ formatPrice(estimatedPrice) }}</strong>
+      <div class="summary-list">
+        <div class="summary-item">
+          <i class="bi bi-building"></i>
+          <div>
+            <span>{{ 'sportsFields' | translate }}</span>
+            <strong>{{ arena?.name }}</strong>
+          </div>
+        </div>
+
+        <div class="summary-item">
+          <i class="bi bi-calendar-event"></i>
+          <div>
+            <span>{{ 'selectedDate' | translate }}</span>
+            <strong>{{ formatFullDate(displayDate) }}</strong>
+          </div>
+        </div>
+
+        <div class="summary-item">
+          <i class="bi bi-clock-history"></i>
+          <div>
+            <span>{{ 'selectedTime' | translate }}</span>
+            <strong>{{ displayTimeRange }}</strong>
+          </div>
+        </div>
+
+        <div class="summary-item">
+          <i class="bi bi-dribbble"></i>
+          <div>
+            <span>{{ 'sport' | translate }}</span>
+            <strong>{{ (arena?.sportType || '') | translate }}</strong>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <button
-      type="button"
-      class="primary-cta"
-      disabled
-      [title]="'reservationComingSoon' | translate"
-    >
-      {{ 'makeReservation' | translate }}
-    </button>
+      <div class="duration-selector" *ngIf="reservationCardState === 'selecting'">
+        <span class="duration-selector-label">{{ 'sessionDuration' | translate }}</span>
+        <div class="duration-options">
+          <button
+            type="button"
+            *ngFor="let hours of durationOptions"
+            class="duration-option"
+            [ngClass]="{ active: selectedDurationHours === hours }"
+            [disabled]="!isDurationAvailableForSelectedSlot(hours)"
+            (click)="selectDuration(hours)"
+          >
+            {{ hours }}h
+          </button>
+        </div>
+      </div>
 
-    <button
-      type="button"
-      class="secondary-cta"
-      disabled
-      [title]="'reservationComingSoon' | translate"
-    >
-      <i class="bi bi-heart"></i>
-      {{ 'saveToFavorites' | translate }}
-    </button>
+      <div class="summary-divider"></div>
+
+      <div class="price-block">
+        <div class="price-row">
+          <span>{{ getSessionLabel() }}</span>
+          <strong>{{ formatPrice(displayPrice) }}</strong>
+        </div>
+
+        <div class="price-row total">
+          <span>{{ 'total' | translate }}</span>
+          <strong>{{ formatPrice(displayPrice) }}</strong>
+        </div>
+      </div>
+
+      <button
+        *ngIf="reservationCardState === 'selecting'"
+        type="button"
+        class="primary-cta"
+        (click)="goToPayment()"
+      >
+        {{ 'makeReservation' | translate }}
+      </button>
+
+      <button
+        type="button"
+        class="secondary-cta"
+        (click)="toggleFavorite()"
+      >
+        <i class="bi" [ngClass]="isFavorite ? 'bi-heart-fill' : 'bi-heart'"></i>
+        {{ (isFavorite ? 'removeFromFavorites' : 'saveToFavorites') | translate }}
+      </button>
+    </ng-container>
   </div>
 </div>
 

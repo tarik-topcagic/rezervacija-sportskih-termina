@@ -1,3 +1,4 @@
+using SportskiTerminiAPI.DTOs;
 using SportskiTerminiAPI.Models;
 
 namespace SportskiTerminiAPI.Interfaces
@@ -5,6 +6,8 @@ namespace SportskiTerminiAPI.Interfaces
     public interface IReservationRepository
     {
         Task<Reservation?> CreateWithConflictCheckAsync(string userId, int arenaId, DateTime startTime, DateTime endTime, string? cardLast4);
+        Task<IEnumerable<TimeRangeDto>> GetConfirmedReservationsForArenaOnDateAsync(int arenaId, DateTime dateUtc);
+        Task<IEnumerable<Reservation>> GetConfirmedReservationsStartingBetweenAsync(DateTime fromUtc, DateTime toUtc);
         Task<Reservation?> GetByIdAsync(int id);
         Task<Reservation?> GetConflictingReservationAsync(int arenaId, DateTime startTime, DateTime endTime);
         Task<IEnumerable<Reservation>> GetReservationsForUserAsync(string userId);

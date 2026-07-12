@@ -8,7 +8,9 @@ namespace SportskiTerminiAPI.Models
         GroupInvitationReceived = 0,
         GroupInvitationAccepted = 1,
         GroupJoinRequestReceived = 2,
-        GroupJoinRequestAccepted = 3
+        GroupJoinRequestAccepted = 3,
+        ReservationReminder1Hour = 4,
+        ReservationReminder30Minutes = 5
     }
 
     public class AppNotification
@@ -18,6 +20,7 @@ namespace SportskiTerminiAPI.Models
         public string? ActorUserId { get; set; }
         public int? GroupId { get; set; }
         public int? MembershipId { get; set; }
+        public int? ReservationId { get; set; }
         public AppNotificationType Type { get; set; }
         public bool IsRead { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -27,5 +30,6 @@ namespace SportskiTerminiAPI.Models
         public virtual AppUser? ActorUser { get; set; }
         public virtual Group? Group { get; set; }
         public virtual GroupMembership? Membership { get; set; }
+        public virtual Reservation? Reservation { get; set; }
     }
 }

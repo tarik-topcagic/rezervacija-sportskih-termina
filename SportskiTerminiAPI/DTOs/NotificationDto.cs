@@ -14,6 +14,10 @@ namespace SportskiTerminiAPI.DTOs
         public int? MembershipId { get; set; }
         public MembershipStatus? InvitationStatus { get; set; }
         public MembershipStatus? MembershipStatus { get; set; }
+        public int? ReservationId { get; set; }
+        public int? ArenaId { get; set; }
+        public string? ArenaName { get; set; }
+        public DateTimeOffset? ReservationStartTime { get; set; }
         public bool IsRead { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
     }

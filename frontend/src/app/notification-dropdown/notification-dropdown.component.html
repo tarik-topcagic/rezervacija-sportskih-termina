@@ -46,7 +46,8 @@
                 'bi-envelope-plus': notification.type === notificationType.GroupInvitationReceived,
                 'bi-check-circle': notification.type === notificationType.GroupInvitationAccepted,
                 'bi-person-check': notification.type === notificationType.GroupJoinRequestReceived,
-                'bi-door-open': notification.type === notificationType.GroupJoinRequestAccepted
+                'bi-door-open': notification.type === notificationType.GroupJoinRequestAccepted,
+                'bi-alarm': notification.type === notificationType.ReservationReminder1Hour || notification.type === notificationType.ReservationReminder30Minutes
               }"
             ></i>
           </div>

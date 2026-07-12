@@ -73,6 +73,12 @@ namespace SportskiTerminiAPI.Services
                 MembershipId = notification.MembershipId,
                 InvitationStatus = notification.Membership?.Status,
                 MembershipStatus = notification.Membership?.Status,
+                ReservationId = notification.ReservationId,
+                ArenaId = notification.Reservation?.ArenaId,
+                ArenaName = notification.Reservation?.Arena?.Name,
+                ReservationStartTime = notification.Reservation == null
+                    ? null
+                    : ToUtcOffset(notification.Reservation.StartTime),
                 IsRead = notification.IsRead,
                 CreatedAt = ToUtcOffset(notification.CreatedAt)
             };

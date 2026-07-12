@@ -1,0 +1,81 @@
+<app-navbar></app-navbar>
+
+<div class="container mt-4 mb-5 my-reservations-page">
+  <h2 class="mb-4">{{ 'myReservations' | translate }}</h2>
+
+  <div *ngIf="isLoading" class="alert alert-info">{{ 'loading' | translate }}</div>
+  <div *ngIf="!isLoading && errorMessage" class="alert alert-danger">{{ errorMessage | translate }}</div>
+
+  <ng-container *ngIf="!isLoading && !errorMessage">
+    <section class="reservations-section">
+      <h4 class="mb-3">{{ 'upcomingReservations' | translate }}</h4>
+
+      <p *ngIf="upcomingReservations.length === 0" class="text-secondary">
+        {{ 'noUpcomingReservations' | translate }}
+      </p>
+
+      <div class="reservation-card" *ngFor="let reservation of upcomingReservations">
+        <div class="reservation-card-main">
+          <div class="reservation-arena">
+            <i class="bi bi-building"></i>
+            <strong>{{ reservation.arenaName }}</strong>
+          </div>
+          <div class="reservation-meta">
+            <span><i class="bi bi-calendar-event"></i> {{ formatDateTime(reservation.startTime) }}</span>
+            <span><i class="bi bi-clock-history"></i> {{ formatDuration(reservation.durationInHours) }}</span>
+          </div>
+        </div>
+
+        <div class="reservation-side">
+          <span
+            class="status-badge"
+            [ngClass]="reservation.status === 'Confirmed' ? 'status-confirmed' : 'status-cancelled'"
+          >
+            {{ (reservation.status === 'Confirmed' ? 'statusConfirmed' : 'statusCancelled') | translate }}
+          </span>
+
+          <button
+            *ngIf="canCancel(reservation)"
+            type="button"
+            class="btn btn-outline-danger btn-sm cancel-reservation-btn"
+            [disabled]="cancellingId === reservation.id"
+            (click)="cancelReservation(reservation)"
+          >
+            <span *ngIf="cancellingId !== reservation.id">{{ 'cancel' | translate }}</span>
+            <span *ngIf="cancellingId === reservation.id" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="reservations-section past-section">
+      <h4 class="mb-3">{{ 'pastReservations' | translate }}</h4>
+
+      <p *ngIf="pastReservations.length === 0" class="text-secondary">
+        {{ 'noPastReservations' | translate }}
+      </p>
+
+      <div class="reservation-card past" *ngFor="let reservation of pastReservations">
+        <div class="reservation-card-main">
+          <div class="reservation-arena">
+            <i class="bi bi-building"></i>
+            <strong>{{ reservation.arenaName }}</strong>
+          </div>
+          <div class="reservation-meta">
+            <span><i class="bi bi-calendar-event"></i> {{ formatDateTime(reservation.startTime) }}</span>
+            <span><i class="bi bi-clock-history"></i> {{ formatDuration(reservation.durationInHours) }}</span>
+          </div>
+        </div>
+
+        <div class="reservation-side">
+          <span
+            class="status-badge"
+            [ngClass]="reservation.status === 'Confirmed' ? 'status-confirmed' : 'status-cancelled'"
+          >
+            {{ (reservation.status === 'Confirmed' ? 'statusConfirmed' : 'statusCancelled') | translate }}
+          </span>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>

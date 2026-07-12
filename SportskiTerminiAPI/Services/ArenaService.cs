@@ -7,10 +7,12 @@ namespace SportskiTerminiAPI.Services
     public class ArenaService : IArenaService
     {
         private readonly IArenaRepository _arenaRepository;
+        private readonly IReservationRepository _reservationRepository;
 
-        public ArenaService(IArenaRepository arenaRepository)
+        public ArenaService(IArenaRepository arenaRepository, IReservationRepository reservationRepository)
         {
             _arenaRepository = arenaRepository;
+            _reservationRepository = reservationRepository;
         }
 
         public async Task<IEnumerable<ArenaDto>> GetArenasAsync(string? city, string? sportType, string? searchTerm)
@@ -25,6 +27,15 @@ namespace SportskiTerminiAPI.Services
             return arena == null ? null : MapArena(arena);
         }
 
+        public async Task<IEnumerable<TimeRangeDto>?> GetAvailabilityAsync(int arenaId, DateTime dateUtc)
+        {
+            var arena = await _arenaRepository.GetArenaByIdAsync(arenaId);
+            if (arena == null)
+                return null;
+
+            return await _reservationRepository.GetConfirmedReservationsForArenaOnDateAsync(arenaId, dateUtc);
+        }
+
         private static ArenaDto MapArena(Arena arena)
         {
             return new ArenaDto
@@ -36,6 +47,7 @@ namespace SportskiTerminiAPI.Services
                 SportType = arena.SportType,
                 Address = arena.Address,
                 ImageUrl = arena.ImageUrl,
+                PricePerHour = arena.PricePerHour,
                 CreatedAt = arena.CreatedAt
             };
         }

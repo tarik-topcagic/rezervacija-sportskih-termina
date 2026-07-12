@@ -87,11 +87,31 @@ export class NotificationsComponent implements OnInit, OnDestroy {
         },
         error: () => this.router.navigate(['/groups', notification.groupId]),
       });
+    } else if (notification.reservationId) {
+      this.notificationService.markAsRead(notification.id).subscribe({
+        next: () => {
+          notification.isRead = true;
+          this.router.navigate(['/my-reservations']);
+        },
+        error: () => this.router.navigate(['/my-reservations']),
+      });
     }
   }
 
   getNotificationText(notification: AppNotification): string {
     const groupName = this.formatNotificationGroupName(notification.groupName);
+
+    if (notification.type === AppNotificationType.ReservationReminder1Hour) {
+      return this.interpolate('reservationReminder1HourNotification', {
+        arenaName: notification.arenaName || '',
+      });
+    }
+
+    if (notification.type === AppNotificationType.ReservationReminder30Minutes) {
+      return this.interpolate('reservationReminder30MinutesNotification', {
+        arenaName: notification.arenaName || '',
+      });
+    }
 
     if (notification.type === AppNotificationType.GroupInvitationReceived) {
       return this.interpolate('invitationReceivedNotification', { groupName });

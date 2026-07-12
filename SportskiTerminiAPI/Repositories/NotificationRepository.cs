@@ -21,6 +21,8 @@ namespace SportskiTerminiAPI.Repositories
                 .Include(n => n.Group)
                 .Include(n => n.ActorUser)
                 .Include(n => n.Membership)
+                .Include(n => n.Reservation)
+                .ThenInclude(r => r!.Arena)
                 .OrderByDescending(n => n.CreatedAt)
                 .Take(take)
                 .ToListAsync();
@@ -86,6 +88,13 @@ namespace SportskiTerminiAPI.Repositories
                 && n.MembershipId == membershipId);
         }
 
+        public async Task<bool> ReservationReminderExistsAsync(int reservationId, AppNotificationType type)
+        {
+            return await _context.Notifications.AnyAsync(n =>
+                n.ReservationId == reservationId
+                && n.Type == type);
+        }
+
         public async Task<AppNotification> AddNotificationAsync(AppNotification notification)
         {
             _context.Notifications.Add(notification);
@@ -95,6 +104,8 @@ namespace SportskiTerminiAPI.Repositories
                 .Include(n => n.Group)
                 .Include(n => n.ActorUser)
                 .Include(n => n.Membership)
+                .Include(n => n.Reservation)
+                .ThenInclude(r => r!.Arena)
                 .FirstAsync(n => n.Id == notification.Id);
         }
 

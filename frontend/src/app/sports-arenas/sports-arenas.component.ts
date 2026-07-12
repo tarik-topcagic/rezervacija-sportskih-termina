@@ -9,9 +9,13 @@ import {
 import { paginate } from '../helpers/pagination.helper';
 import { SearchSortDirection, sortItemsByText } from '../helpers/search.helper';
 import { Arena } from '../interfaces/arena.model';
+import { FavoriteArena } from '../interfaces/favorite-arena.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { ArenaService } from '../../services/arena.service';
+import { FavoriteArenaService } from '../../services/favorite-arena.service';
+import { LanguageService } from '../../services/language.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-sports-arenas',
@@ -44,6 +48,8 @@ export class SportsArenasComponent implements OnInit {
   isLoadingArenas = false;
   errorMessage = '';
 
+  favoriteArenas: FavoriteArena[] = [];
+
   currentPage = 1;
   pageSize = 6;
   totalPages = 0;
@@ -51,11 +57,40 @@ export class SportsArenasComponent implements OnInit {
 
   constructor(
     private arenaService: ArenaService,
+    private favoriteArenaService: FavoriteArenaService,
+    private languageService: LanguageService,
+    private toastService: ToastService,
     private router: Router,
   ) {}
 
   ngOnInit(): void {
     this.loadArenas();
+    this.loadFavoriteArenas();
+  }
+
+  viewFavoriteDetails(favorite: FavoriteArena): void {
+    this.router.navigate(['/sports-arenas', favorite.arenaId]);
+  }
+
+  removeFavoriteArena(favorite: FavoriteArena, event: Event): void {
+    event.stopPropagation();
+
+    this.favoriteArenaService.removeFavorite(favorite.arenaId).subscribe({
+      next: () => {
+        this.favoriteArenas = this.favoriteArenas.filter((f) => f.arenaId !== favorite.arenaId);
+      },
+      error: (error) => {
+        console.error('Error removing favorite arena:', error);
+        this.toastService.showError(this.languageService.translate('removeFavoriteError'));
+      },
+    });
+  }
+
+  private loadFavoriteArenas(): void {
+    this.favoriteArenaService.getMyFavorites().subscribe({
+      next: (favorites) => (this.favoriteArenas = favorites),
+      error: (error) => console.error('Error loading favorite arenas:', error),
+    });
   }
 
   loadArenas(): void {

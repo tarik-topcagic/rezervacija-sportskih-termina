@@ -200,6 +200,7 @@
 
 .legend-dot.available { background: #1d4ed8; }
 .legend-dot.booked { background: #d7dde5; }
+.legend-dot.mine { background: #22c55e; }
 .legend-dot.selected { background: #dbeafe; box-shadow: inset 0 0 0 3px rgba(13, 110, 253, 0.95); }
 
 .mobile-calendar-scroll {
@@ -279,8 +280,17 @@
 
 .slot-button.booked { background: #f4f6f8; color: #8a97a8; }
 
+.slot-button.mine {
+  background: rgba(34, 197, 94, 0.14); border-color: rgba(34, 197, 94, 0.4); color: #15803d;
+}
+
 .slot-button.selected {
   background: var(--arena-primary); border-color: rgba(13, 110, 253, 0.85); color: #fff;
+}
+
+.slot-button.past-slot {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .info-grid {
@@ -347,41 +357,47 @@
   justify-content: center; gap: 0.55rem; border: 1px solid var(--arena-border); background: var(--arena-surface-strong); color: var(--arena-primary);
 }
 
-.summary-note {
-  gap: 0.75rem; margin-top: 1rem; padding: 1rem; border-radius: 1rem; background: rgba(13, 110, 253, 0.08); color: var(--arena-muted);
-}
-
 .state-card { padding: 3rem 1.5rem; text-align: center; color: var(--arena-muted); }
 
-.mobile-summary-trigger,
+.summary-placeholder {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 0.75rem; padding: 2.25rem 1rem; color: var(--arena-muted);
+}
+
+.summary-placeholder i { font-size: 2rem; color: var(--arena-primary); opacity: 0.7; }
+.summary-placeholder p { margin: 0; font-size: 0.95rem; line-height: 1.5; }
+
+.confirmed-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;
+  padding: 0.55rem 0.9rem; border-radius: 999px; background: rgba(34, 197, 94, 0.14);
+  color: #15803d; font-weight: 700; font-size: 0.85rem;
+}
+
+.duration-selector { margin-bottom: 1.1rem; }
+
+.duration-selector-label {
+  display: block; margin-bottom: 0.5rem; color: var(--arena-muted); font-size: 0.82rem;
+  font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+}
+
+.duration-options { display: flex; gap: 0.6rem; }
+
+.duration-option {
+  flex: 1; min-height: 2.6rem; border-radius: 0.85rem; border: 1px solid var(--arena-border);
+  background: var(--arena-surface-strong); color: var(--arena-text); font-weight: 700;
+}
+
+.duration-option.active {
+  background: var(--arena-primary); border-color: rgba(13, 110, 253, 0.85); color: #fff;
+}
+
+.duration-option:disabled {
+  opacity: 0.45; cursor: not-allowed;
+}
+
 .mobile-summary-close {
   border: 0;
   transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.mobile-summary-trigger {
-  display: none;
-  width: 100%;
-  padding: 0.95rem 1rem;
-  border-radius: 1rem;
-  background: rgba(13, 110, 253, 0.08);
-  color: var(--arena-text);
-  text-align: left;
-}
-
-.mobile-summary-trigger span {
-  display: block;
-  margin-bottom: 0.2rem;
-  color: var(--arena-primary);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.mobile-summary-trigger strong {
-  color: var(--arena-text);
-  font-size: 1rem;
 }
 
 .mobile-summary-overlay {
@@ -520,10 +536,11 @@
 
 :host-context(body.dark-mode) .slot-button.available { background: rgba(13, 110, 253, 0.18); color: #bfdbfe; }
 :host-context(body.dark-mode) .slot-button.booked { background: rgba(255, 255, 255, 0.04); color: #6f7a88; }
-:host-context(body.dark-mode) .summary-note { background: rgba(13, 110, 253, 0.14); }
+:host-context(body.dark-mode) .slot-button.mine { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+:host-context(body.dark-mode) .confirmed-badge { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+:host-context(body.dark-mode) .duration-option { background: #1f1f1f; }
 :host-context(body.dark-mode) .gallery-dialog { background: rgba(31, 31, 31, 0.98); }
 :host-context(body.dark-mode) .gallery-thumb { background: #1f2937; }
-:host-context(body.dark-mode) .mobile-summary-trigger { background: rgba(13, 110, 253, 0.15); }
 :host-context(body.dark-mode) .mobile-summary-close { background: rgba(255, 255, 255, 0.08); color: #f8fafc; }
 :host-context(body.dark-mode) .mobile-summary-handle { background: #475569; }
 :host-context(body.dark-mode) .mobile-summary-sheet {
@@ -685,15 +702,6 @@
   }
   .info-grid { grid-template-columns: 1fr; }
   .summary-card { display: none; }
-  .mobile-summary-trigger {
-    display: block;
-    position: sticky;
-    bottom: 0.75rem;
-    z-index: 10;
-    padding: 0.85rem 0.95rem;
-    border-radius: 1rem;
-    box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14);
-  }
   .info-item-wide { grid-column: auto; }
   .legend-row {
     gap: 0.45rem 0.8rem;
@@ -778,9 +786,8 @@
   .price-row.total strong {
     font-size: 1.08rem;
   }
-  .summary-note {
-    padding: 0.8rem;
-    border-radius: 0.95rem;
+  .summary-placeholder {
+    padding: 1.6rem 0.8rem;
   }
   .mobile-summary-overlay {
     align-items: center;
@@ -849,7 +856,6 @@
     min-width: 132px;
     max-width: 132px;
   }
-  .summary-note { gap: 0.55rem; }
   .mobile-summary-sheet {
     width: min(100%, 28rem);
     padding: 0.9rem 0.85rem calc(env(safe-area-inset-bottom, 0px) + 0.85rem);

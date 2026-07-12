@@ -9,6 +9,7 @@ namespace SportskiTerminiAPI.Models
         public string SportType { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
+        public decimal PricePerHour { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

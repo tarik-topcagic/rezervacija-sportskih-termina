@@ -24,8 +24,8 @@ namespace SportskiTerminiAPI.Services
             if (arena == null)
                 return ServiceResult.NotFound("Arena not found");
 
-            if (createReservationDto.StartTime <= DateTime.UtcNow)
-                return ServiceResult.BadRequest("Cannot reserve a time slot in the past");
+            if (createReservationDto.StartTime <= DateTime.UtcNow.AddMinutes(30))
+                return ServiceResult.BadRequest("Cannot reserve a time slot starting within the next 30 minutes");
 
             var endTime = createReservationDto.StartTime.AddHours(createReservationDto.DurationInHours);
 

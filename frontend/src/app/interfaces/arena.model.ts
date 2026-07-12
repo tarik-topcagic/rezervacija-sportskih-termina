@@ -6,5 +6,6 @@ export interface Arena {
   sportType: string;
   address: string;
   imageUrl: string;
+  pricePerHour: number;
   createdAt: string | Date;
 }

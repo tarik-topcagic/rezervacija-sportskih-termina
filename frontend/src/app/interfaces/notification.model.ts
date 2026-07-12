@@ -4,7 +4,9 @@ export enum AppNotificationType {
   GroupInvitationReceived = 'GroupInvitationReceived',
   GroupInvitationAccepted = 'GroupInvitationAccepted',
   GroupJoinRequestReceived = 'GroupJoinRequestReceived',
-  GroupJoinRequestAccepted = 'GroupJoinRequestAccepted'
+  GroupJoinRequestAccepted = 'GroupJoinRequestAccepted',
+  ReservationReminder1Hour = 'ReservationReminder1Hour',
+  ReservationReminder30Minutes = 'ReservationReminder30Minutes'
 }
 
 export interface AppNotification {
@@ -18,6 +20,10 @@ export interface AppNotification {
   membershipId?: number | null;
   invitationStatus?: MembershipStatus | null;
   membershipStatus?: MembershipStatus | null;
+  reservationId?: number | null;
+  arenaId?: number | null;
+  arenaName?: string | null;
+  reservationStartTime?: string | null;
   isRead: boolean;
   createdAt: string;
 }

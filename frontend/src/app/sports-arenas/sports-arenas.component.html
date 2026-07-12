@@ -6,6 +6,31 @@
       <p>{{ 'sportsArenasSubtitle' | translate }}</p>
     </section>
 
+    <section class="favorites-strip" *ngIf="favoriteArenas.length">
+      <h2 class="favorites-title">
+        {{ 'favoriteArenas' | translate }}
+      </h2>
+
+      <div class="favorites-scroll">
+        <div class="favorite-chip" *ngFor="let favorite of favoriteArenas">
+          <button
+            type="button"
+            class="favorite-chip-remove"
+            [attr.aria-label]="'removeFavorite' | translate"
+            (click)="removeFavoriteArena(favorite, $event)"
+          >
+            <i class="bi bi-heart-fill"></i>
+          </button>
+
+          <button type="button" class="favorite-chip-body" (click)="viewFavoriteDetails(favorite)">
+            <img [src]="favorite.imageUrl" [alt]="favorite.arenaName" class="favorite-chip-image" />
+            <span class="favorite-chip-name">{{ favorite.arenaName }}</span>
+            <span class="favorite-chip-meta">{{ favorite.city }}</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <section class="search-panel">
       <div class="search-bar">
         <i class="bi bi-search"></i>

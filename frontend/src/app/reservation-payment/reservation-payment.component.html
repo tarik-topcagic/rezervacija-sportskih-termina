@@ -1,0 +1,139 @@
+<app-navbar></app-navbar>
+
+<div class="payment-page">
+  <div class="payment-shell">
+    <button type="button" class="back-button" (click)="goBack()">
+      <i class="bi bi-arrow-left"></i>
+      {{ 'backToArenas' | translate }}
+    </button>
+
+    <ng-container *ngIf="!isLoading && arena; else stateBlock">
+      <div class="payment-grid">
+        <section class="payment-card details-card">
+          <h2 class="mb-3">{{ 'paymentDetails' | translate }}</h2>
+
+          <form #paymentForm="ngForm" (ngSubmit)="submitPayment(paymentForm)" novalidate>
+            <div class="mb-3 form-floating">
+              <input
+                type="text"
+                class="form-control"
+                id="cardholderName"
+                name="cardholderName"
+                [(ngModel)]="cardholderName"
+                required
+                placeholder="{{ 'cardholderName' | translate }}"
+              />
+              <label for="cardholderName">{{ 'cardholderName' | translate }}</label>
+            </div>
+
+            <div class="mb-3 form-floating">
+              <input
+                type="text"
+                class="form-control"
+                id="cardNumber"
+                name="cardNumber"
+                [(ngModel)]="cardNumber"
+                required
+                pattern="^[0-9\s]{12,19}$"
+                maxlength="19"
+                placeholder="{{ 'cardNumber' | translate }}"
+              />
+              <label for="cardNumber">{{ 'cardNumber' | translate }}</label>
+            </div>
+
+            <div class="d-flex gap-3">
+              <div class="mb-3 form-floating flex-fill">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="expiry"
+                  name="expiry"
+                  [(ngModel)]="expiry"
+                  required
+                  pattern="^(0[1-9]|1[0-2])\/[0-9]{2}$"
+                  maxlength="5"
+                  placeholder="MM/YY"
+                />
+                <label for="expiry">{{ 'expiryDate' | translate }}</label>
+              </div>
+
+              <div class="mb-3 form-floating flex-fill">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="cvv"
+                  name="cvv"
+                  [(ngModel)]="cvv"
+                  required
+                  pattern="^[0-9]{3,4}$"
+                  maxlength="4"
+                  placeholder="CVV"
+                />
+                <label for="cvv">CVV</label>
+              </div>
+            </div>
+
+            <p class="payment-security-note">
+              <i class="bi bi-shield-lock"></i>
+              {{ 'paymentSecurityNote' | translate }}
+            </p>
+
+            <button
+              type="submit"
+              class="btn btn-primary w-100 pay-button"
+              [disabled]="paymentForm.invalid || isProcessing"
+            >
+              <span *ngIf="!isProcessing">{{ 'payAmount' | translate }} {{ formatPrice(totalPrice) }}</span>
+              <span *ngIf="isProcessing">
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                {{ 'processingPayment' | translate }}
+              </span>
+            </button>
+          </form>
+        </section>
+
+        <aside class="summary-card details-card">
+          <h2 class="mb-3">{{ 'orderSummary' | translate }}</h2>
+
+          <div class="summary-item">
+            <i class="bi bi-building"></i>
+            <div>
+              <span>{{ 'sportsFields' | translate }}</span>
+              <strong>{{ arena.name }}</strong>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <i class="bi bi-calendar-event"></i>
+            <div>
+              <span>{{ 'selectedDate' | translate }}</span>
+              <strong>{{ formatDateTime(startTime) }}</strong>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <i class="bi bi-clock-history"></i>
+            <div>
+              <span>{{ 'selectedTime' | translate }}</span>
+              <strong>{{ formatTime(startTime) }} - {{ formatTime(endTime) }}</strong>
+            </div>
+          </div>
+
+          <div class="summary-divider"></div>
+
+          <div class="price-row total">
+            <span>{{ 'total' | translate }}</span>
+            <strong>{{ formatPrice(totalPrice) }}</strong>
+          </div>
+        </aside>
+      </div>
+    </ng-container>
+
+    <ng-template #stateBlock>
+      <section class="state-card details-card">
+        <p *ngIf="isLoading">{{ 'loading' | translate }}</p>
+        <p *ngIf="!isLoading">{{ errorMessage | translate }}</p>
+      </section>
+    </ng-template>
+  </div>
+</div>

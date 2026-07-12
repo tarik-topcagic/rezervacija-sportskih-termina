@@ -153,6 +153,10 @@ namespace SportskiTerminiAPI
             builder.Services.AddScoped<IGroupNotificationService, GroupNotificationService>();
             builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
             builder.Services.AddScoped<IReservationService, ReservationService>();
+            builder.Services.AddScoped<IFavoriteArenaRepository, FavoriteArenaRepository>();
+            builder.Services.AddScoped<IFavoriteArenaService, FavoriteArenaService>();
+            builder.Services.AddScoped<IReservationNotificationService, ReservationNotificationService>();
+            builder.Services.AddHostedService<ReservationReminderBackgroundService>();
 
             var app = builder.Build();
 
