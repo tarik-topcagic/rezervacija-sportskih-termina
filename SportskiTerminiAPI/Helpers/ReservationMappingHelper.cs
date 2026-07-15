@@ -12,7 +12,7 @@ namespace SportskiTerminiAPI.Helpers
                 Id = reservation.Id,
                 ArenaId = reservation.ArenaId,
                 ArenaName = reservation.Arena?.Name ?? string.Empty,
-                UserId = reservation.UserId,
+                Username = reservation.User?.UserName ?? string.Empty,
                 StartTime = reservation.StartTime,
                 EndTime = reservation.EndTime,
                 DurationInHours = (reservation.EndTime - reservation.StartTime).TotalHours,

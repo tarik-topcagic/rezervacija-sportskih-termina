@@ -12,7 +12,7 @@ export enum AppNotificationType {
 export interface AppNotification {
   id: number;
   type: AppNotificationType;
-  userId: string;
+  username: string;
   actorUserId?: string | null;
   actorName?: string | null;
   groupId?: number | null;

@@ -37,6 +37,7 @@ body.bottom-groups-visible {
 body.dark-mode {
     background-color: #121212;
     color: #f1f3f5;
+    color-scheme: dark;
     --app-modal-backdrop-bg: rgba(0, 0, 0, 0.68);
     --app-scrollbar-track: #121212;
     --app-scrollbar-thumb: #4b4f54;
@@ -73,6 +74,10 @@ body.dark-mode {
 textarea.form-control,
 input.form-control {
     border-radius: var(--app-control-radius) !important;
+}
+
+.form-select {
+    border-radius: 1.1rem !important;
 }
 
 .btn-sm:not(.btn-close) {
@@ -189,6 +194,143 @@ body.dark-mode .modal-content {
 
 body.dark-mode .bg-light {
     background-color: #2a2a2a !important;
+}
+
+/* Admin panel tables (Users, Groups, Arenas, Reservations, Notifications) share the
+   same bare Bootstrap `.table` markup, so their dark-mode theming lives here once
+   rather than duplicated per component — mirrors how .card/.form-control are handled
+   above. Uses Bootstrap's own --bs-table-* variable API (same approach as the
+   --bs-btn-* overrides further down) rather than touching --bs-body-bg, which this
+   app's dark mode never redefines. */
+:is(.admin-page, .admin-dashboard-page) .table-responsive {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 1rem;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    padding: 0.25rem;
+    /* Hide the scrollbar cross-browser while keeping horizontal scroll (swipe/drag)
+       fully functional, so the table stays scrollable on mobile without a visible track. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+:is(.admin-page, .admin-dashboard-page) .table-responsive::-webkit-scrollbar {
+    display: none;
+}
+
+/* Let the table keep its natural desktop width instead of shrinking to fit narrow
+   viewports (Bootstrap's .table defaults to width: 100%). On mobile this means the
+   table renders identically to desktop and simply overflows into the horizontally
+   scrollable .table-responsive container above, rather than wrapping/stacking cell
+   content and buttons. min-width: 100% preserves the existing desktop look (table
+   still fills/stretches to the container when it has room to). */
+:is(.admin-page, .admin-dashboard-page) .table-responsive .table {
+    width: auto;
+    min-width: 100%;
+}
+
+body.dark-mode :is(.admin-page, .admin-dashboard-page) .table-responsive {
+    background: #1a1a1a;
+    border-color: #3a3a3a;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+body.dark-mode :is(.admin-page, .admin-dashboard-page) .table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: #232323;
+    --bs-table-striped-color: #f1f3f5;
+    --bs-table-color: #f1f3f5;
+    --bs-table-border-color: #3a3a3a;
+    --bs-table-hover-bg: #262626;
+    --bs-table-hover-color: #f1f3f5;
+    color: #f1f3f5;
+}
+
+body.dark-mode :is(.admin-page, .admin-dashboard-page) .table thead th {
+    color: #f1f3f5;
+    border-bottom-color: #3a3a3a;
+}
+
+/* Pagination controls, matching the .pagination-shell/.page-button/.page-number
+   pattern already used by search-users/search-groups/sports-arenas. */
+:is(.admin-page, .admin-dashboard-page) .pagination-shell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+:is(.admin-page, .admin-dashboard-page) :is(.page-button, .page-number) {
+    min-width: 46px;
+    height: 46px;
+    border: 1px solid #dee2e6;
+    border-radius: 0.95rem;
+    background: #fff;
+    color: #0f172a;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+:is(.admin-page, .admin-dashboard-page) .page-number.active {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #0d6efd, #3b82f6);
+    box-shadow: 0 16px 24px rgba(13, 110, 253, 0.22);
+}
+
+:is(.admin-page, .admin-dashboard-page) .page-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+:is(.admin-page, .admin-dashboard-page) :is(.page-button, .page-number):hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+}
+
+body.dark-mode :is(.admin-page, .admin-dashboard-page) :is(.page-button, .page-number) {
+    background: #1a1a1a;
+    border-color: #3a3a3a;
+    color: #f1f3f5;
+}
+
+body.dark-mode :is(.admin-page, .admin-dashboard-page) .page-number.active {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    box-shadow: 0 16px 24px rgba(59, 130, 246, 0.3);
+}
+
+/* Admin form inputs (popup forms and full-page forms like arenas/new) match
+   create-group-modal's/edit-group-modal's .form-control treatment exactly,
+   rather than falling back to the flatter global body.dark-mode .form-control rule. */
+body.dark-mode :is(.admin-page, .admin-dashboard-page) :is(.form-control, .form-select) {
+    background-color: #15191e;
+    color: #f1f3f5;
+    border-color: #4b5563;
+}
+
+body.dark-mode :is(.admin-page, .admin-dashboard-page) :is(.form-control, .form-select):focus {
+    background-color: #15191e;
+    color: #fff;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+body.dark-mode :is(.admin-page, .admin-dashboard-page) .form-control::placeholder {
+    color: #adb5bd;
+}
+
+body.dark-mode :is(.admin-page, .admin-dashboard-page) .form-floating > .form-control::placeholder {
+    color: transparent;
+}
+
+body.dark-mode :is(.admin-page, .admin-dashboard-page) .form-floating > .form-control:focus ~ label::after,
+body.dark-mode :is(.admin-page, .admin-dashboard-page) .form-floating > .form-control:not(:placeholder-shown) ~ label::after {
+    background-color: #15191e;
+}
+
+body.dark-mode :is(.admin-page, .admin-dashboard-page) .form-floating > label {
+    color: #adb5bd;
 }
 
 body.dark-mode .cancel-button.btn.btn-secondary {

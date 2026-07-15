@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using SportskiTerminiAPI.DTOs;
+using SportskiTerminiAPI.DTOs.Admin;
 using SportskiTerminiAPI.Helpers;
+using SportskiTerminiAPI.Helpers.Admin;
 using SportskiTerminiAPI.Interfaces;
 using SportskiTerminiAPI.Models;
 
@@ -50,6 +52,58 @@ namespace SportskiTerminiAPI.Services
                         && ((user.UserName != null && user.UserName.ToLower().Contains(loweredQuery))
                             || (user.FullName != null && user.FullName.ToLower().Contains(loweredQuery)))))
                 .Select(UserMappingHelper.ToUserProfileDto);
+        }
+
+        public async Task<IEnumerable<AdminUserDto>> GetAllUsersForAdminAsync(string? username, string? role, bool? locked)
+        {
+            var users = await _userRepository.GetAllUsersForAdminAsync(username);
+            var result = new List<AdminUserDto>();
+
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                result.Add(AdminUserMappingHelper.ToAdminUserDto(user, roles));
+            }
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                var wantsAdmin = string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase);
+                result = result.Where(u => u.Roles.Contains("Admin") == wantsAdmin).ToList();
+            }
+
+            if (locked.HasValue)
+            {
+                result = result
+                    .Where(u => IsUserLocked(u.LockoutEnd) == locked.Value)
+                    .ToList();
+            }
+
+            return result;
+        }
+
+        private static bool IsUserLocked(DateTimeOffset? lockoutEnd)
+        {
+            return lockoutEnd.HasValue && lockoutEnd.Value > DateTimeOffset.UtcNow;
+        }
+
+        public async Task<ServiceResult> SetUserLockoutAsync(string userId, bool locked, string callerId)
+        {
+            if (locked && string.Equals(userId, callerId, StringComparison.Ordinal))
+                return ServiceResult.BadRequest("You cannot lock your own account.");
+
+            var user = await _userRepository.GetUserByIdAsync(userId);
+            if (user == null)
+                return ServiceResult.NotFound("User not found");
+
+            var result = await _userManager.SetLockoutEnabledAsync(user, true);
+            if (!result.Succeeded)
+                return ServiceResult.BadRequest(result.Errors.Select(e => e.Description));
+
+            var lockoutResult = await _userManager.SetLockoutEndDateAsync(user, locked ? DateTimeOffset.MaxValue : (DateTimeOffset?)null);
+            if (!lockoutResult.Succeeded)
+                return ServiceResult.BadRequest(lockoutResult.Errors.Select(e => e.Description));
+
+            return ServiceResult.Ok(new { message = locked ? "User locked" : "User unlocked" });
         }
     }
 }

@@ -6,7 +6,7 @@ namespace SportskiTerminiAPI.Interfaces
     public interface IGroupRepository
     {
         Task<Group> CreateGroupAsync(Group group);
-        Task<IEnumerable<Group>> GetAllGroupsAsync();
+        Task<IEnumerable<Group>> GetAllGroupsAsync(string? name, string? owner);
         Task<Group> UpdateGroupAsync(Group group);
         Task DeleteGroupAsync(int groupId);
         Task<Group?> GetGroupByIdAsync(int groupId);

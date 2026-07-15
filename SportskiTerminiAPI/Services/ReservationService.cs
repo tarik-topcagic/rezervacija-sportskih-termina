@@ -93,5 +93,27 @@ namespace SportskiTerminiAPI.Services
             var reservations = await _reservationRepository.GetReservationsForUserAsync(userId);
             return ServiceResult.Ok(reservations.Select(ReservationMappingHelper.ToReservationDto));
         }
+
+        public async Task<ServiceResult> GetAllReservationsForAdminAsync(int? arenaId, string? username, ReservationStatus? status)
+        {
+            var reservations = await _reservationRepository.GetAllReservationsAsync(arenaId, username, status);
+            return ServiceResult.Ok(reservations.Select(ReservationMappingHelper.ToReservationDto));
+        }
+
+        public async Task<ServiceResult> AdminCancelReservationAsync(int reservationId)
+        {
+            var reservation = await _reservationRepository.GetByIdAsync(reservationId);
+            if (reservation == null)
+                return ServiceResult.NotFound("Reservation not found");
+
+            if (reservation.Status == ReservationStatus.Cancelled)
+                return ServiceResult.BadRequest("This reservation is already cancelled");
+
+            reservation.Status = ReservationStatus.Cancelled;
+            reservation.CancelledAt = DateTime.UtcNow;
+            await _reservationRepository.UpdateAsync(reservation);
+
+            return ServiceResult.Ok(new { message = "Reservation cancelled successfully" });
+        }
     }
 }

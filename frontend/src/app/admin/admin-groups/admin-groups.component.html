@@ -1,0 +1,161 @@
+<app-navbar></app-navbar>
+<div class="container admin-page">
+  <h1 class="mb-4">Groups</h1>
+
+  <form class="row g-2 align-items-end mb-4" (ngSubmit)="applyFilters()">
+    <div class="col-auto">
+      <label class="form-label">Name</label>
+      <input type="text" class="form-control" name="filterName" [(ngModel)]="filterName" />
+    </div>
+    <div class="col-auto">
+      <label class="form-label">Owner</label>
+      <input type="text" class="form-control" name="filterOwner" [(ngModel)]="filterOwner" />
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary">Filter</button>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn btn-outline-secondary" (click)="clearFilters()">Clear</button>
+    </div>
+  </form>
+
+  <div *ngIf="isLoading" class="text-muted">Loading...</div>
+  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+  <div class="table-responsive" *ngIf="!isLoading && !errorMessage">
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Group ID</th>
+          <th>Name</th>
+          <th>Owner</th>
+          <th>Owner's Username</th>
+          <th>City</th>
+          <th>Sport</th>
+          <th>Members</th>
+          <th>Created At</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let group of pagedGroups">
+          <td>{{ group.id }}</td>
+          <td>{{ group.name }}</td>
+          <td>{{ group.adminDisplayName || '-' }}</td>
+          <td>{{ group.adminUsername || '-' }}</td>
+          <td>{{ group.grad }}</td>
+          <td>{{ group.kategorijaSporta }}</td>
+          <td>{{ group.membersCount ?? '-' }}</td>
+          <td>{{ group.dateCreated | date: 'short' }}</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-sm btn-outline-secondary me-1" (click)="openMembers(group)">
+              Members
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="openEdit(group)">
+              Edit
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger"
+              [disabled]="isPending(group)"
+              (click)="deleteGroup(group)"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="!groups.length">
+          <td colspan="9" class="text-center text-muted">No groups found.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <nav class="pagination-shell" aria-label="Groups pagination" *ngIf="totalPages > 1">
+      <button type="button" class="page-button" [disabled]="currentPage === 1" (click)="previousPage($event)">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <button
+        type="button"
+        class="page-number"
+        *ngFor="let page of totalPagesArray"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page, $event)"
+      >
+        {{ page }}
+      </button>
+      <button type="button" class="page-button" [disabled]="currentPage === totalPages" (click)="nextPage($event)">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- Edit group modal -->
+<div class="modal-backdrop-custom" role="presentation" *ngIf="editingGroup" (click)="closeEdit()">
+  <section class="admin-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <div class="admin-modal-header">
+      <h2>Edit Group</h2>
+      <button type="button" class="icon-button" title="Cancel" (click)="closeEdit()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <form (ngSubmit)="saveEdit()">
+      <div class="mb-3 form-floating">
+        <input id="adminEditGroupName" type="text" class="form-control" name="name" [(ngModel)]="editForm.name" required placeholder="Name" />
+        <label for="adminEditGroupName">Name</label>
+      </div>
+      <div class="mb-3 form-floating">
+        <textarea id="adminEditGroupDescription" class="form-control" name="description" [(ngModel)]="editForm.description" placeholder="Description" style="height: 100px"></textarea>
+        <label for="adminEditGroupDescription">Description</label>
+      </div>
+      <div class="mb-3 form-floating">
+        <input id="adminEditGroupCity" type="text" class="form-control" name="grad" [(ngModel)]="editForm.grad" required placeholder="City" />
+        <label for="adminEditGroupCity">City</label>
+      </div>
+      <div class="mb-3 form-floating">
+        <input id="adminEditGroupSport" type="text" class="form-control" name="kategorijaSporta" [(ngModel)]="editForm.kategorijaSporta" required placeholder="Sport category" />
+        <label for="adminEditGroupSport">Sport category</label>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary cancel-button" (click)="closeEdit()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="isSavingEdit">Save</button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<!-- Members modal -->
+<div class="modal-backdrop-custom" role="presentation" *ngIf="membersGroup || isLoadingMembers" (click)="closeMembers()">
+  <section class="admin-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <div class="admin-modal-header">
+      <h2>Group Members</h2>
+      <button type="button" class="icon-button" title="Cancel" (click)="closeMembers()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div *ngIf="isLoadingMembers" class="text-muted">Loading...</div>
+
+    <ul class="list-group" *ngIf="membersGroup">
+      <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let member of membersGroup.members">
+        <div>
+          <strong>{{ member.displayName || member.username }}</strong>
+        </div>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-danger"
+          *ngIf="!member.isAdmin"
+          [disabled]="isRemovingMember(member)"
+          (click)="removeMember(member)"
+        >
+          Remove
+        </button>
+      </li>
+      <li class="list-group-item text-center text-muted" *ngIf="!membersGroup.members.length">
+        No members found.
+      </li>
+    </ul>
+  </section>
+</div>

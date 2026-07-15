@@ -15,6 +15,10 @@ namespace SportskiTerminiAPI.Helpers
                 Grad = group.Grad,
                 KategorijaSporta = group.KategorijaSporta,
                 AdminId = group.AdminId,
+                AdminDisplayName = !string.IsNullOrWhiteSpace(group.Admin?.FullName)
+                    ? group.Admin.FullName
+                    : group.Admin?.UserName ?? string.Empty,
+                AdminUsername = group.Admin?.UserName ?? string.Empty,
                 DateCreated = group.DateCreated,
                 ImageUrl = group.ImageUrl,
                 MembersCount = GetVisibleMembersCount(group)

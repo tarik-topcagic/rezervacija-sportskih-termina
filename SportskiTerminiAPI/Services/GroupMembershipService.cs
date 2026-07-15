@@ -293,5 +293,23 @@ namespace SportskiTerminiAPI.Services
 
             return ServiceResult.Ok(invitations);
         }
+
+        public async Task<ServiceResult> AdminRemoveMemberAsync(int groupId, string memberId)
+        {
+            var group = await _groupRepository.GetGroupByIdAsync(groupId);
+            if (group == null)
+                return ServiceResult.NotFound("Group not found");
+
+            if (memberId == group.AdminId)
+                return ServiceResult.BadRequest("Group admin cannot be removed from the group");
+
+            var membership = group.Memberships.FirstOrDefault(m => m.UserId == memberId && m.Status == MembershipStatus.Accepted);
+            if (membership == null)
+                return ServiceResult.NotFound("Membership not found");
+
+            await _groupRepository.RemoveMembershipAsync(membership.Id);
+
+            return ServiceResult.Ok(new { message = "Member removed" });
+        }
     }
 }

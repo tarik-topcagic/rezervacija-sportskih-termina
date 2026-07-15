@@ -1,0 +1,16 @@
+<app-navbar></app-navbar>
+<div class="container admin-dashboard-page">
+  <h1 class="mb-4">Admin Panel</h1>
+
+  <div class="row g-3">
+    <div class="col-12 col-sm-6 col-lg-4" *ngFor="let section of sections">
+      <a class="card admin-card text-decoration-none h-100" [routerLink]="section.link">
+        <div class="card-body">
+          <i class="bi {{ section.icon }} admin-card-icon"></i>
+          <h5 class="card-title mt-2">{{ section.title }}</h5>
+          <p class="card-text text-muted">{{ section.description }}</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>

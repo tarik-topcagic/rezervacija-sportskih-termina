@@ -12,5 +12,7 @@ namespace SportskiTerminiAPI.Interfaces
         Task<Reservation?> GetConflictingReservationAsync(int arenaId, DateTime startTime, DateTime endTime);
         Task<IEnumerable<Reservation>> GetReservationsForUserAsync(string userId);
         Task UpdateAsync(Reservation reservation);
+        Task<bool> ArenaHasReservationsAsync(int arenaId);
+        Task<IEnumerable<Reservation>> GetAllReservationsAsync(int? arenaId, string? username, ReservationStatus? status);
     }
 }

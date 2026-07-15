@@ -4,7 +4,7 @@ export interface Reservation {
   id: number;
   arenaId: number;
   arenaName: string;
-  userId: string;
+  username: string;
   startTime: string;
   endTime: string;
   durationInHours: number;

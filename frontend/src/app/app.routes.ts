@@ -4,6 +4,7 @@ import { RegisterComponent } from './register/register.component';
 import { LoginComponent } from './login/login.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { AuthGuard } from './guards/auth.guard';
+import { AdminGuard } from './guards/admin.guard';
 import { ProfileComponent } from './profile/profile.component';
 import { ProfileEditComponent } from './profile-edit/profile-edit.component';
 import { PendingChangesGuard } from './guards/pending-changes.guard';
@@ -49,6 +50,46 @@ export const routes: Routes = [
       path: 'messages/private/:conversationId',
       loadComponent: () => import('./private-chat/private-chat.component').then((module) => module.PrivateChatComponent),
       canActivate: [AuthGuard],
+    },
+    {
+      path: 'admin',
+      loadComponent: () => import('./admin/admin-dashboard/admin-dashboard.component').then((module) => module.AdminDashboardComponent),
+      canActivate: [AuthGuard, AdminGuard],
+    },
+    {
+      path: 'admin/users',
+      loadComponent: () => import('./admin/admin-users/admin-users.component').then((module) => module.AdminUsersComponent),
+      canActivate: [AuthGuard, AdminGuard],
+    },
+    {
+      path: 'admin/groups',
+      loadComponent: () => import('./admin/admin-groups/admin-groups.component').then((module) => module.AdminGroupsComponent),
+      canActivate: [AuthGuard, AdminGuard],
+    },
+    {
+      path: 'admin/arenas',
+      loadComponent: () => import('./admin/admin-arenas/admin-arenas.component').then((module) => module.AdminArenasComponent),
+      canActivate: [AuthGuard, AdminGuard],
+    },
+    {
+      path: 'admin/arenas/new',
+      loadComponent: () => import('./admin/admin-arenas/admin-arenas.component').then((module) => module.AdminArenasComponent),
+      canActivate: [AuthGuard, AdminGuard],
+    },
+    {
+      path: 'admin/arenas/:id/edit',
+      loadComponent: () => import('./admin/admin-arenas/admin-arenas.component').then((module) => module.AdminArenasComponent),
+      canActivate: [AuthGuard, AdminGuard],
+    },
+    {
+      path: 'admin/reservations',
+      loadComponent: () => import('./admin/admin-reservations/admin-reservations.component').then((module) => module.AdminReservationsComponent),
+      canActivate: [AuthGuard, AdminGuard],
+    },
+    {
+      path: 'admin/notifications',
+      loadComponent: () => import('./admin/admin-notifications/admin-notifications.component').then((module) => module.AdminNotificationsComponent),
+      canActivate: [AuthGuard, AdminGuard],
     },
     { path: 'registracija', redirectTo: 'register', pathMatch: 'full' },
     { path: 'prijava', redirectTo: 'login', pathMatch: 'full' },

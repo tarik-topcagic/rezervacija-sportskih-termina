@@ -94,12 +94,30 @@ namespace SportskiTerminiAPI.Repositories
             }
         }
 
-        public async Task<IEnumerable<Group>> GetAllGroupsAsync()
+        public async Task<IEnumerable<Group>> GetAllGroupsAsync(string? name, string? owner)
         {
-            return await _context.Groups
+            var query = _context.Groups
+                .Include(g => g.Admin)
                 .Include(g => g.Memberships)
                 .ThenInclude(m => m.User)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                var normalizedName = name.Trim().ToLower();
+                query = query.Where(g => g.Name.ToLower().Contains(normalizedName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(owner))
+            {
+                var normalizedOwner = owner.Trim().ToLower();
+                query = query.Where(g => g.Admin != null && (
+                    (g.Admin.FullName != null && g.Admin.FullName.ToLower().Contains(normalizedOwner)) ||
+                    (g.Admin.UserName != null && g.Admin.UserName.ToLower().Contains(normalizedOwner))
+                ));
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<Group?> GetGroupByIdAsync(int groupId)

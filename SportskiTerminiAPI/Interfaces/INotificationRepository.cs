@@ -21,5 +21,7 @@ namespace SportskiTerminiAPI.Interfaces
         Task AddNotificationsAsync(IEnumerable<AppNotification> notifications);
         Task RemoveNotificationsAsync(IEnumerable<AppNotification> notifications);
         Task SaveChangesAsync();
+        Task<List<AppNotification>> GetAllNotificationsAsync(int take = 100, AppNotificationType? type = null, bool? isRead = null, string? username = null);
+        Task<AppNotification?> GetNotificationByIdAsync(int id);
     }
 }

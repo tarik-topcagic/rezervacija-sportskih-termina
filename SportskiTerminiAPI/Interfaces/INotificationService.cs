@@ -1,4 +1,5 @@
 using SportskiTerminiAPI.DTOs;
+using SportskiTerminiAPI.Models;
 using SportskiTerminiAPI.Services;
 
 namespace SportskiTerminiAPI.Interfaces
@@ -9,5 +10,7 @@ namespace SportskiTerminiAPI.Interfaces
         Task<int> GetUnreadCountAsync(string userId);
         Task<ServiceResult> MarkAllAsReadAsync(string userId);
         Task<ServiceResult> MarkAsReadAsync(string userId, int notificationId);
+        Task<IEnumerable<NotificationDto>> GetAllNotificationsForAdminAsync(AppNotificationType? type, bool? isRead, string? username);
+        Task<ServiceResult> AdminDeleteNotificationAsync(int id);
     }
 }

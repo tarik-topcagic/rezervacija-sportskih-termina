@@ -40,7 +40,8 @@ namespace SportskiTerminiAPI.Services
                 FullName = model.FullName,
                 UserName = model.Username,
                 Email = model.Email,
-                PhoneNumber = model.PhoneNumber
+                PhoneNumber = model.PhoneNumber,
+                CreatedAt = DateTime.UtcNow
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -57,8 +58,25 @@ namespace SportskiTerminiAPI.Services
                 .SingleOrDefaultAsync(appUser => appUser.NormalizedUserName == normalizedUsername);
 
             if (user == null ||
-                !string.Equals(user.UserName, model.Username.Trim(), StringComparison.Ordinal) ||
-                !(await _userManager.CheckPasswordAsync(user, model.Password)))
+                !string.Equals(user.UserName, model.Username.Trim(), StringComparison.Ordinal))
+            {
+                return new ServiceResult
+                {
+                    StatusCode = StatusCodes.Status401Unauthorized,
+                    Payload = "Invalid login attempt"
+                };
+            }
+
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                return new ServiceResult
+                {
+                    StatusCode = StatusCodes.Status401Unauthorized,
+                    Payload = "Account is locked"
+                };
+            }
+
+            if (!(await _userManager.CheckPasswordAsync(user, model.Password)))
             {
                 return new ServiceResult
                 {

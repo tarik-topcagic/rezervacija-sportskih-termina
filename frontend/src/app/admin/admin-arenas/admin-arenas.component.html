@@ -1,0 +1,154 @@
+<app-navbar></app-navbar>
+<div class="container admin-page">
+
+  <!-- List mode -->
+  <ng-container *ngIf="mode === 'list'">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="mb-0">Arenas</h1>
+      <a class="btn btn-primary" routerLink="/admin/arenas/new">New arena</a>
+    </div>
+
+    <form class="row g-2 align-items-end mb-4" (ngSubmit)="applyFilters()">
+      <div class="col-auto">
+        <label class="form-label">Name</label>
+        <input type="text" class="form-control" name="filterName" [(ngModel)]="filterName" />
+      </div>
+      <div class="col-auto">
+        <label class="form-label">City</label>
+        <app-admin-select name="filterCity" [(ngModel)]="filterCity" [options]="cityOptions"></app-admin-select>
+      </div>
+      <div class="col-auto">
+        <label class="form-label">Sport</label>
+        <app-admin-select name="filterSportType" [(ngModel)]="filterSportType" [options]="sportOptions"></app-admin-select>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Filter</button>
+      </div>
+      <div class="col-auto">
+        <button type="button" class="btn btn-outline-secondary" (click)="clearFilters()">Clear</button>
+      </div>
+    </form>
+
+    <div *ngIf="isLoading" class="text-muted">Loading...</div>
+    <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+    <div class="table-responsive" *ngIf="!isLoading && !errorMessage">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Arena ID</th>
+            <th>Name</th>
+            <th>City</th>
+            <th>Sport</th>
+            <th>Address</th>
+            <th>Price/hour</th>
+            <th>Reservations</th>
+            <th>Favorites</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let arena of pagedArenas">
+            <td>{{ arena.id }}</td>
+            <td>{{ arena.name }}</td>
+            <td>{{ arena.city }}</td>
+            <td>{{ arena.sportType }}</td>
+            <td>{{ arena.address }}</td>
+            <td>{{ arena.pricePerHour }}</td>
+            <td>{{ arena.reservationCount }}</td>
+            <td>{{ arena.favoriteCount }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-primary me-1" [routerLink]="['/admin/arenas', arena.id, 'edit']">
+                Edit
+              </a>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                [disabled]="isPending(arena)"
+                (click)="deleteArena(arena)"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!arenas.length">
+            <td colspan="9" class="text-center text-muted">No arenas found.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <nav class="pagination-shell" aria-label="Arenas pagination" *ngIf="totalPages > 1">
+        <button type="button" class="page-button" [disabled]="currentPage === 1" (click)="previousPage($event)">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <button
+          type="button"
+          class="page-number"
+          *ngFor="let page of totalPagesArray"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page, $event)"
+        >
+          {{ page }}
+        </button>
+        <button type="button" class="page-button" [disabled]="currentPage === totalPages" (click)="nextPage($event)">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </nav>
+    </div>
+  </ng-container>
+
+  <!-- Create / edit mode -->
+  <ng-container *ngIf="mode === 'create' || mode === 'edit'">
+    <h1 class="mb-4">{{ mode === 'create' ? 'New Arena' : 'Edit Arena' }}</h1>
+
+    <div *ngIf="formError" class="alert alert-danger">{{ formError }}</div>
+
+    <form (ngSubmit)="submitForm()" class="admin-form">
+      <div class="mb-3 form-floating">
+        <input id="adminArenaName" type="text" class="form-control" name="name" [(ngModel)]="form.name" required placeholder="Name" />
+        <label for="adminArenaName">Name</label>
+      </div>
+      <div class="mb-3 form-floating">
+        <textarea id="adminArenaDescription" class="form-control" name="description" [(ngModel)]="form.description" placeholder="Description" style="height: 100px"></textarea>
+        <label for="adminArenaDescription">Description</label>
+      </div>
+      <div class="mb-3 form-floating">
+        <input id="adminArenaCity" type="text" class="form-control" name="city" [(ngModel)]="form.city" required placeholder="City" />
+        <label for="adminArenaCity">City</label>
+      </div>
+      <div class="mb-3 form-floating">
+        <input id="adminArenaSportType" type="text" class="form-control" name="sportType" [(ngModel)]="form.sportType" required placeholder="Sport type" />
+        <label for="adminArenaSportType">Sport type</label>
+      </div>
+      <div class="mb-3 form-floating">
+        <input id="adminArenaAddress" type="text" class="form-control" name="address" [(ngModel)]="form.address" required placeholder="Address" />
+        <label for="adminArenaAddress">Address</label>
+      </div>
+      <div class="mb-3 form-floating">
+        <input id="adminArenaPrice" type="number" class="form-control" name="pricePerHour" min="0" step="0.01" [(ngModel)]="form.pricePerHour" required placeholder="Price per hour" />
+        <label for="adminArenaPrice">Price per hour</label>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" [disabled]="isSaving">Save</button>
+        <button type="button" class="btn btn-secondary cancel-button" (click)="cancelForm()">Cancel</button>
+      </div>
+    </form>
+
+    <div class="admin-form mt-4" *ngIf="mode === 'edit'">
+      <h2 class="h5">Picture</h2>
+      <img *ngIf="currentImageUrl" [src]="currentImageUrl" alt="Arena picture" class="arena-preview-image mb-2" />
+      <div class="mb-2">
+        <input type="file" class="form-control" accept="image/*" (change)="onFileSelected($event)" />
+      </div>
+      <button
+        type="button"
+        class="btn btn-outline-primary"
+        [disabled]="!selectedFile || isUploadingPicture"
+        (click)="uploadPicture()"
+      >
+        Upload picture
+      </button>
+    </div>
+  </ng-container>
+</div>

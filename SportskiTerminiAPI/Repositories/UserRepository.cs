@@ -19,6 +19,19 @@ namespace SportskiTerminiAPI.Repositories
             return await _userManager.Users.ToListAsync();
         }
 
+        public async Task<List<AppUser>> GetAllUsersForAdminAsync(string? username)
+        {
+            var query = _userManager.Users.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                var normalizedSearch = username.Trim().ToLower();
+                query = query.Where(u => u.UserName != null && u.UserName.ToLower().Contains(normalizedSearch));
+            }
+
+            return await query.ToListAsync();
+        }
+
         public async Task<AppUser?> GetUserByIdAsync(string id)
         {
             return await _userManager.FindByIdAsync(id);

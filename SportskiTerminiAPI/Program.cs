@@ -18,7 +18,7 @@ namespace SportskiTerminiAPI
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -164,6 +164,21 @@ namespace SportskiTerminiAPI
             {
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
                 context.Database.Migrate();
+            }
+
+            using (var seedScope = app.Services.CreateScope())
+            {
+                var roleManager = seedScope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                var userManager = seedScope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+                if (!await roleManager.RoleExistsAsync("Admin"))
+                    await roleManager.CreateAsync(new IdentityRole("Admin"));
+                var adminEmail = builder.Configuration["Seed:AdminEmail"];
+                if (!string.IsNullOrWhiteSpace(adminEmail))
+                {
+                    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+                    if (adminUser != null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
+                        await userManager.AddToRoleAsync(adminUser, "Admin");
+                }
             }
 
             app.UseCors("AllowFrontend");

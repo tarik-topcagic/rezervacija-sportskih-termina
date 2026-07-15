@@ -7,7 +7,7 @@ namespace SportskiTerminiAPI.DTOs
         public int Id { get; set; }
         public int ArenaId { get; set; }
         public string ArenaName { get; set; } = string.Empty;
-        public string UserId { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public double DurationInHours { get; set; }

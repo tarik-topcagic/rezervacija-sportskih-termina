@@ -5,6 +5,8 @@ export interface Group {
   grad: string;
   kategorijaSporta: string;
   adminId: string;
+  adminDisplayName?: string;
+  adminUsername?: string;
   imageUrl: string;
   createdAt: Date;
   dateCreated: Date;
@@ -65,6 +67,14 @@ export interface GroupMembership {
   createdAt?: Date;
   joinedAt: Date;
   respondedAt?: Date | null;
+}
+
+export interface UpdateGroupDto {
+  name: string;
+  description: string;
+  grad: string;
+  kategorijaSporta: string;
+  groupPictureUrl?: string | null;
 }
 
 export interface GroupMembershipState {

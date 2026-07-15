@@ -45,5 +45,10 @@ namespace SportskiTerminiAPI.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task<bool> ArenaHasFavoritesAsync(int arenaId)
+        {
+            return await _context.FavoriteArenas.AnyAsync(f => f.ArenaId == arenaId);
+        }
     }
 }

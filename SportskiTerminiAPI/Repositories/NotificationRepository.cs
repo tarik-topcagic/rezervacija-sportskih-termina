@@ -125,5 +125,45 @@ namespace SportskiTerminiAPI.Repositories
         {
             await _context.SaveChangesAsync();
         }
+
+        public async Task<List<AppNotification>> GetAllNotificationsAsync(int take = 100, AppNotificationType? type = null, bool? isRead = null, string? username = null)
+        {
+            var query = _context.Notifications
+                .Include(n => n.User)
+                .Include(n => n.Group)
+                .Include(n => n.ActorUser)
+                .Include(n => n.Membership)
+                .Include(n => n.Reservation)
+                .ThenInclude(r => r!.Arena)
+                .AsQueryable();
+
+            if (type.HasValue)
+                query = query.Where(n => n.Type == type.Value);
+
+            if (isRead.HasValue)
+                query = query.Where(n => n.IsRead == isRead.Value);
+
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                var normalizedUsername = username.Trim().ToLower();
+                query = query.Where(n => n.User != null && n.User.UserName != null && n.User.UserName.ToLower().Contains(normalizedUsername));
+            }
+
+            return await query
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(take)
+                .ToListAsync();
+        }
+
+        public async Task<AppNotification?> GetNotificationByIdAsync(int id)
+        {
+            return await _context.Notifications
+                .Include(n => n.Group)
+                .Include(n => n.ActorUser)
+                .Include(n => n.Membership)
+                .Include(n => n.Reservation)
+                .ThenInclude(r => r!.Arena)
+                .FirstOrDefaultAsync(n => n.Id == id);
+        }
     }
 }

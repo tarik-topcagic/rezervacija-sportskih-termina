@@ -45,7 +45,7 @@ namespace SportskiTerminiAPI.Services
             {
                 Id = notification.Id,
                 Type = notification.Type,
-                UserId = notification.UserId,
+                Username = notification.User?.UserName ?? string.Empty,
                 ReservationId = notification.ReservationId,
                 ArenaId = notification.Reservation?.ArenaId,
                 ArenaName = notification.Reservation?.Arena?.Name,

@@ -117,5 +117,34 @@ namespace SportskiTerminiAPI.Repositories
             _context.Reservations.Update(reservation);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<bool> ArenaHasReservationsAsync(int arenaId)
+        {
+            return await _context.Reservations.AnyAsync(r => r.ArenaId == arenaId);
+        }
+
+        public async Task<IEnumerable<Reservation>> GetAllReservationsAsync(int? arenaId, string? username, ReservationStatus? status)
+        {
+            var query = _context.Reservations
+                .Include(r => r.Arena)
+                .Include(r => r.User)
+                .AsQueryable();
+
+            if (arenaId.HasValue)
+                query = query.Where(r => r.ArenaId == arenaId.Value);
+
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                var normalizedUsername = username.Trim().ToLower();
+                query = query.Where(r => r.User != null && r.User.UserName != null && r.User.UserName.ToLower().Contains(normalizedUsername));
+            }
+
+            if (status.HasValue)
+                query = query.Where(r => r.Status == status.Value);
+
+            return await query
+                .OrderByDescending(r => r.StartTime)
+                .ToListAsync();
+        }
     }
 }

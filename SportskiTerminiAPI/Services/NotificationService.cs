@@ -57,13 +57,29 @@ namespace SportskiTerminiAPI.Services
             return ServiceResult.Ok(new { message = "Notification marked as read" });
         }
 
+        public async Task<IEnumerable<NotificationDto>> GetAllNotificationsForAdminAsync(AppNotificationType? type, bool? isRead, string? username)
+        {
+            var notifications = await _notificationRepository.GetAllNotificationsAsync(100, type, isRead, username);
+            return notifications.Select(ToDto);
+        }
+
+        public async Task<ServiceResult> AdminDeleteNotificationAsync(int id)
+        {
+            var notification = await _notificationRepository.GetNotificationByIdAsync(id);
+            if (notification == null)
+                return ServiceResult.NotFound("Notification not found");
+
+            await _notificationRepository.RemoveNotificationsAsync(new[] { notification });
+            return ServiceResult.Ok(new { message = "Notification deleted" });
+        }
+
         private static NotificationDto ToDto(AppNotification notification)
         {
             return new NotificationDto
             {
                 Id = notification.Id,
                 Type = notification.Type,
-                UserId = notification.UserId,
+                Username = notification.User?.UserName ?? string.Empty,
                 ActorUserId = notification.ActorUserId,
                 ActorName = !string.IsNullOrWhiteSpace(notification.ActorUser?.FullName)
                     ? notification.ActorUser.FullName

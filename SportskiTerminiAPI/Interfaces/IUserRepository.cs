@@ -11,6 +11,7 @@ namespace SportskiTerminiAPI.Interfaces
         Task<IdentityResult> UpdateUserAsync(AppUser user);
         Task<IdentityResult> UpdateSecurityStampAsync(AppUser user);
         Task<List<AppUser>> GetAllUsersAsync();
+        Task<List<AppUser>> GetAllUsersForAdminAsync(string? username);
         Task<List<AppUser>> SearchUsersAsync(string? searchTerm);
     }
 }

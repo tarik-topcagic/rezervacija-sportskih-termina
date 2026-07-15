@@ -134,7 +134,7 @@ namespace SportskiTerminiAPI.Services
             {
                 Id = notification.Id,
                 Type = notification.Type,
-                UserId = notification.UserId,
+                Username = notification.User?.UserName ?? string.Empty,
                 ActorUserId = notification.ActorUserId,
                 ActorName = !string.IsNullOrWhiteSpace(notification.ActorUser?.FullName)
                     ? notification.ActorUser.FullName

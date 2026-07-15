@@ -127,5 +127,53 @@ namespace SportskiTerminiAPI.Services
 
             return groups.Select(GroupMappingHelper.ToGroupDto);
         }
+
+        public async Task<IEnumerable<GroupDto>> GetAllGroupsForAdminAsync(string? name, string? owner)
+        {
+            var groups = await _groupRepository.GetAllGroupsAsync(name, owner);
+            return groups.Select(GroupMappingHelper.ToGroupDto);
+        }
+
+        public async Task<ServiceResult> AdminUpdateGroupAsync(int groupId, UpdateGroupDto updateGroupDto)
+        {
+            var group = await _groupRepository.GetGroupByIdAsync(groupId);
+            if (group == null)
+                return ServiceResult.NotFound("Group not found");
+
+            group.Name = updateGroupDto.Name;
+            group.Description = updateGroupDto.Description;
+            group.Grad = updateGroupDto.Grad;
+            group.KategorijaSporta = updateGroupDto.KategorijaSporta;
+            group.ImageUrl = updateGroupDto.GroupPictureUrl ?? "default-group.png";
+
+            var updatedGroup = await _groupRepository.UpdateGroupAsync(group);
+            return ServiceResult.Ok(GroupMappingHelper.ToGroupDto(updatedGroup));
+        }
+
+        public async Task<ServiceResult> AdminDeleteGroupAsync(int groupId)
+        {
+            try
+            {
+                var group = await _groupRepository.GetGroupByIdAsync(groupId);
+                if (group == null)
+                    return ServiceResult.NotFound("Group not found");
+
+                await _groupRepository.DeleteGroupAsync(groupId);
+                return ServiceResult.Ok(new { message = "Group deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error in GroupService.AdminDeleteGroupAsync for group {GroupId}. Message: {Message}. InnerException: {InnerException}. StackTrace: {StackTrace}",
+                    groupId,
+                    ex.Message,
+                    ex.InnerException?.ToString(),
+                    ex.StackTrace
+                );
+
+                return ServiceResult.BadRequest("Cannot delete this group due to an unexpected error. Please try again or contact support.");
+            }
+        }
     }
 }

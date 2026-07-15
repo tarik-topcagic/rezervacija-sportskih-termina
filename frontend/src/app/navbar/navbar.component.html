@@ -45,6 +45,11 @@
             {{ 'groups' | translate }}
           </a>
         </li>
+        <li class="nav-item" *ngIf="isAdmin">
+          <a class="nav-link" routerLink="/admin" routerLinkActive="active">
+            Admin
+          </a>
+        </li>
       </ul>
 
       <div class="ms-auto text-white navbar-actions" style="font-weight: 500" *ngIf="username">

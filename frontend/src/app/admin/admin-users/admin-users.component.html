@@ -1,0 +1,97 @@
+<app-navbar></app-navbar>
+<div class="container admin-page">
+  <h1 class="mb-4">Users</h1>
+
+  <form class="row g-2 align-items-end mb-4" (ngSubmit)="applyFilters()">
+    <div class="col-auto">
+      <label class="form-label">Username</label>
+      <input type="text" class="form-control" name="filterUsername" [(ngModel)]="filterUsername" />
+    </div>
+    <div class="col-auto">
+      <label class="form-label">Role</label>
+      <app-admin-select name="filterRole" [(ngModel)]="filterRole" [options]="roleOptions"></app-admin-select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label">Status</label>
+      <app-admin-select name="filterLocked" [(ngModel)]="filterLocked" [options]="lockedOptions"></app-admin-select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary">Filter</button>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn btn-outline-secondary" (click)="clearFilters()">Clear</button>
+    </div>
+  </form>
+
+  <div *ngIf="isLoading" class="text-muted">Loading...</div>
+  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+  <div class="table-responsive" *ngIf="!isLoading && !errorMessage">
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Full name</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Roles</th>
+          <th>Status</th>
+          <th>Created At</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of pagedUsers">
+          <td>{{ user.id }}</td>
+          <td>{{ user.fullName }}</td>
+          <td>{{ user.userName || '-' }}</td>
+          <td>{{ user.email || '-' }}</td>
+          <td>
+            <span class="badge text-bg-secondary me-1" *ngFor="let role of user.roles">{{ role }}</span>
+            <span *ngIf="!user.roles.length" class="text-muted">-</span>
+          </td>
+          <td>
+            <span class="badge" [class.text-bg-danger]="isLocked(user)" [class.text-bg-success]="!isLocked(user)">
+              {{ isLocked(user) ? 'Locked' : 'Active' }}
+            </span>
+          </td>
+          <td>{{ user.createdAt ? (user.createdAt | date: 'short') : '-' }}</td>
+          <td>
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-outline-danger]="!isLocked(user)"
+              [class.btn-outline-success]="isLocked(user)"
+              [disabled]="isPending(user) || (!isLocked(user) && isSelf(user))"
+              [title]="!isLocked(user) && isSelf(user) ? 'You cannot lock your own account' : ''"
+              (click)="toggleLock(user)"
+            >
+              {{ isLocked(user) ? 'Unlock' : 'Lock' }}
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="!users.length">
+          <td colspan="8" class="text-center text-muted">No users found.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <nav class="pagination-shell" aria-label="Users pagination" *ngIf="totalPages > 1">
+      <button type="button" class="page-button" [disabled]="currentPage === 1" (click)="previousPage($event)">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <button
+        type="button"
+        class="page-number"
+        *ngFor="let page of totalPagesArray"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page, $event)"
+      >
+        {{ page }}
+      </button>
+      <button type="button" class="page-button" [disabled]="currentPage === totalPages" (click)="nextPage($event)">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </nav>
+  </div>
+</div>

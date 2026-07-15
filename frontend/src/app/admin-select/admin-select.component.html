@@ -1,0 +1,23 @@
+<div class="admin-select" [class.disabled]="disabled">
+  <button
+    type="button"
+    class="form-select admin-select-trigger"
+    (click)="toggle($event)"
+    [attr.aria-expanded]="isOpen"
+    [disabled]="disabled"
+  >
+    {{ selectedLabel }}
+  </button>
+
+  <div class="dropdown-menu admin-select-menu" [class.show]="isOpen" *ngIf="isOpen">
+    <button
+      type="button"
+      class="dropdown-item"
+      *ngFor="let option of options"
+      [class.active]="option.value === value"
+      (click)="select(option, $event)"
+    >
+      {{ option.label }}
+    </button>
+  </div>
+</div>

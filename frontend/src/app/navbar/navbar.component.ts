@@ -7,6 +7,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 import { Subscription } from 'rxjs';
 import { NotificationDropdownComponent } from '../notification-dropdown/notification-dropdown.component';
 import { MessageDropdownComponent } from '../message-dropdown/message-dropdown.component';
+import { getRolesFromToken } from '../../services/jwt.util';
 
 @Component({
   selector: 'app-navbar',
@@ -18,6 +19,7 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
   username: string | null = null;
   isDropdownOpen = false;
   profileImageUrl: string | null = null;
+  isAdmin = false;
   private currentUserSubscription?: Subscription;
 
   constructor(
@@ -30,6 +32,7 @@ export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.currentUserSubscription = this.authService.currentUser.subscribe((user) => {
       this.username = user ? user.username : null;
+      this.isAdmin = !!user?.token && getRolesFromToken(user.token).includes('Admin');
 
       if (user) {
         this.getUserProfileImage();

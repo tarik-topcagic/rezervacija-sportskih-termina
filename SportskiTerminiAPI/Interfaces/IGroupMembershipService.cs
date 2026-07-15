@@ -16,5 +16,6 @@ namespace SportskiTerminiAPI.Interfaces
         Task<ServiceResult> GetPendingJoinRequestsAsync(string adminId, int groupId);
         Task<ServiceResult> GetGroupMembershipsAsync(string adminId, int groupId);
         Task<ServiceResult> GetMyPendingInvitationsAsync(string userId);
+        Task<ServiceResult> AdminRemoveMemberAsync(int groupId, string memberId);
     }
 }
