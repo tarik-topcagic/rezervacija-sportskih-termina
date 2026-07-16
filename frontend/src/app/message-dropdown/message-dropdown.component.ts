@@ -63,6 +63,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
   private readonly desktopMediaQuery = window.matchMedia('(min-width: 992px)');
   private readonly onViewportChange = () => this.syncViewportActivity();
   private readonly onNotificationDropdownOpened = () => this.closeMessages();
+  private readonly onAdminSelectOpened = () => this.closeMessages();
   private isActiveForViewport = false;
   private currentGroupId: number | null = null;
   private currentConversationId: number | null = null;
@@ -136,6 +137,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
 
     this.desktopMediaQuery.addEventListener('change', this.onViewportChange);
     window.addEventListener('app-notification-dropdown-opened', this.onNotificationDropdownOpened);
+    window.addEventListener('app-admin-select-opened', this.onAdminSelectOpened);
     this.syncViewportActivity();
   }
 
@@ -148,6 +150,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     this.presenceSubscription?.unsubscribe();
     this.desktopMediaQuery.removeEventListener('change', this.onViewportChange);
     window.removeEventListener('app-notification-dropdown-opened', this.onNotificationDropdownOpened);
+    window.removeEventListener('app-admin-select-opened', this.onAdminSelectOpened);
     this.stopTimers();
     void this.chatRealtimeService.disconnect();
   }

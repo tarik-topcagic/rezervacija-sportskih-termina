@@ -229,6 +229,15 @@ body.dark-mode .bg-light {
     min-width: 100%;
 }
 
+/* Action button cells (Edit/Delete/Members/etc.) must never wrap their buttons onto
+   separate lines, on any screen size - the cell's own natural width already fits them
+   on one line at desktop widths; without this, narrow viewports can still let the
+   inline-block buttons break onto their own lines even though the table itself no
+   longer shrinks. */
+:is(.admin-page, .admin-dashboard-page) .table td:has(.btn) {
+    white-space: nowrap;
+}
+
 body.dark-mode :is(.admin-page, .admin-dashboard-page) .table-responsive {
     background: #1a1a1a;
     border-color: #3a3a3a;

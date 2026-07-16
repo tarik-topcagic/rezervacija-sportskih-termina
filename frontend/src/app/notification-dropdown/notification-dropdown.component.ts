@@ -56,6 +56,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
   private readonly desktopMediaQuery = window.matchMedia('(min-width: 992px)');
   private readonly onViewportChange = () => this.syncViewportActivity();
   private readonly onMessageDropdownOpened = () => this.closeNotifications();
+  private readonly onAdminSelectOpened = () => this.closeNotifications();
   private isActiveForViewport = false;
 
   constructor(
@@ -97,6 +98,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
 
     this.desktopMediaQuery.addEventListener('change', this.onViewportChange);
     window.addEventListener('app-message-dropdown-opened', this.onMessageDropdownOpened);
+    window.addEventListener('app-admin-select-opened', this.onAdminSelectOpened);
     this.syncViewportActivity();
   }
 
@@ -106,6 +108,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     this.realtimeNotificationSubscription?.unsubscribe();
     this.desktopMediaQuery.removeEventListener('change', this.onViewportChange);
     window.removeEventListener('app-message-dropdown-opened', this.onMessageDropdownOpened);
+    window.removeEventListener('app-admin-select-opened', this.onAdminSelectOpened);
     this.stopTimers();
     void this.systemNotificationRealtimeService.disconnect();
   }
