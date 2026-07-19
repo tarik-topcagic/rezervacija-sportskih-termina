@@ -71,7 +71,7 @@ export class SettingsComponent implements OnInit {
           );
         },
         error: () => {
-          this.errorMessage = this.languageService.translate('notificationsSaveError');
+          this.toastService.showError(this.languageService.translate('notificationsSaveError'));
         },
       });
   }
@@ -108,10 +108,11 @@ export class SettingsComponent implements OnInit {
         );
       },
       error: (error) => {
-        this.errorMessage =
+        this.toastService.showError(
           error.error?.field === 'username'
             ? this.languageService.translate('usernameTaken')
-            : this.languageService.translate('usernameChangeError');
+            : this.languageService.translate('usernameChangeError'),
+        );
       },
     });
   }
@@ -145,7 +146,7 @@ export class SettingsComponent implements OnInit {
       error: () => {
         this.selectedLanguage = previousLanguage;
         this.languageService.setLanguage(previousLanguage);
-        this.errorMessage = this.languageService.translate('languageSaveError');
+        this.toastService.showError(this.languageService.translate('languageSaveError'));
       },
     });
   }

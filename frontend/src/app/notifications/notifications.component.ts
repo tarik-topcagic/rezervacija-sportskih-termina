@@ -11,6 +11,7 @@ import { MembershipStatus } from '../interfaces/group.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { NotificationTimeService } from '../../services/notification-time.service';
+import { ToastService } from '../../services/toast.service';
 import { createHighlightedSet, prependIfNotExists } from '../helpers/dropdown-ui.helper';
 import {
   respondToGroupInvitation,
@@ -45,6 +46,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     private languageService: LanguageService,
     private notificationTimeService: NotificationTimeService,
     private systemNotificationRealtimeService: SystemNotificationRealtimeService,
+    private toastService: ToastService,
     private router: Router,
   ) {}
 
@@ -252,6 +254,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       },
         onError: (error) => {
         this.respondingInvitationIds.delete(notification.membershipId!);
+        this.toastService.showError(this.languageService.translate('invitationResponseError'));
         console.error('Error responding to invitation:', error);
       },
       },
@@ -279,6 +282,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       },
         onError: (error) => {
         this.respondingJoinRequestIds.delete(notification.membershipId!);
+        this.toastService.showError(this.languageService.translate('joinRequestResponseError'));
         console.error('Error responding to join request:', error);
       },
       },

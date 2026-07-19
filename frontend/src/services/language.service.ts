@@ -1811,6 +1811,16 @@ export class LanguageService {
       fr: 'Profil mis a jour.',
       it: 'Profilo aggiornato.',
     },
+    updateProfileError: {
+      en: 'An error occurred while updating your profile.',
+      de: 'Beim Aktualisieren Ihres Profils ist ein Fehler aufgetreten.',
+      bs: 'Došlo je do greške prilikom ažuriranja profila.',
+      hr: 'Došlo je do greške prilikom ažuriranja profila.',
+      sr: 'Došlo je do greške prilikom ažuriranja profila.',
+      es: 'Ocurrio un error al actualizar tu perfil.',
+      fr: 'Une erreur est survenue lors de la mise a jour de votre profil.',
+      it: 'Si e verificato un errore durante l\'aggiornamento del profilo.',
+    },
     selectValidImage: {
       en: 'Select a valid image.',
       de: 'Waehlen Sie ein gueltiges Bild.',

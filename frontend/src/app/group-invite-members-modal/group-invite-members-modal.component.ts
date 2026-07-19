@@ -30,6 +30,7 @@ import {
 })
 export class GroupInviteMembersModalComponent implements OnChanges {
   @Input() groupId: number | null = null;
+  @Input() groupAdminId: string | null = null;
   @Output() close = new EventEmitter<void>();
   @Output() groupDetailsRefresh = new EventEmitter<void>();
 
@@ -101,7 +102,7 @@ export class GroupInviteMembersModalComponent implements OnChanges {
           this.invitationStatuses.set(user.id, MembershipStatus.PendingInvitation);
           this.inviteModalMessage = this.languageService.translate('pending');
         } else {
-          this.inviteModalError = this.languageService.translate('invitationSendError');
+          this.toastService.showError(this.languageService.translate('invitationSendError'));
         }
 
         console.error('Error sending group invitation:', error);
@@ -129,7 +130,7 @@ export class GroupInviteMembersModalComponent implements OnChanges {
       },
       onError: (error) => {
         this.cancelingInvitationUserIds.delete(user.id);
-        this.inviteModalError = this.languageService.translate('cancelInvitationError');
+        this.toastService.showError(this.languageService.translate('cancelInvitationError'));
         console.error('Error cancelling group invitation:', error);
       },
     });
@@ -165,28 +166,36 @@ export class GroupInviteMembersModalComponent implements OnChanges {
           const updatedMembership = { ...membership, status: MembershipStatus.Accepted };
           this.invitationStatuses.set(user.id, MembershipStatus.Accepted);
           this.membershipsByUserId.set(user.id, updatedMembership);
-          this.inviteModalMessage = this.languageService.translate('joinRequestAccepted');
+          this.toastService.showSuccess(this.languageService.translate('joinRequestAccepted'));
           this.groupDetailsRefresh.emit();
         } else {
           this.invitationStatuses.delete(user.id);
           this.membershipsByUserId.delete(user.id);
-          this.inviteModalMessage = this.languageService.translate('joinRequestDeclined');
+          this.toastService.showSuccess(this.languageService.translate('joinRequestDeclined'));
         }
       },
       onError: (error) => {
         this.respondingJoinRequestUserIds.delete(user.id);
-        this.inviteModalError = this.languageService.translate('joinRequestResponseError');
+        this.toastService.showError(this.languageService.translate('joinRequestResponseError'));
         console.error('Error responding to pending join request:', error);
       },
     });
   }
 
   getInviteLabel(user: User): string {
+    if (this.isGroupAdmin(user)) {
+      return 'admin';
+    }
+
     return getMembershipInviteLabel(
       this.getInvitationStatus(user),
       this.isInviting(user),
       this.isCancelingInvitation(user),
     );
+  }
+
+  isGroupAdmin(user: User): boolean {
+    return !!user.id && !!this.groupAdminId && user.id === this.groupAdminId;
   }
 
   isInviting(user: User): boolean {

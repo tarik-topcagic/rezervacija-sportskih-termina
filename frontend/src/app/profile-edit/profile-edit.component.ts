@@ -196,6 +196,9 @@ export class ProfileEditComponent
         if (err.error && err.error.errors) {
           console.error('Validacijske greške:', err.error.errors);
         }
+        this.toastService.showError(
+          this.languageService.translate('updateProfileError'),
+        );
       },
     });
   }

@@ -39,7 +39,6 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   showMembersModal = false;
   isMemberMenuOpen = false;
   errorMessage = '';
-  successMessage = '';
   canShowPresence = false;
   onlineMemberUserIds = new Set<string>();
   private routeSubscription?: Subscription;
@@ -98,7 +97,6 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
 
     this.isRequestingAccess = true;
     this.errorMessage = '';
-    this.successMessage = '';
 
     requestGroupAccess(this.groupService, this.group.id, {
       languageService: this.languageService,
@@ -110,7 +108,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       },
       onError: (error) => {
         this.isRequestingAccess = false;
-        this.errorMessage = this.languageService.translate('requestAccessError');
+        this.toastService.showError(this.languageService.translate('requestAccessError'));
         console.error('Error requesting group access:', error);
       },
     });
@@ -123,7 +121,6 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
 
     this.isCancelingAccessRequest = true;
     this.errorMessage = '';
-    this.successMessage = '';
 
     cancelGroupAccessRequest(this.groupService, this.group.id, {
       languageService: this.languageService,
@@ -135,7 +132,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       },
       onError: (error) => {
         this.isCancelingAccessRequest = false;
-        this.errorMessage = this.languageService.translate('cancelJoinRequestError');
+        this.toastService.showError(this.languageService.translate('cancelJoinRequestError'));
         console.error('Error cancelling join request:', error);
       },
     });
@@ -234,10 +231,10 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
               membersCount: Math.max(0, this.group.membersCount - 1),
             }
           : null;
-        this.successMessage = this.languageService.translate('leftGroup');
+        this.toastService.showSuccess(this.languageService.translate('leftGroup'));
       },
       (error) => {
-        this.errorMessage = this.languageService.translate('leaveGroupError');
+        this.toastService.showError(this.languageService.translate('leaveGroupError'));
         console.error('Error leaving group:', error);
       },
     );
@@ -254,7 +251,6 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     this.showMembersModal = false;
     this.isMemberMenuOpen = false;
     this.errorMessage = '';
-    this.successMessage = '';
     this.canShowPresence = false;
     this.onlineMemberUserIds.clear();
   }
@@ -285,7 +281,6 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
 
     this.isRespondingToInvitation = true;
     this.errorMessage = '';
-    this.successMessage = '';
 
     respondToGroupInvitation(
       this.groupService,
@@ -295,12 +290,12 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       {
         onSuccess: () => {
         this.isRespondingToInvitation = false;
-        this.successMessage = this.languageService.translate(accept ? 'invitationAccepted' : 'invitationDeclined');
+        this.toastService.showSuccess(this.languageService.translate(accept ? 'invitationAccepted' : 'invitationDeclined'));
         this.loadGroup(this.group!.id);
       },
         onError: (error) => {
         this.isRespondingToInvitation = false;
-        this.errorMessage = this.languageService.translate('invitationResponseError');
+        this.toastService.showError(this.languageService.translate('invitationResponseError'));
         console.error('Error responding to group invitation:', error);
       },
       },
@@ -342,7 +337,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   }
 
   onMembersModalError(message: string): void {
-    this.errorMessage = message;
+    this.toastService.showError(message);
   }
 
   private loadGroupPresence(groupId: number): void {
@@ -385,5 +380,9 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   private isPresenceRelevant(userId: string): boolean {
     return !!this.group
       && this.group.members.some((member) => member.userId === userId);
+  }
+
+  get groupAdminId(): string | null {
+    return this.group?.members.find((member) => member.isAdmin)?.userId ?? null;
   }
 }

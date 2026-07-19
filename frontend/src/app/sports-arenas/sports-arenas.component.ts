@@ -78,6 +78,7 @@ export class SportsArenasComponent implements OnInit {
     this.favoriteArenaService.removeFavorite(favorite.arenaId).subscribe({
       next: () => {
         this.favoriteArenas = this.favoriteArenas.filter((f) => f.arenaId !== favorite.arenaId);
+        this.toastService.showSuccess(this.languageService.translate('removedFromFavorites'));
       },
       error: (error) => {
         console.error('Error removing favorite arena:', error);

@@ -17,6 +17,7 @@ import { ToastService } from '../../services/toast.service';
 import {
   cancelGroupAccessRequest,
   requestGroupAccess,
+  respondToGroupInvitation,
 } from '../helpers/group-membership-actions.helper';
 
 @Component({
@@ -43,6 +44,8 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
   pendingInvitationGroupIds = new Set<number>();
   requestingAccessGroupIds = new Set<number>();
   cancelingAccessRequestGroupIds = new Set<number>();
+  respondingToInvitationGroupIds = new Set<number>();
+  private pendingInvitationMembershipIdByGroupId = new Map<number, number>();
 
   currentPage = 1;
   pageSize = 6;
@@ -252,6 +255,7 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
       },
       onError: (error) => {
         this.requestingAccessGroupIds.delete(group.id);
+        this.toastService.showError(this.languageService.translate('requestAccessError'));
         console.error('Error requesting group access from search page:', error);
       },
     });
@@ -274,7 +278,44 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
       },
       onError: (error) => {
         this.cancelingAccessRequestGroupIds.delete(group.id);
+        this.toastService.showError(this.languageService.translate('cancelJoinRequestError'));
         console.error('Error cancelling group access request from search page:', error);
+      },
+    });
+  }
+
+  isRespondingToInvitation(group: Group): boolean {
+    return this.respondingToInvitationGroupIds.has(group.id);
+  }
+
+  acceptInvitation(group: Group): void {
+    this.respondToInvitation(group, true);
+  }
+
+  declineInvitation(group: Group): void {
+    this.respondToInvitation(group, false);
+  }
+
+  private respondToInvitation(group: Group, accept: boolean): void {
+    const membershipId = this.pendingInvitationMembershipIdByGroupId.get(group.id);
+    if (!membershipId || !this.hasPendingInvitation(group) || this.isRespondingToInvitation(group)) {
+      return;
+    }
+
+    this.respondingToInvitationGroupIds.add(group.id);
+
+    respondToGroupInvitation(this.groupService, membershipId, accept, group.id, {
+      onSuccess: () => {
+        this.respondingToInvitationGroupIds.delete(group.id);
+        this.pendingInvitationGroupIds.delete(group.id);
+        this.pendingInvitationMembershipIdByGroupId.delete(group.id);
+        this.toastService.showSuccess(this.languageService.translate(accept ? 'invitationAccepted' : 'invitationDeclined'));
+        this.loadGroupCollections();
+      },
+      onError: (error) => {
+        this.respondingToInvitationGroupIds.delete(group.id);
+        this.toastService.showError(this.languageService.translate('invitationResponseError'));
+        console.error('Error responding to group invitation from search page:', error);
       },
     });
   }
@@ -295,11 +336,12 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
       adminGroups: this.groupService.getMyGroups().pipe(catchError(() => of([] as Group[]))),
       memberGroups: this.groupService.getMemberGroups().pipe(catchError(() => of([] as Group[]))),
       pendingJoinRequestGroups: this.groupService.getPendingJoinRequestGroups().pipe(catchError(() => of([] as Group[]))),
+      pendingInvitationGroups: this.groupService.getPendingInvitationGroups().pipe(catchError(() => of([] as Group[]))),
     }).subscribe({
-      next: ({ allGroups, adminGroups, memberGroups, pendingJoinRequestGroups }) => {
+      next: ({ allGroups, adminGroups, memberGroups, pendingJoinRequestGroups, pendingInvitationGroups }) => {
         this.myGroups = adminGroups;
         this.memberGroups = memberGroups;
-        this.allGroups = this.mergeUniqueGroups(allGroups, adminGroups, memberGroups, pendingJoinRequestGroups);
+        this.allGroups = this.mergeUniqueGroups(allGroups, adminGroups, memberGroups, pendingJoinRequestGroups, pendingInvitationGroups);
 
         if (!this.myGroups.length && !this.memberGroups.length) {
           this.activeFilter = 'all';
@@ -366,6 +408,7 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
     if (!candidateGroups.length) {
       this.pendingJoinRequestGroupIds.clear();
       this.pendingInvitationGroupIds.clear();
+      this.pendingInvitationMembershipIdByGroupId.clear();
       this.isLoadingGroups = false;
       this.applyFiltersAndSort();
       return;
@@ -381,6 +424,7 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
       next: (groupDetails) => {
         this.pendingJoinRequestGroupIds.clear();
         this.pendingInvitationGroupIds.clear();
+        this.pendingInvitationMembershipIdByGroupId.clear();
 
         groupDetails.forEach((details, index) => {
           if (!details) {
@@ -395,6 +439,10 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
 
           if (details.hasPendingInvitation) {
             this.pendingInvitationGroupIds.add(groupId);
+
+            if (details.pendingInvitationMembershipId) {
+              this.pendingInvitationMembershipIdByGroupId.set(groupId, details.pendingInvitationMembershipId);
+            }
           }
         });
 
@@ -405,6 +453,7 @@ export class SearchGroupsComponent implements OnInit, OnDestroy {
         console.error('Error loading access request states for search groups page:', error);
         this.pendingJoinRequestGroupIds.clear();
         this.pendingInvitationGroupIds.clear();
+        this.pendingInvitationMembershipIdByGroupId.clear();
         this.isLoadingGroups = false;
         this.applyFiltersAndSort();
       },

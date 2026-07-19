@@ -21,7 +21,6 @@ export class CreateGroupModalComponent {
   selectedImage: File | null = null;
   previewUrl: string | null = null;
   isSubmitting: boolean = false;
-  errorMessage: string = '';
 
   constructor(
     private groupService: GroupService,
@@ -62,7 +61,6 @@ export class CreateGroupModalComponent {
       return;
     }
     this.isSubmitting = true;
-    this.errorMessage = '';
 
     const data = {
       Name: this.createGroupForm.value.name,
@@ -82,7 +80,7 @@ export class CreateGroupModalComponent {
       },
       (error) => {
         this.isSubmitting = false;
-        this.errorMessage = this.languageService.translate('createGroupError');
+        this.toastService.showError(this.languageService.translate('createGroupError'));
         console.error('Error creating group:', error);
       }
     );

@@ -8,7 +8,6 @@
 
     <section class="search-panel">
       <div class="search-bar">
-        <i class="bi bi-search"></i>
         <input
           type="text"
           [(ngModel)]="searchQuery"
@@ -16,9 +15,7 @@
           (ngModelChange)="onSearchQueryChange()"
           (keyup.enter)="searchUsers()"
         />
-        <button type="button" class="btn btn-primary primary-search-button" (click)="searchUsers()">
-          {{ 'search' | translate }}
-        </button>
+        <i class="bi bi-search"></i>
       </div>
     </section>
 

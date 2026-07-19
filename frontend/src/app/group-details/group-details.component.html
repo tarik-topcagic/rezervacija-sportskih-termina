@@ -119,10 +119,6 @@
         </div>
       </div>
 
-      <div *ngIf="successMessage" class="alert alert-success">
-        {{ successMessage }}
-      </div>
-
       <div class="details-grid">
         <div class="detail-item">
           <span>{{ 'groupName' | translate }}</span>
@@ -189,6 +185,7 @@
 <app-group-invite-members-modal
   *ngIf="showInviteMembersModal && group"
   [groupId]="group.id"
+  [groupAdminId]="groupAdminId"
   (close)="closeInviteMembersModal()"
   (groupDetailsRefresh)="onInviteMembersGroupDetailsRefresh()"
 ></app-group-invite-members-modal>

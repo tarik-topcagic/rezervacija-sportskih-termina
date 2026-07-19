@@ -33,7 +33,6 @@
 
     <section class="search-panel">
       <div class="search-bar">
-        <i class="bi bi-search"></i>
         <input
           type="text"
           [(ngModel)]="searchQuery"
@@ -41,9 +40,7 @@
           (ngModelChange)="onSearchQueryChange()"
           (keyup.enter)="searchArenas()"
         />
-        <button type="button" class="btn btn-primary primary-search-button" (click)="searchArenas()">
-          {{ 'search' | translate }}
-        </button>
+        <i class="bi bi-search"></i>
       </div>
     </section>
 
@@ -151,10 +148,6 @@
         <div class="result-actions">
           <button type="button" class="outline-button" (click)="viewDetails(arena)">
             {{ 'viewDetails' | translate }}
-          </button>
-
-          <button type="button" class="secondary-button" disabled [title]="'reservationComingSoon' | translate">
-            {{ 'makeReservation' | translate }}
           </button>
         </div>
       </article>

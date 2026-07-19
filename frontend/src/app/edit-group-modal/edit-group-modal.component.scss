@@ -121,6 +121,14 @@
   border-color: #4b5563;
 }
 
+:host-context(body.dark-mode) .form-control:-webkit-autofill,
+:host-context(body.dark-mode) .form-control:-webkit-autofill:hover,
+:host-context(body.dark-mode) .form-control:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #15191e inset !important;
+  -webkit-text-fill-color: #f1f3f5 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 :host-context(body.dark-mode) .form-floating > .form-control:focus ~ label::after,
 :host-context(body.dark-mode) .form-floating > .form-control:not(:placeholder-shown) ~ label::after,
 :host-context(body.dark-mode) .form-floating > .form-control:-webkit-autofill ~ label::after {

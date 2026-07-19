@@ -12,6 +12,7 @@ namespace SportskiTerminiAPI.Interfaces
         Task<IEnumerable<GroupDto>> GetAdminGroupsAsync(string userId);
         Task<IEnumerable<GroupDto>> GetMemberGroupsAsync(string userId);
         Task<IEnumerable<GroupDto>> GetPendingJoinRequestGroupsAsync(string userId);
+        Task<IEnumerable<GroupDto>> GetPendingInvitationGroupsAsync(string userId);
         Task<IEnumerable<GroupDto>> SearchGroupsAsync(string userId, string? query);
         Task<IEnumerable<GroupDto>> GetAllGroupsForAdminAsync(string? name, string? owner);
         Task<ServiceResult> AdminUpdateGroupAsync(int groupId, UpdateGroupDto updateGroupDto);

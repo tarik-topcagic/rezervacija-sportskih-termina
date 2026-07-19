@@ -119,6 +119,12 @@ namespace SportskiTerminiAPI.Services
             return groups.Select(GroupMappingHelper.ToGroupDto);
         }
 
+        public async Task<IEnumerable<GroupDto>> GetPendingInvitationGroupsAsync(string userId)
+        {
+            var groups = await _groupRepository.GetPendingInvitationGroupsAsync(userId);
+            return groups.Select(GroupMappingHelper.ToGroupDto);
+        }
+
         public async Task<IEnumerable<GroupDto>> SearchGroupsAsync(string userId, string? query)
         {
             var groups = string.IsNullOrWhiteSpace(query)

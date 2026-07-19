@@ -15,7 +15,6 @@
 
     <section class="search-panel">
       <div class="search-bar">
-        <i class="bi bi-search"></i>
         <input
           type="text"
           [(ngModel)]="searchQuery"
@@ -23,9 +22,7 @@
           (ngModelChange)="onSearchQueryChange()"
           (keyup.enter)="searchGroups()"
         />
-        <button type="button" class="btn btn-primary primary-search-button" (click)="searchGroups()">
-          {{ 'search' | translate }}
-        </button>
+        <i class="bi bi-search"></i>
       </div>
     </section>
 
@@ -145,6 +142,27 @@
           <button type="button" class="outline-button" (click)="viewGroup(group)">
             {{ 'viewGroup' | translate }}
           </button>
+
+          <ng-container *ngIf="!isMyGroup(group) && !isMemberGroup(group) && hasPendingInvitation(group)">
+            <button
+              type="button"
+              class="outline-button"
+              [disabled]="isRespondingToInvitation(group)"
+              (click)="acceptInvitation(group)"
+            >
+              <i class="bi bi-check-circle"></i>
+              {{ 'acceptInvitation' | translate }}
+            </button>
+            <button
+              type="button"
+              class="outline-button"
+              [disabled]="isRespondingToInvitation(group)"
+              (click)="declineInvitation(group)"
+            >
+              <i class="bi bi-x-circle"></i>
+              {{ 'declineInvitation' | translate }}
+            </button>
+          </ng-container>
 
           <button
             *ngIf="canShowRequestAccessButton(group) && !hasPendingJoinRequest(group)"

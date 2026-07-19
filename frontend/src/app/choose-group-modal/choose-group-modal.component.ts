@@ -39,7 +39,6 @@ export class ChooseGroupModalComponent implements OnChanges {
   cancelingInvitationGroupIds = new Set<number>();
   respondingJoinRequestGroupIds = new Set<number>();
   isLoadingGroups = false;
-  inviteSuccessMessage = '';
   inviteErrorMessage = '';
 
   constructor(
@@ -160,7 +159,6 @@ export class ChooseGroupModalComponent implements OnChanges {
     }
 
     this.invitingGroupIds.add(group.id);
-    this.inviteSuccessMessage = '';
     this.inviteErrorMessage = '';
 
     sendGroupInvitation(this.groupService, group.id, this.user.id, {
@@ -177,7 +175,7 @@ export class ChooseGroupModalComponent implements OnChanges {
         if (error?.status === 400) {
           this.groupStatuses.set(group.id, MembershipStatus.PendingInvitation);
         } else {
-          this.inviteErrorMessage = this.languageService.translate('invitationSendError');
+          this.toastService.showError(this.languageService.translate('invitationSendError'));
         }
 
         console.error('Error sending group invitation:', error);
@@ -191,7 +189,6 @@ export class ChooseGroupModalComponent implements OnChanges {
     }
 
     this.cancelingInvitationGroupIds.add(group.id);
-    this.inviteSuccessMessage = '';
     this.inviteErrorMessage = '';
 
     cancelGroupInvitation(this.groupService, group.id, this.user.id, {
@@ -205,7 +202,7 @@ export class ChooseGroupModalComponent implements OnChanges {
       },
       onError: (error) => {
         this.cancelingInvitationGroupIds.delete(group.id);
-        this.inviteErrorMessage = this.languageService.translate('cancelInvitationError');
+        this.toastService.showError(this.languageService.translate('cancelInvitationError'));
         console.error('Error cancelling group invitation:', error);
       },
     });
@@ -225,7 +222,6 @@ export class ChooseGroupModalComponent implements OnChanges {
     }
 
     this.respondingJoinRequestGroupIds.add(group.id);
-    this.inviteSuccessMessage = '';
     this.inviteErrorMessage = '';
 
     respondToGroupJoinRequest(this.groupService, group.id, membershipId, accept, {
@@ -234,16 +230,16 @@ export class ChooseGroupModalComponent implements OnChanges {
 
         if (accept) {
           this.groupStatuses.set(group.id, MembershipStatus.Accepted);
-          this.inviteSuccessMessage = this.languageService.translate('joinRequestAccepted');
+          this.toastService.showSuccess(this.languageService.translate('joinRequestAccepted'));
         } else {
           this.groupStatuses.delete(group.id);
           this.groupMembershipIds.delete(group.id);
-          this.inviteSuccessMessage = this.languageService.translate('joinRequestDeclined');
+          this.toastService.showSuccess(this.languageService.translate('joinRequestDeclined'));
         }
       },
       onError: (error) => {
         this.respondingJoinRequestGroupIds.delete(group.id);
-        this.inviteErrorMessage = this.languageService.translate('joinRequestResponseError');
+        this.toastService.showError(this.languageService.translate('joinRequestResponseError'));
         console.error('Error responding to join request:', error);
       },
     });
@@ -307,7 +303,6 @@ export class ChooseGroupModalComponent implements OnChanges {
     this.cancelingInvitationGroupIds.clear();
     this.respondingJoinRequestGroupIds.clear();
     this.isLoadingGroups = false;
-    this.inviteSuccessMessage = '';
     this.inviteErrorMessage = '';
   }
 }

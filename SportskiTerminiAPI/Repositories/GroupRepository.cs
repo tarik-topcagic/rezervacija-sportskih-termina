@@ -153,6 +153,15 @@ namespace SportskiTerminiAPI.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Group>> GetPendingInvitationGroupsAsync(string userId)
+        {
+            return await _context.Groups
+                .Include(g => g.Memberships)
+                .Where(g => g.AdminId != userId
+                    && g.Memberships.Any(m => m.UserId == userId && m.Status == MembershipStatus.PendingInvitation))
+                .ToListAsync();
+        }
+
         public async Task<GroupMembership?> GetMembershipByIdAsync(int membershipId)
         {
             return await _context.GroupMemberships

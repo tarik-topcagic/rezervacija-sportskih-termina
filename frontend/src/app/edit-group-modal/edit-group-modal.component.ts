@@ -24,7 +24,6 @@ export class EditGroupModalComponent implements OnInit {
   selectedImage: File | null = null;
   previewUrl: string | null = null;
   isSubmitting: boolean = false;
-  errorMessage: string = '';
   showActionsMenu = false;
 
   constructor(
@@ -115,7 +114,6 @@ export class EditGroupModalComponent implements OnInit {
     }
 
     this.isSubmitting = true;
-    this.errorMessage = '';
 
     this.groupService.deleteGroup(this.group.id).subscribe({
       next: () => {
@@ -128,7 +126,7 @@ export class EditGroupModalComponent implements OnInit {
       },
       error: (error) => {
         this.isSubmitting = false;
-        this.errorMessage = this.languageService.translate('deleteGroupError');
+        this.toastService.showError(this.languageService.translate('deleteGroupError'));
         console.error('Error deleting group:', error);
       },
     });
@@ -139,8 +137,7 @@ export class EditGroupModalComponent implements OnInit {
       return;
     }
     this.isSubmitting = true;
-    this.errorMessage = '';
-  
+
     const data = {
       Name: this.editGroupForm.value.name,
       Description: this.editGroupForm.value.description,
@@ -148,9 +145,9 @@ export class EditGroupModalComponent implements OnInit {
       KategorijaSporta: this.editGroupForm.value.kategorijaSporta,
       GroupPictureUrl: this.previewUrl ? this.previewUrl : ""
     };
-  
-    console.log('Payload za update:', data); 
-  
+
+    console.log('Payload za update:', data);
+
     this.groupService.updateGroup(this.group.id, data).subscribe(
       (response) => {
         this.isSubmitting = false;
@@ -161,7 +158,7 @@ export class EditGroupModalComponent implements OnInit {
       },
       (error) => {
         this.isSubmitting = false;
-        this.errorMessage = this.languageService.translate('updateGroupError');
+        this.toastService.showError(this.languageService.translate('updateGroupError'));
         console.error('Error updating group:', error);
       }
     );

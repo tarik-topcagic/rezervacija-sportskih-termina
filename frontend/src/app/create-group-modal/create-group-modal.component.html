@@ -67,7 +67,6 @@
       <textarea id="groupDescription" formControlName="description" class="form-control" placeholder="{{ 'description' | translate }}" style="height: 100px"></textarea>
       <label for="groupDescription">{{ 'description' | translate }}</label>
     </div>
-    <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
     <div class="d-flex justify-content-between">
       <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || createGroupForm.invalid">
         {{ (isSubmitting ? 'creating' : 'createGroup') | translate }}

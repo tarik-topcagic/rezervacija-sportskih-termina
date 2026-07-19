@@ -225,7 +225,7 @@ export class AdminArenasComponent implements OnInit {
         error: (error) => {
           console.error('Error creating arena:', error);
           this.isSaving = false;
-          this.formError = 'Failed to create arena.';
+          this.toastService.showError('Failed to create arena.');
         },
       });
       return;
@@ -241,7 +241,7 @@ export class AdminArenasComponent implements OnInit {
         error: (error) => {
           console.error('Error updating arena:', error);
           this.isSaving = false;
-          this.formError = 'Failed to update arena.';
+          this.toastService.showError('Failed to update arena.');
         },
       });
     }

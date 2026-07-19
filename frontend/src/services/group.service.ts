@@ -107,6 +107,10 @@ export class GroupService {
     return this.http.get<Group[]>(`${this.apiUrl}/pending-requests`);
   }
 
+  getPendingInvitationGroups(): Observable<Group[]> {
+    return this.http.get<Group[]>(`${this.apiUrl}/pending-invitations`);
+  }
+
   searchGroups(query: string = ''): Observable<Group[]> {
     let url = `${this.apiUrl}/search-groups`;
     if (query.trim()) {

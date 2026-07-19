@@ -31,12 +31,10 @@
         class="form-control"
         [(ngModel)]="inviteSearchQuery"
         [placeholder]="'enterNameOrUsername' | translate"
+        (ngModelChange)="searchInviteUsers()"
         (keyup.enter)="searchInviteUsers()"
       />
-      <button type="button" class="btn btn-primary" (click)="searchInviteUsers()">
-        <i class="bi bi-search"></i>
-        {{ 'search' | translate }}
-      </button>
+      <i class="bi bi-search"></i>
     </div>
 
     <div *ngIf="inviteModalMessage" class="alert alert-success">
