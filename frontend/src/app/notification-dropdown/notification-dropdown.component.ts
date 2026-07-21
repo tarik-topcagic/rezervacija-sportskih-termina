@@ -24,10 +24,11 @@ import {
 import { MembershipStatus } from '../interfaces/group.model';
 import { AppNotification, AppNotificationType } from '../interfaces/notification.model';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonListItemComponent } from '../skeleton/skeleton-list-item/skeleton-list-item.component';
 
 @Component({
   selector: 'app-notification-dropdown',
-  imports: [NgIf, NgFor, NgClass, RouterModule, TranslatePipe],
+  imports: [NgIf, NgFor, NgClass, RouterModule, TranslatePipe, SkeletonListItemComponent],
   templateUrl: './notification-dropdown.component.html',
   styleUrl: './notification-dropdown.component.scss',
 })
@@ -37,6 +38,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
 
   username: string | null = null;
   isNotificationsOpen = false;
+  isLoading = false;
   notifications: AppNotification[] = [];
   unreadNotificationsCount = 0;
   highlightedNotificationIds = new Set<number>();
@@ -297,8 +299,14 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.notifications.length) {
+      this.isLoading = true;
+    }
+
     this.notificationService.getNotifications().subscribe({
       next: (notifications) => {
+        this.isLoading = false;
+
         if (captureUnreadHighlights) {
           this.highlightedNotificationIds = createHighlightedSet(
             notifications,
@@ -315,6 +323,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
+        this.isLoading = false;
         console.error('Error loading notifications:', error);
       },
     });
@@ -439,6 +448,7 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
   private resetNotificationsState(): void {
     this.notifications = [];
     this.unreadNotificationsCount = 0;
+    this.isLoading = false;
     this.highlightedNotificationIds.clear();
     this.respondingInvitationIds.clear();
     this.respondingJoinRequestIds.clear();

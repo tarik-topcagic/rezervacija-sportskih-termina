@@ -1,0 +1,4 @@
+<div class="skeleton-text-block" [class.align-center]="align === 'center'">
+  <app-skeleton *ngIf="showHeading" class="skeleton-heading" [width]="headingWidth" height="1.4rem"></app-skeleton>
+  <app-skeleton *ngFor="let lineWidth of resolvedLineWidths" [width]="lineWidth" height="0.9rem"></app-skeleton>
+</div>

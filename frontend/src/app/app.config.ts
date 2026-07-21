@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter, withInMemoryScrolling } from '@angular/router';
+import { PreloadAllModules, provideRouter, withInMemoryScrolling, withPreloading } from '@angular/router';
 import {
   provideHttpClient,
   withInterceptors,
@@ -17,6 +17,7 @@ export const appConfig: ApplicationConfig = {
       withInMemoryScrolling({
         anchorScrolling: 'enabled',
       }),
+      withPreloading(PreloadAllModules),
     ),
     provideHttpClient(withInterceptors([JwtInterceptor])),
   ],

@@ -14,6 +14,9 @@ import { Reservation } from '../interfaces/reservation.model';
 import { TimeRange } from '../interfaces/availability.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonComponent } from '../skeleton/skeleton/skeleton.component';
+import { SkeletonCalendarGridComponent } from '../skeleton/skeleton-calendar-grid/skeleton-calendar-grid.component';
+import { SkeletonTextBlockComponent } from '../skeleton/skeleton-text-block/skeleton-text-block.component';
 import { ArenaService } from '../../services/arena.service';
 import { LanguageService } from '../../services/language.service';
 import { ReservationService } from '../../services/reservation.service';
@@ -35,7 +38,16 @@ const CLOSING_HOUR = 23;
 
 @Component({
   selector: 'app-arena-details',
-  imports: [NgIf, NgFor, NgClass, NavbarComponent, TranslatePipe],
+  imports: [
+    NgIf,
+    NgFor,
+    NgClass,
+    NavbarComponent,
+    TranslatePipe,
+    SkeletonComponent,
+    SkeletonCalendarGridComponent,
+    SkeletonTextBlockComponent,
+  ],
   templateUrl: './arena-details.component.html',
   styleUrl: './arena-details.component.scss',
 })
@@ -72,6 +84,7 @@ export class ArenaDetailsComponent implements OnInit, OnDestroy {
   myReservations: Reservation[] = [];
   justBookedReservation: Reservation | null = null;
   isBusyLoadingAvailability = false;
+  isTogglingFavorite = false;
 
   private busyRangesByDate = new Map<string, TimeRange[]>();
   private refreshIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -515,21 +528,34 @@ export class ArenaDetailsComponent implements OnInit, OnDestroy {
   }
 
   toggleFavorite(): void {
-    if (!this.arena) {
+    if (!this.arena || this.isTogglingFavorite) {
       return;
     }
 
     const arenaId = this.arena.id;
+    this.isTogglingFavorite = true;
 
     if (this.isFavorite) {
       this.favoriteArenaService.removeFavorite(arenaId).subscribe({
-        next: () => this.toastService.showSuccess(this.languageService.translate('removedFromFavorites')),
-        error: () => this.toastService.showError(this.languageService.translate('favoriteActionError')),
+        next: () => {
+          this.isTogglingFavorite = false;
+          this.toastService.showSuccess(this.languageService.translate('removedFromFavorites'));
+        },
+        error: () => {
+          this.isTogglingFavorite = false;
+          this.toastService.showError(this.languageService.translate('favoriteActionError'));
+        },
       });
     } else {
       this.favoriteArenaService.addFavorite(arenaId).subscribe({
-        next: () => this.toastService.showSuccess(this.languageService.translate('addedToFavorites')),
-        error: () => this.toastService.showError(this.languageService.translate('favoriteActionError')),
+        next: () => {
+          this.isTogglingFavorite = false;
+          this.toastService.showSuccess(this.languageService.translate('addedToFavorites'));
+        },
+        error: () => {
+          this.isTogglingFavorite = false;
+          this.toastService.showError(this.languageService.translate('favoriteActionError'));
+        },
       });
     }
   }

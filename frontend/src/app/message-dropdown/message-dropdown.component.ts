@@ -32,10 +32,11 @@ import { getUserIdFromToken } from '../helpers/jwt.helper';
 import { ChatMessageNotification } from '../interfaces/chat-message-notification.model';
 import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonListItemComponent } from '../skeleton/skeleton-list-item/skeleton-list-item.component';
 
 @Component({
   selector: 'app-message-dropdown',
-  imports: [NgIf, NgFor, NgClass, RouterModule, TranslatePipe],
+  imports: [NgIf, NgFor, NgClass, RouterModule, TranslatePipe, SkeletonListItemComponent],
   templateUrl: './message-dropdown.component.html',
   styleUrl: './message-dropdown.component.scss',
 })
@@ -45,6 +46,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
 
   username: string | null = null;
   isOpen = false;
+  isLoading = false;
   messages: ChatInboxItem[] = [];
   unreadCount = 0;
   highlightedMessageKeys = new Set<string>();
@@ -306,8 +308,14 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.messages.length) {
+      this.isLoading = true;
+    }
+
     this.chatInboxService.getInboxItems().subscribe({
       next: (messages) => {
+        this.isLoading = false;
+
         if (captureUnreadHighlights) {
           this.highlightedMessageKeys = createHighlightedSet(
             messages,
@@ -321,6 +329,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
         this.syncPresenceIndicators(messages);
       },
       error: (error) => {
+        this.isLoading = false;
         console.error('Error loading chat inbox notifications:', error);
       },
     });
@@ -349,6 +358,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
   private resetState(): void {
     this.messages = [];
     this.unreadCount = 0;
+    this.isLoading = false;
     this.highlightedMessageKeys.clear();
     this.privatePresenceByUserId.clear();
     this.groupPresenceByGroupId.clear();

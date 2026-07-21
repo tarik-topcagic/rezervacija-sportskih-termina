@@ -11,13 +11,14 @@ import { AdminArenaService, ArenaFilterOptions } from '../../../services/admin/a
 import { ToastService } from '../../../services/toast.service';
 import { ConfirmDialogService } from '../../../services/confirm-dialog.service';
 import { paginate } from '../../helpers/pagination.helper';
+import { SkeletonTableRowComponent } from '../../skeleton/skeleton-table-row/skeleton-table-row.component';
 
 type AdminArenaMode = 'list' | 'create' | 'edit';
 
 @Component({
   selector: 'app-admin-arenas',
   standalone: true,
-  imports: [NgFor, NgIf, FormsModule, RouterModule, NavbarComponent, AdminSelectComponent],
+  imports: [NgFor, NgIf, FormsModule, RouterModule, NavbarComponent, AdminSelectComponent, SkeletonTableRowComponent],
   templateUrl: './admin-arenas.component.html',
   styleUrl: './admin-arenas.component.scss',
 })

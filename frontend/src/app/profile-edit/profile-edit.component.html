@@ -1,7 +1,16 @@
 <app-navbar></app-navbar>
 <div class="container mt-4">
   <div class="card mx-auto shadow-sm profile-edit-card" style="max-width: 600px">
-    <div class="card-body">
+    <div class="card-body" *ngIf="isLoading">
+      <h3 class="card-title text-center mb-4">{{ 'editProfile' | translate }}</h3>
+      <app-skeleton [circle]="true" width="150px" height="150px" class="mb-4 mx-auto" style="display: block"></app-skeleton>
+      <app-skeleton width="100%" height="3.3rem" radius="var(--app-control-radius)" class="mb-3" style="display: block"></app-skeleton>
+      <app-skeleton width="100%" height="3.3rem" radius="var(--app-control-radius)" class="mb-3" style="display: block"></app-skeleton>
+      <app-skeleton width="100%" height="3.3rem" radius="var(--app-control-radius)" class="mb-4" style="display: block"></app-skeleton>
+      <app-skeleton width="160px" height="2.4rem" radius="var(--app-control-radius)" class="mx-auto" style="display: block"></app-skeleton>
+    </div>
+
+    <div class="card-body" *ngIf="!isLoading">
       <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
       <h3 class="card-title text-center mb-4">{{ 'editProfile' | translate }}</h3>
 
@@ -37,10 +46,12 @@
                   type="button"
                   class="btn btn-sm position-absolute top-0 end-0 mt-1 me-1"
                   style="background-color: #e4e4e4"
+                  [disabled]="isRemovingPicture"
                   (click)="removeProfilePicture()"
                   [title]="'removeProfilePicture' | translate"
                 >
-                  <i class="bi bi-trash" style="color: #585858"></i>
+                  <span *ngIf="isRemovingPicture" class="spinner-border spinner-border-sm" role="status"></span>
+                  <i *ngIf="!isRemovingPicture" class="bi bi-trash" style="color: #585858"></i>
                 </button>
               </div>
             </ng-template>
@@ -130,9 +141,13 @@
           <button
             type="submit"
             class="btn btn-primary mb-2"
-            [disabled]="editForm.pristine || editForm.invalid"
+            [disabled]="editForm.pristine || editForm.invalid || isSaving"
           >
-            {{ 'saveChanges' | translate }}
+            <span *ngIf="!isSaving">{{ 'saveChanges' | translate }}</span>
+            <span *ngIf="isSaving">
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              {{ 'savingChanges' | translate }}
+            </span>
           </button>
         </div>
       </form>

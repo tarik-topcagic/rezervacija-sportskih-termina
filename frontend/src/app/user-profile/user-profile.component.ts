@@ -11,10 +11,11 @@ import { PrivateChatService } from '../../services/private-chat.service';
 import { PresenceService } from '../../services/presence.service';
 import { Subscription } from 'rxjs';
 import { UserPresence } from '../interfaces/user-presence.model';
+import { SkeletonComponent } from '../skeleton/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-user-profile',
-  imports: [NgIf, NavbarComponent, TranslatePipe, RouterLink, ChooseGroupModalComponent],
+  imports: [NgIf, NavbarComponent, TranslatePipe, RouterLink, ChooseGroupModalComponent, SkeletonComponent],
   templateUrl: './user-profile.component.html',
   styleUrl: './user-profile.component.scss'
 })

@@ -54,11 +54,23 @@
 
 <ng-template #profileState>
   <div class="container mt-4">
-    <div *ngIf="isLoading; else profileNotFound" class="alert alert-info" role="alert">
-      {{ 'loading' | translate }}
+    <div *ngIf="isLoading; else profileNotFound" class="card mx-auto shadow-sm profile-card">
+      <div class="card-body text-center">
+        <app-skeleton [circle]="true" width="150px" height="150px" class="mb-3 mx-auto" style="display: block"></app-skeleton>
+        <app-skeleton width="40%" height="1.6rem" class="mx-auto mb-2" style="display: block"></app-skeleton>
+        <app-skeleton width="28%" height="1.15rem" class="mx-auto mb-3" style="display: block"></app-skeleton>
+        <hr />
+        <app-skeleton width="28%" height="1rem" class="mx-auto" style="display: block"></app-skeleton>
+      </div>
+      <div class="profile-actions text-center">
+        <div class="d-flex justify-content-center gap-2">
+          <app-skeleton width="120px" height="2.4rem" radius="var(--app-control-radius)" style="display: block"></app-skeleton>
+          <app-skeleton width="150px" height="2.4rem" radius="var(--app-control-radius)" style="display: block"></app-skeleton>
+        </div>
+      </div>
     </div>
     <ng-template #profileNotFound>
-      <div class="alert alert-warning" role="alert">{{ 'userNotFound' | translate }}</div>
+      <div class="app-state-message">{{ 'userNotFound' | translate }}</div>
     </ng-template>
   </div>
 </ng-template>

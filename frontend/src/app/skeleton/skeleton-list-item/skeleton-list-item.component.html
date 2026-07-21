@@ -1,0 +1,23 @@
+<div class="skeleton-row" [class.variant-card]="variant === 'card'" [class.compact]="compact">
+  <div class="skeleton-row-main">
+    <app-skeleton
+      *ngIf="showAvatar"
+      class="skeleton-avatar"
+      [circle]="avatarShape === 'circle'"
+      [radius]="avatarShape === 'square' ? 'var(--app-control-radius-sm)' : undefined"
+      [width]="resolvedAvatarWidth"
+      [height]="resolvedAvatarHeight"
+    ></app-skeleton>
+    <div class="skeleton-lines">
+      <app-skeleton *ngFor="let lineWidth of lineWidths" [width]="lineWidth" height="0.9rem"></app-skeleton>
+    </div>
+  </div>
+  <div class="skeleton-actions">
+    <app-skeleton
+      *ngFor="let actionWidth of resolvedActionWidths"
+      [width]="actionWidth"
+      [height]="actionHeight"
+      [radius]="actionRadius"
+    ></app-skeleton>
+  </div>
+</div>

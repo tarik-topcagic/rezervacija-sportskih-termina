@@ -21,6 +21,7 @@ export class GroupMembersModalComponent {
   @Output() error = new EventEmitter<string>();
 
   removingMemberIds = new Set<string>();
+  openingChatUserId: string | null = null;
 
   constructor(
     private router: Router,
@@ -61,17 +62,25 @@ export class GroupMembersModalComponent {
     return !!this.group?.currentUserId && member.userId === this.group.currentUserId;
   }
 
+  isOpeningChat(member: GroupMember): boolean {
+    return this.openingChatUserId === member.userId;
+  }
+
   openPrivateChat(member: GroupMember): void {
-    if (this.isCurrentUser(member)) {
+    if (this.isCurrentUser(member) || this.openingChatUserId) {
       return;
     }
 
+    this.openingChatUserId = member.userId;
+
     this.privateChatService.getOrCreateConversation(member.userId).subscribe({
       next: (conversation) => {
+        this.openingChatUserId = null;
         this.closeModal();
         this.router.navigate(['/messages/private', conversation.id]);
       },
       error: (error) => {
+        this.openingChatUserId = null;
         this.error.emit(this.languageService.translate('privateChatLoadError'));
         console.error('Error opening private chat from group members modal:', error);
       },

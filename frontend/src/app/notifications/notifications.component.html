@@ -8,8 +8,15 @@
         <h1>{{ 'notifications' | translate }}</h1>
       </div>
 
-      <div *ngIf="isLoading" class="status-message">
-        {{ 'loading' | translate }}
+      <div *ngIf="isLoading" class="notifications-list">
+        <app-skeleton-list-item
+          *ngFor="let placeholder of [1, 2, 3, 4]"
+          variant="card"
+          avatarShape="circle"
+          avatarSize="38px"
+          [lineWidths]="['85%', '25%']"
+          [actionCount]="0"
+        ></app-skeleton-list-item>
       </div>
 
       <div *ngIf="!isLoading && !notifications.length" class="status-message">
@@ -52,6 +59,7 @@
                 [disabled]="isResponding(notification)"
                 (click)="acceptInvitation(notification, $event)"
               >
+                <span *ngIf="isResponding(notification)" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 {{ 'accept' | translate }}
               </button>
               <button
@@ -60,6 +68,7 @@
                 [disabled]="isResponding(notification)"
                 (click)="declineInvitation(notification, $event)"
               >
+                <span *ngIf="isResponding(notification)" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 {{ 'decline' | translate }}
               </button>
             </div>
@@ -75,6 +84,7 @@
                 [disabled]="isResponding(notification)"
                 (click)="acceptJoinRequest(notification, $event)"
               >
+                <span *ngIf="isResponding(notification)" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 {{ 'acceptJoinRequest' | translate }}
               </button>
               <button
@@ -83,6 +93,7 @@
                 [disabled]="isResponding(notification)"
                 (click)="declineJoinRequest(notification, $event)"
               >
+                <span *ngIf="isResponding(notification)" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 {{ 'declineJoinRequest' | translate }}
               </button>
             </div>

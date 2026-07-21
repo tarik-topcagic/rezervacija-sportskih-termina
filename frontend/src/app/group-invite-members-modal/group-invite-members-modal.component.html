@@ -44,8 +44,15 @@
       {{ inviteModalError }}
     </div>
 
-    <div *ngIf="isLoadingInviteUsers" class="status-message compact">
-      {{ 'loading' | translate }}
+    <div *ngIf="isLoadingInviteUsers" class="invite-user-list">
+      <app-skeleton-list-item
+        *ngFor="let placeholder of [1, 2, 3]"
+        avatarShape="circle"
+        avatarSize="44px"
+        [lineWidths]="['50%', '35%']"
+        [actionCount]="1"
+        actionWidth="90px"
+      ></app-skeleton-list-item>
     </div>
 
     <div *ngIf="!isLoadingInviteUsers && inviteUsers.length" class="invite-user-list">
@@ -72,7 +79,8 @@
             [disabled]="isRespondingJoinRequest(user)"
             (click)="acceptJoinRequest(user)"
           >
-            <i class="bi bi-check-circle"></i>
+            <span *ngIf="isRespondingJoinRequest(user)" class="spinner-border spinner-border-sm" role="status"></span>
+            <i *ngIf="!isRespondingJoinRequest(user)" class="bi bi-check-circle"></i>
             {{ 'accept' | translate }}
           </button>
           <button
@@ -81,7 +89,8 @@
             [disabled]="isRespondingJoinRequest(user)"
             (click)="declineJoinRequest(user)"
           >
-            <i class="bi bi-x-circle"></i>
+            <span *ngIf="isRespondingJoinRequest(user)" class="spinner-border spinner-border-sm" role="status"></span>
+            <i *ngIf="!isRespondingJoinRequest(user)" class="bi bi-x-circle"></i>
             {{ 'decline' | translate }}
           </button>
         </div>
@@ -97,7 +106,8 @@
             [title]="getInviteActionTitle(user) | translate"
             (click)="handleInviteAction(user)"
           >
-            <i class="bi {{ getInviteActionIcon(user) }}"></i>
+            <span *ngIf="isInviting(user) || isCancelingInvitation(user)" class="spinner-border spinner-border-sm" role="status"></span>
+            <i *ngIf="!isInviting(user) && !isCancelingInvitation(user)" class="bi {{ getInviteActionIcon(user) }}"></i>
             {{ getInviteLabel(user) | translate }}
           </button>
         </ng-template>

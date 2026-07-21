@@ -31,7 +31,18 @@
         <strong>{{ 'notifications' | translate }}</strong>
       </div>
 
-      <div *ngIf="notifications.length; else emptyNotifications" class="notifications-list">
+      <div *ngIf="isLoading" class="notifications-list">
+        <app-skeleton-list-item
+          *ngFor="let placeholder of [1, 2, 3]"
+          [compact]="true"
+          avatarShape="circle"
+          avatarSize="34px"
+          [lineWidths]="['85%', '25%']"
+          [actionCount]="0"
+        ></app-skeleton-list-item>
+      </div>
+
+      <div *ngIf="!isLoading && notifications.length" class="notifications-list">
         <div
           class="notification-item"
           *ngFor="let notification of notifications"
@@ -66,6 +77,7 @@
                 [disabled]="isResponding(notification)"
                 (click)="acceptInvitation(notification, $event)"
               >
+                <span *ngIf="isResponding(notification)" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 {{ 'accept' | translate }}
               </button>
               <button
@@ -74,6 +86,7 @@
                 [disabled]="isResponding(notification)"
                 (click)="declineInvitation(notification, $event)"
               >
+                <span *ngIf="isResponding(notification)" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 {{ 'decline' | translate }}
               </button>
             </div>
@@ -89,6 +102,7 @@
                 [disabled]="isResponding(notification)"
                 (click)="acceptJoinRequest(notification, $event)"
               >
+                <span *ngIf="isResponding(notification)" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 {{ 'acceptJoinRequest' | translate }}
               </button>
               <button
@@ -97,6 +111,7 @@
                 [disabled]="isResponding(notification)"
                 (click)="declineJoinRequest(notification, $event)"
               >
+                <span *ngIf="isResponding(notification)" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 {{ 'declineJoinRequest' | translate }}
               </button>
             </div>
@@ -129,9 +144,9 @@
         </div>
       </div>
 
-      <ng-template #emptyNotifications>
-        <div class="notifications-empty">{{ 'noNotifications' | translate }}</div>
-      </ng-template>
+      <div *ngIf="!isLoading && !notifications.length" class="notifications-empty">
+        {{ 'noNotifications' | translate }}
+      </div>
     </div>
   </div>
 </ng-container>

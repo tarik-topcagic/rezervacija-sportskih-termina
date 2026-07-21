@@ -1,0 +1,21 @@
+:host {
+  display: block;
+}
+
+.skeleton-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.skeleton-heading {
+  margin-bottom: 0.4rem;
+}
+
+.skeleton-text-block.align-center {
+  align-items: center;
+}
+
+.skeleton-text-block.align-center app-skeleton {
+  margin-inline: auto;
+}

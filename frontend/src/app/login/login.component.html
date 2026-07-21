@@ -45,8 +45,12 @@
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary" [disabled]="loginForm.invalid">
-        {{ 'login' | translate }}
+      <button type="submit" class="btn btn-primary" [disabled]="loginForm.invalid || isLoading">
+        <span *ngIf="!isLoading">{{ 'login' | translate }}</span>
+        <span *ngIf="isLoading">
+          <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+          {{ 'loggingIn' | translate }}
+        </span>
       </button>
     </form>
     <div class="mt-5 auth-footer">

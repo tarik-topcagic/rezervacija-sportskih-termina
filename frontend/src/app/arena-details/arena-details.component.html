@@ -266,9 +266,11 @@
             <button
               type="button"
               class="secondary-cta"
+              [disabled]="isTogglingFavorite"
               (click)="toggleFavorite()"
             >
-              <i class="bi" [ngClass]="isFavorite ? 'bi-heart-fill' : 'bi-heart'"></i>
+              <span *ngIf="isTogglingFavorite" class="spinner-border spinner-border-sm" role="status"></span>
+              <i *ngIf="!isTogglingFavorite" class="bi" [ngClass]="isFavorite ? 'bi-heart-fill' : 'bi-heart'"></i>
               {{ (isFavorite ? 'removeFromFavorites' : 'saveToFavorites') | translate }}
             </button>
           </ng-container>
@@ -277,10 +279,36 @@
     </section>
 
     <ng-template #stateBlock>
-      <section class="state-card">
-        <p *ngIf="isLoading">{{ 'loading' | translate }}</p>
-        <p *ngIf="!isLoading">{{ errorMessage | translate }}</p>
+      <section class="arena-experience" *ngIf="isLoading; else errorBlock">
+        <section class="hero-card details-card">
+          <app-skeleton class="hero-image" width="100%" height="100%" radius="0"></app-skeleton>
+        </section>
+
+        <div class="content-grid">
+          <div class="content-main">
+            <section class="schedule-card details-card">
+              <app-skeleton-calendar-grid
+                [dayCount]="visibleDays.length"
+                [isMobileLayout]="isMobileLayout"
+              ></app-skeleton-calendar-grid>
+            </section>
+
+            <section class="details-copy details-card">
+              <app-skeleton-text-block headingWidth="35%" [lineCount]="4"></app-skeleton-text-block>
+            </section>
+          </div>
+
+          <aside *ngIf="!isMobileLayout" class="summary-card details-card">
+            <app-skeleton-text-block headingWidth="55%" [lineCount]="3"></app-skeleton-text-block>
+          </aside>
+        </div>
       </section>
+
+      <ng-template #errorBlock>
+        <section class="app-state-message">
+          <p>{{ errorMessage | translate }}</p>
+        </section>
+      </ng-template>
     </ng-template>
   </div>
 </div>

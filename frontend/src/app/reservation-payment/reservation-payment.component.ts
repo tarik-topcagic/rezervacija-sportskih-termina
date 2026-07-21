@@ -6,6 +6,7 @@ import { Arena } from '../interfaces/arena.model';
 import { formatReadableDate } from '../helpers/date-format.helper';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonTextBlockComponent } from '../skeleton/skeleton-text-block/skeleton-text-block.component';
 import { ArenaService } from '../../services/arena.service';
 import { LanguageService } from '../../services/language.service';
 import { ReservationService } from '../../services/reservation.service';
@@ -15,7 +16,7 @@ const ADDITIONAL_HALF_HOUR_PRICE = 10;
 
 @Component({
   selector: 'app-reservation-payment',
-  imports: [NgIf, FormsModule, NavbarComponent, TranslatePipe],
+  imports: [NgIf, FormsModule, NavbarComponent, TranslatePipe, SkeletonTextBlockComponent],
   templateUrl: './reservation-payment.component.html',
   styleUrl: './reservation-payment.component.scss',
 })

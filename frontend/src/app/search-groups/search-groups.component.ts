@@ -7,6 +7,7 @@ import { NgClass, NgFor, NgIf } from '@angular/common';
 import { CreateGroupModalComponent } from '../create-group-modal/create-group-modal.component';
 import { EditGroupModalComponent } from '../edit-group-modal/edit-group-modal.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonListItemComponent } from '../skeleton/skeleton-list-item/skeleton-list-item.component';
 import { Router } from '@angular/router';
 import { Subscription, catchError, forkJoin, of } from 'rxjs';
 import { paginate } from '../helpers/pagination.helper';
@@ -22,7 +23,7 @@ import {
 
 @Component({
   selector: 'app-search-groups',
-  imports: [NgIf, NgFor, NgClass, NavbarComponent, FormsModule, CreateGroupModalComponent, EditGroupModalComponent, TranslatePipe],
+  imports: [NgIf, NgFor, NgClass, NavbarComponent, FormsModule, CreateGroupModalComponent, EditGroupModalComponent, TranslatePipe, SkeletonListItemComponent],
   templateUrl: './search-groups.component.html',
   styleUrl: './search-groups.component.scss',
 })

@@ -3,8 +3,34 @@
 <div class="container mt-4 mb-5 my-reservations-page">
   <h2 class="mb-4">{{ 'myReservations' | translate }}</h2>
 
-  <div *ngIf="isLoading" class="alert alert-info">{{ 'loading' | translate }}</div>
-  <div *ngIf="!isLoading && errorMessage" class="alert alert-danger">{{ errorMessage | translate }}</div>
+  <ng-container *ngIf="isLoading">
+    <section class="reservations-section">
+      <h4 class="mb-3">{{ 'upcomingReservations' | translate }}</h4>
+      <app-skeleton-list-item
+        *ngFor="let placeholder of [1, 2]"
+        variant="card"
+        [showAvatar]="false"
+        [lineWidths]="['42%', '58%']"
+        [actionWidths]="['70px']"
+        actionHeight="1.4rem"
+        actionRadius="999px"
+      ></app-skeleton-list-item>
+    </section>
+
+    <section class="reservations-section past-section">
+      <h4 class="mb-3">{{ 'pastReservations' | translate }}</h4>
+      <app-skeleton-list-item
+        *ngFor="let placeholder of [1, 2]"
+        variant="card"
+        [showAvatar]="false"
+        [lineWidths]="['42%', '58%']"
+        [actionWidths]="['70px']"
+        actionHeight="1.4rem"
+        actionRadius="999px"
+      ></app-skeleton-list-item>
+    </section>
+  </ng-container>
+  <div *ngIf="!isLoading && errorMessage" class="app-state-message">{{ errorMessage | translate }}</div>
 
   <ng-container *ngIf="!isLoading && !errorMessage">
     <section class="reservations-section">

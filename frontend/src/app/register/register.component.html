@@ -67,7 +67,13 @@
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary" [disabled]="registerForm.invalid || passwordStrengthError || usernameTakenError || emailTakenError || phoneNumberTakenError">{{ 'register' | translate }}</button>
+      <button type="submit" class="btn btn-primary" [disabled]="registerForm.invalid || passwordStrengthError || usernameTakenError || emailTakenError || phoneNumberTakenError || isLoading">
+        <span *ngIf="!isLoading">{{ 'register' | translate }}</span>
+        <span *ngIf="isLoading">
+          <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+          {{ 'registering' | translate }}
+        </span>
+      </button>
     </form>
     <div class="mt-5 auth-footer">
       <p>{{ 'haveProfile' | translate }} <a routerLink="/login" class="link-primary" style="cursor: pointer;">{{ 'login' | translate }}</a></p>

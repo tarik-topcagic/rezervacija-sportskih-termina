@@ -56,9 +56,11 @@
             *ngIf="!isCurrentUser(member)"
             type="button"
             class="btn btn-sm btn-outline-secondary"
+            [disabled]="isOpeningChat(member)"
             (click)="openPrivateChat(member)"
           >
-            <i class="bi bi-chat-dots"></i>
+            <span *ngIf="isOpeningChat(member)" class="spinner-border spinner-border-sm" role="status"></span>
+            <i *ngIf="!isOpeningChat(member)" class="bi bi-chat-dots"></i>
             {{ 'message' | translate }}
           </button>
           <button
@@ -68,7 +70,8 @@
             [disabled]="isRemovingMember(member)"
             (click)="removeMember(member)"
           >
-            <i class="bi bi-person-dash"></i>
+            <span *ngIf="isRemovingMember(member)" class="spinner-border spinner-border-sm" role="status"></span>
+            <i *ngIf="!isRemovingMember(member)" class="bi bi-person-dash"></i>
             {{ 'removeFromGroup' | translate }}
           </button>
         </div>

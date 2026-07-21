@@ -17,10 +17,19 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { LanguageService } from '../../services/language.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { ToastService } from '../../services/toast.service';
+import { SkeletonComponent } from '../skeleton/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-profile-edit',
-  imports: [ReactiveFormsModule, CommonModule, NgIf, NgFor, NavbarComponent, TranslatePipe],
+  imports: [
+    ReactiveFormsModule,
+    CommonModule,
+    NgIf,
+    NgFor,
+    NavbarComponent,
+    TranslatePipe,
+    SkeletonComponent,
+  ],
   templateUrl: './profile-edit.component.html',
   styleUrl: './profile-edit.component.scss',
 })
@@ -36,6 +45,9 @@ export class ProfileEditComponent
   showDropdown = false;
   timestamp = Date.now();
   successMessage = '';
+  isLoading = true;
+  isSaving = false;
+  isRemovingPicture = false;
 
   private handleClickOutsideBound = this.handleClickOutside.bind(this);
   private beforeUnloadHandlerBound = this.beforeUnloadHandler.bind(this);
@@ -62,24 +74,31 @@ export class ProfileEditComponent
       profilePictureUrl: [''],
     });
 
-    this.userService.getMyProfile().subscribe((profile) => {
-      this.editForm.patchValue({
-        fullName: profile.fullName,
-        phoneNumber: profile.phoneNumber,
-        location: profile.location || '',
-        profilePictureUrl: profile.profilePictureUrl,
-      });
+    this.userService.getMyProfile().subscribe({
+      next: (profile) => {
+        this.isLoading = false;
+        this.editForm.patchValue({
+          fullName: profile.fullName,
+          phoneNumber: profile.phoneNumber,
+          location: profile.location || '',
+          profilePictureUrl: profile.profilePictureUrl,
+        });
 
-      if (
-        profile.profilePictureUrl &&
-        profile.profilePictureUrl.trim().toLowerCase() !== 'default-profile.png'
-      ) {
-        this.previewUrl = profile.profilePictureUrl;
-      } else {
-        this.previewUrl = null;
-      }
+        if (
+          profile.profilePictureUrl &&
+          profile.profilePictureUrl.trim().toLowerCase() !== 'default-profile.png'
+        ) {
+          this.previewUrl = profile.profilePictureUrl;
+        } else {
+          this.previewUrl = null;
+        }
 
-      this.editForm.markAsPristine();
+        this.editForm.markAsPristine();
+      },
+      error: (error) => {
+        this.isLoading = false;
+        console.error('Error loading profile for editing:', error);
+      },
     });
 
     this.cityService.getCities().subscribe((cities) => {
@@ -152,9 +171,11 @@ export class ProfileEditComponent
   }
 
   onSubmit(): void {
-    if (this.editForm.invalid) {
+    if (this.editForm.invalid || this.isSaving) {
       return;
     }
+
+    this.isSaving = true;
 
     if (this.selectedFile) {
       const formData = new FormData();
@@ -165,6 +186,7 @@ export class ProfileEditComponent
           this.updateProfile();
         },
         error: (err) => {
+          this.isSaving = false;
           console.error('Greška pri uploadu slike', err);
           this.fileError = this.languageService.translate('uploadImageError');
         },
@@ -182,6 +204,7 @@ export class ProfileEditComponent
   private updateProfile(): void {
     this.userService.updateProfile(this.editForm.value).subscribe({
       next: () => {
+        this.isSaving = false;
         this.userService.refreshProfile();
         this.toastService.showSuccess(
           this.languageService.translate('profileUpdated'),
@@ -192,6 +215,7 @@ export class ProfileEditComponent
         }, 0);
       },
       error: (err) => {
+        this.isSaving = false;
         console.error('Greška pri ažuriranju profila', err);
         if (err.error && err.error.errors) {
           console.error('Validacijske greške:', err.error.errors);
@@ -204,9 +228,14 @@ export class ProfileEditComponent
   }
 
   removeProfilePicture(): void {
+    if (this.isRemovingPicture) {
+      return;
+    }
+
     this.previewUrl = null;
     this.selectedFile = null;
     this.editForm.get('profilePictureUrl')?.setValue(null);
+    this.isRemovingPicture = true;
 
     const fileInput = document.getElementById(
       'profilePicture',
@@ -217,13 +246,17 @@ export class ProfileEditComponent
 
     this.userService.deleteProfilePicture().subscribe({
       next: () => {
+        this.isRemovingPicture = false;
         this.editForm.markAsDirty();
         const fileInput = document.getElementById(
           'profilePicture',
         ) as HTMLInputElement;
         if (fileInput) fileInput.value = '';
       },
-      error: (err) => console.error('Greška pri uklanjanju slike', err),
+      error: (err) => {
+        this.isRemovingPicture = false;
+        console.error('Greška pri uklanjanju slike', err);
+      },
     });
     this.editForm.markAsDirty();
   }

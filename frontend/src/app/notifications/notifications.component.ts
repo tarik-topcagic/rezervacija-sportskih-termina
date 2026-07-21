@@ -10,6 +10,7 @@ import { AppNotification, AppNotificationType } from '../interfaces/notification
 import { MembershipStatus } from '../interfaces/group.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonListItemComponent } from '../skeleton/skeleton-list-item/skeleton-list-item.component';
 import { NotificationTimeService } from '../../services/notification-time.service';
 import { ToastService } from '../../services/toast.service';
 import { createHighlightedSet, prependIfNotExists } from '../helpers/dropdown-ui.helper';
@@ -20,7 +21,7 @@ import {
 
 @Component({
   selector: 'app-notifications',
-  imports: [NgClass, NgFor, NgIf, NavbarComponent, TranslatePipe],
+  imports: [NgClass, NgFor, NgIf, NavbarComponent, TranslatePipe, SkeletonListItemComponent],
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.scss',
 })

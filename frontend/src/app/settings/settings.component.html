@@ -3,11 +3,11 @@
 <div class="container mt-4 mb-5 settings-page">
   <h2 class="mb-4">{{ 'settings' | translate }}</h2>
 
-  <div *ngIf="errorMessage" class="alert alert-danger">
+  <div *ngIf="errorMessage" class="app-state-message">
     {{ errorMessage }}
   </div>
 
-  <div *ngIf="settings; else loading">
+  <div *ngIf="settings">
     <section class="settings-section">
       <h4>{{ 'notifications' | translate }}</h4>
       <div class="form-check form-switch">
@@ -89,7 +89,8 @@
             />
             <label for="username">{{ 'username' | translate }}</label>
           </div>
-          <button type="submit" class="btn btn-primary" [disabled]="!canSubmitUsernameChange">
+          <button type="submit" class="btn btn-primary" [disabled]="!canSubmitUsernameChange || isChangingUsername">
+            <span *ngIf="isChangingUsername" class="spinner-border spinner-border-sm me-1" role="status"></span>
             {{ 'changeUsername' | translate }}
           </button>
         </div>
@@ -120,8 +121,16 @@
       </dl>
     </section>
   </div>
-</div>
 
-<ng-template #loading>
-  <div class="alert alert-info" role="alert">{{ 'loading' | translate }}</div>
-</ng-template>
+  <ng-container *ngIf="!settings && !errorMessage">
+    <section class="settings-section">
+      <app-skeleton-text-block headingWidth="25%" [lineCount]="2"></app-skeleton-text-block>
+    </section>
+    <section class="settings-section">
+      <app-skeleton-text-block headingWidth="25%" [lineCount]="2"></app-skeleton-text-block>
+    </section>
+    <section class="settings-section">
+      <app-skeleton-text-block headingWidth="25%" [lineCount]="3"></app-skeleton-text-block>
+    </section>
+  </ng-container>
+</div>

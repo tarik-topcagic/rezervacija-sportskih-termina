@@ -5,10 +5,11 @@ import { NgIf } from '@angular/common';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonComponent } from '../skeleton/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-profile',
-  imports: [NgIf, NavbarComponent, RouterModule, TranslatePipe],
+  imports: [NgIf, NavbarComponent, RouterModule, TranslatePipe, SkeletonComponent],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })

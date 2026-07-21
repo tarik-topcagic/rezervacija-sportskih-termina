@@ -7,11 +7,36 @@
       {{ 'backToGroups' | translate }}
     </a>
 
-    <div *ngIf="isLoading" class="status-message">
-      {{ 'loading' | translate }}
-    </div>
+    <section *ngIf="isLoading" class="details-shell">
+      <div class="details-header">
+        <div class="title-block">
+          <app-skeleton [circle]="true" width="150px" height="150px"></app-skeleton>
+          <div style="flex: 1; min-width: 0;">
+            <app-skeleton width="35%" height="0.85rem" class="mb-2" style="display: block"></app-skeleton>
+            <app-skeleton width="55%" height="1.8rem" style="display: block"></app-skeleton>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <app-skeleton width="130px" height="2.4rem" radius="var(--app-control-radius)"></app-skeleton>
+          <app-skeleton width="150px" height="2.4rem" radius="var(--app-control-radius)"></app-skeleton>
+        </div>
+      </div>
 
-    <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+      <div class="details-grid">
+        <div class="detail-item" *ngFor="let placeholder of [1, 2, 3, 4, 5, 6]">
+          <app-skeleton width="50%" height="0.75rem" class="mb-2" style="display: block"></app-skeleton>
+          <app-skeleton width="75%" height="1.1rem" style="display: block"></app-skeleton>
+        </div>
+      </div>
+
+      <div class="description-section">
+        <app-skeleton width="20%" height="0.85rem" class="mb-2" style="display: block"></app-skeleton>
+        <app-skeleton width="90%" height="1rem" class="mb-1" style="display: block"></app-skeleton>
+        <app-skeleton width="70%" height="1rem" style="display: block"></app-skeleton>
+      </div>
+    </section>
+
+    <div *ngIf="errorMessage" class="app-state-message mt-3">
       {{ errorMessage }}
     </div>
 
@@ -41,8 +66,14 @@
               <i class="bi bi-caret-down-fill"></i>
             </button>
             <div *ngIf="isMemberMenuOpen" class="member-status-menu">
-              <button type="button" class="member-status-menu-item" (click)="leaveGroup()">
-                <i class="bi bi-box-arrow-right"></i>
+              <button
+                type="button"
+                class="member-status-menu-item"
+                [disabled]="isLeavingGroup"
+                (click)="leaveGroup()"
+              >
+                <span *ngIf="isLeavingGroup" class="spinner-border spinner-border-sm" role="status"></span>
+                <i *ngIf="!isLeavingGroup" class="bi bi-box-arrow-right"></i>
                 {{ 'leaveGroup' | translate }}
               </button>
             </div>
@@ -82,7 +113,8 @@
               [disabled]="isRespondingToInvitation"
               (click)="acceptInvitation()"
             >
-              <i class="bi bi-check-circle"></i>
+              <span *ngIf="isRespondingToInvitation" class="spinner-border spinner-border-sm" role="status"></span>
+              <i *ngIf="!isRespondingToInvitation" class="bi bi-check-circle"></i>
               {{ 'acceptInvitation' | translate }}
             </button>
             <button
@@ -91,7 +123,8 @@
               [disabled]="isRespondingToInvitation"
               (click)="declineInvitation()"
             >
-              <i class="bi bi-x-circle"></i>
+              <span *ngIf="isRespondingToInvitation" class="spinner-border spinner-border-sm" role="status"></span>
+              <i *ngIf="!isRespondingToInvitation" class="bi bi-x-circle"></i>
               {{ 'declineInvitation' | translate }}
             </button>
           </ng-container>
@@ -102,7 +135,8 @@
             [disabled]="isRequestingAccess"
             (click)="requestAccess()"
           >
-            <i class="bi bi-door-open"></i>
+            <span *ngIf="isRequestingAccess" class="spinner-border spinner-border-sm" role="status"></span>
+            <i *ngIf="!isRequestingAccess" class="bi bi-door-open"></i>
             {{ (isRequestingAccess ? 'requestingAccess' : 'requestAccess') | translate }}
           </button>
           <button
@@ -113,7 +147,8 @@
             [title]="'cancelJoinRequest' | translate"
             (click)="cancelAccessRequest()"
           >
-            <i class="bi bi-x-circle"></i>
+            <span *ngIf="isCancelingAccessRequest" class="spinner-border spinner-border-sm" role="status"></span>
+            <i *ngIf="!isCancelingAccessRequest" class="bi bi-x-circle"></i>
             {{ (isCancelingAccessRequest ? 'canceling' : 'pending') | translate }}
           </button>
         </div>

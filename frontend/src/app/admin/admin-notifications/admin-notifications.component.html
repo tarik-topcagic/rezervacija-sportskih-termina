@@ -23,10 +23,9 @@
     </div>
   </form>
 
-  <div *ngIf="isLoading" class="text-muted">Loading...</div>
-  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+  <div *ngIf="errorMessage" class="app-state-message">{{ errorMessage }}</div>
 
-  <div class="table-responsive" *ngIf="!isLoading && !errorMessage">
+  <div class="table-responsive" *ngIf="!errorMessage">
     <table class="table table-striped align-middle">
       <thead>
         <tr>
@@ -40,31 +39,37 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let notification of pagedNotifications">
-          <td>{{ notification.id }}</td>
-          <td>{{ notification.type }}</td>
-          <td>{{ notification.username }}</td>
-          <td>{{ notification.actorName || '-' }}</td>
-          <td>
-            <span class="badge" [class.text-bg-success]="notification.isRead" [class.text-bg-secondary]="!notification.isRead">
-              {{ notification.isRead ? 'Read' : 'Unread' }}
-            </span>
-          </td>
-          <td>{{ notification.createdAt | date: 'short' }}</td>
-          <td class="text-end">
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-danger"
-              [disabled]="isPending(notification)"
-              (click)="deleteNotification(notification)"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="!notifications.length">
-          <td colspan="7" class="text-center text-muted">No notifications found.</td>
-        </tr>
+        <ng-container *ngIf="isLoading">
+          <tr app-skeleton-row *ngFor="let placeholder of [1, 2, 3, 4, 5, 6]" [columnCount]="7"></tr>
+        </ng-container>
+        <ng-container *ngIf="!isLoading">
+          <tr *ngFor="let notification of pagedNotifications">
+            <td>{{ notification.id }}</td>
+            <td>{{ notification.type }}</td>
+            <td>{{ notification.username }}</td>
+            <td>{{ notification.actorName || '-' }}</td>
+            <td>
+              <span class="badge" [class.text-bg-success]="notification.isRead" [class.text-bg-secondary]="!notification.isRead">
+                {{ notification.isRead ? 'Read' : 'Unread' }}
+              </span>
+            </td>
+            <td>{{ notification.createdAt | date: 'short' }}</td>
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                [disabled]="isPending(notification)"
+                (click)="deleteNotification(notification)"
+              >
+                <span *ngIf="isPending(notification)" class="spinner-border spinner-border-sm" role="status"></span>
+                <span *ngIf="!isPending(notification)">Delete</span>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!notifications.length">
+            <td colspan="7" class="text-center text-muted">No notifications found.</td>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
 

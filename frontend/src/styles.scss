@@ -8,6 +8,12 @@
     --app-scrollbar-track: #ffffff;
     --app-scrollbar-thumb: #c7ced6;
     --app-scrollbar-thumb-hover: #b5bec8;
+    --app-skeleton-base: #e9ecef;
+    --app-skeleton-shine: #f8f9fa;
+    --app-state-surface: rgba(255, 255, 255, 0.92);
+    --app-state-border: rgba(226, 232, 240, 0.96);
+    --app-state-text: #64748b;
+    --app-state-shadow: 0 24px 50px rgba(15, 23, 42, 0.08);
 }
 
 html, body {
@@ -42,6 +48,12 @@ body.dark-mode {
     --app-scrollbar-track: #121212;
     --app-scrollbar-thumb: #4b4f54;
     --app-scrollbar-thumb-hover: #5a6066;
+    --app-skeleton-base: #2a2a2a;
+    --app-skeleton-shine: #3a3a3a;
+    --app-state-surface: rgba(31, 31, 31, 0.94);
+    --app-state-border: rgba(58, 58, 58, 0.95);
+    --app-state-text: #a7b4c8;
+    --app-state-shadow: 0 24px 50px rgba(0, 0, 0, 0.32);
 }
 
 * {
@@ -65,6 +77,41 @@ body.dark-mode {
 
 *::-webkit-scrollbar-thumb:hover {
     background: var(--app-scrollbar-thumb-hover);
+}
+
+@keyframes app-skeleton-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.app-skeleton {
+    display: block;
+    background: linear-gradient(90deg, var(--app-skeleton-base) 25%, var(--app-skeleton-shine) 50%, var(--app-skeleton-base) 75%);
+    background-size: 200% 100%;
+    animation: app-skeleton-shimmer 1.4s ease-in-out infinite;
+    border-radius: var(--app-control-radius-sm);
+}
+
+.app-state-message {
+    background: var(--app-state-surface);
+    border: 1px solid var(--app-state-border);
+    border-radius: 1.75rem;
+    box-shadow: var(--app-state-shadow);
+    backdrop-filter: blur(14px);
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: var(--app-state-text);
+}
+
+@media (max-width: 576px) {
+    .app-state-message {
+        border-radius: 1.2rem;
+        padding: 2.25rem 1.25rem;
+    }
 }
 
 .btn:not(.btn-close),
@@ -128,6 +175,26 @@ body.dark-mode .form-select {
     background-color: #1f1f1f;
     color: #f1f3f5;
     border-color: #3a3a3a;
+}
+
+/* .navbar sets data-bs-theme="dark" for its own contrast against the blue background,
+   but that scope inherits into the nested profile dropdown/list, forcing it dark even
+   outside the app's own dark mode. Reset just the base colors here (not hover/active,
+   which stay as Bootstrap resolves them) so the dropdown follows the app's own theme. */
+body:not(.dark-mode) .navbar .dropdown-menu,
+body:not(.dark-mode) .navbar .list-group-item {
+    --bs-dropdown-bg: #fff;
+    --bs-dropdown-color: #495057;
+    --bs-dropdown-link-color: #495057;
+    --bs-dropdown-border-color: rgba(0, 0, 0, 0.175);
+    background-color: #fff;
+    color: #495057;
+    border-color: rgba(0, 0, 0, 0.175);
+}
+
+body:not(.dark-mode) .navbar .dropdown-menu .dropdown-item:not(:hover):not(:focus),
+body:not(.dark-mode) .navbar .list-group-item .nav-link:not(:hover):not(:focus) {
+    color: #495057;
 }
 
 .dropdown-menu {

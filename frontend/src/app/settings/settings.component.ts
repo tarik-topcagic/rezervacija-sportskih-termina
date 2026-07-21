@@ -8,10 +8,11 @@ import { ToastService } from '../../services/toast.service';
 import { UserService, UserSettings } from '../../services/user.service';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonTextBlockComponent } from '../skeleton/skeleton-text-block/skeleton-text-block.component';
 
 @Component({
   selector: 'app-settings',
-  imports: [CommonModule, FormsModule, NavbarComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, NavbarComponent, TranslatePipe, SkeletonTextBlockComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -24,6 +25,7 @@ export class SettingsComponent implements OnInit {
   showLanguageMenu = false;
   newUsername = '';
   errorMessage = '';
+  isChangingUsername = false;
 
   constructor(
     private userService: UserService,
@@ -90,8 +92,15 @@ export class SettingsComponent implements OnInit {
       return;
     }
 
+    if (this.isChangingUsername) {
+      return;
+    }
+
+    this.isChangingUsername = true;
+
     this.userService.updateUsername(username).subscribe({
       next: (response) => {
+        this.isChangingUsername = false;
         const updatedUsername = response.username || username;
         if (this.settings) {
           this.settings.username = updatedUsername;
@@ -108,6 +117,7 @@ export class SettingsComponent implements OnInit {
         );
       },
       error: (error) => {
+        this.isChangingUsername = false;
         this.toastService.showError(
           error.error?.field === 'username'
             ? this.languageService.translate('usernameTaken')

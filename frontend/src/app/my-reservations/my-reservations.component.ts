@@ -4,6 +4,7 @@ import { Reservation } from '../interfaces/reservation.model';
 import { formatReadableDate } from '../helpers/date-format.helper';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonListItemComponent } from '../skeleton/skeleton-list-item/skeleton-list-item.component';
 import { ReservationService } from '../../services/reservation.service';
 import { LanguageService } from '../../services/language.service';
 import { ToastService } from '../../services/toast.service';
@@ -11,7 +12,7 @@ import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 
 @Component({
   selector: 'app-my-reservations',
-  imports: [NgIf, NgFor, NgClass, NavbarComponent, TranslatePipe],
+  imports: [NgIf, NgFor, NgClass, NavbarComponent, TranslatePipe, SkeletonListItemComponent],
   templateUrl: './my-reservations.component.html',
   styleUrl: './my-reservations.component.scss',
 })

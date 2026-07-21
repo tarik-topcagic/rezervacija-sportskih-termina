@@ -27,6 +27,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
   emailTakenError = false;
   phoneNumberTakenError = false;
   usernameSpaceError = false;
+  isLoading = false;
 
   constructor(
     private authService: AuthService,
@@ -77,9 +78,10 @@ export class RegisterComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.usernameTakenError = false; 
+    this.usernameTakenError = false;
     this.emailTakenError = false;
     this.phoneNumberTakenError = false;
+    this.isLoading = true;
 
     this.authService.register(this.registerModel).subscribe({
       next: (response) => {
@@ -87,15 +89,19 @@ export class RegisterComponent implements OnInit, OnDestroy {
           .subscribe({
             next: () => {
               this.languageService.syncLanguageFromBackend().subscribe(() => {
+                this.isLoading = false;
                 this.router.navigate(['/home']);
               });
             },
             error: (error) => {
+              this.isLoading = false;
               console.error('Login error:', error);
             }
           });
       },
       error: (error) => {
+        this.isLoading = false;
+
         if (error.error?.field === 'username' || error.error?.message === "Username is already taken.") {
           this.usernameTakenError = true;
         }
@@ -106,7 +112,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
           this.phoneNumberTakenError = true;
         }
         console.error('Registration error:', error);
-        console.log('Full error details:', error.error);  
+        console.log('Full error details:', error.error);
       }
     });
   }

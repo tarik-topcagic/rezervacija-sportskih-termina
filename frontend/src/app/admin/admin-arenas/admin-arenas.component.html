@@ -29,10 +29,9 @@
       </div>
     </form>
 
-    <div *ngIf="isLoading" class="text-muted">Loading...</div>
-    <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+    <div *ngIf="errorMessage" class="app-state-message">{{ errorMessage }}</div>
 
-    <div class="table-responsive" *ngIf="!isLoading && !errorMessage">
+    <div class="table-responsive" *ngIf="!errorMessage">
       <table class="table table-striped align-middle">
         <thead>
           <tr>
@@ -48,32 +47,38 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let arena of pagedArenas">
-            <td>{{ arena.id }}</td>
-            <td>{{ arena.name }}</td>
-            <td>{{ arena.city }}</td>
-            <td>{{ arena.sportType }}</td>
-            <td>{{ arena.address }}</td>
-            <td>{{ arena.pricePerHour }}</td>
-            <td>{{ arena.reservationCount }}</td>
-            <td>{{ arena.favoriteCount }}</td>
-            <td class="text-end">
-              <a class="btn btn-sm btn-outline-primary me-1" [routerLink]="['/admin/arenas', arena.id, 'edit']">
-                Edit
-              </a>
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-danger"
-                [disabled]="isPending(arena)"
-                (click)="deleteArena(arena)"
-              >
-                Delete
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="!arenas.length">
-            <td colspan="9" class="text-center text-muted">No arenas found.</td>
-          </tr>
+          <ng-container *ngIf="isLoading">
+            <tr app-skeleton-row *ngFor="let placeholder of [1, 2, 3, 4, 5, 6]" [columnCount]="9"></tr>
+          </ng-container>
+          <ng-container *ngIf="!isLoading">
+            <tr *ngFor="let arena of pagedArenas">
+              <td>{{ arena.id }}</td>
+              <td>{{ arena.name }}</td>
+              <td>{{ arena.city }}</td>
+              <td>{{ arena.sportType }}</td>
+              <td>{{ arena.address }}</td>
+              <td>{{ arena.pricePerHour }}</td>
+              <td>{{ arena.reservationCount }}</td>
+              <td>{{ arena.favoriteCount }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary me-1" [routerLink]="['/admin/arenas', arena.id, 'edit']">
+                  Edit
+                </a>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  [disabled]="isPending(arena)"
+                  (click)="deleteArena(arena)"
+                >
+                  <span *ngIf="isPending(arena)" class="spinner-border spinner-border-sm" role="status"></span>
+                  <span *ngIf="!isPending(arena)">Delete</span>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="!arenas.length">
+              <td colspan="9" class="text-center text-muted">No arenas found.</td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
 
@@ -130,7 +135,10 @@
       </div>
 
       <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary" [disabled]="isSaving">Save</button>
+        <button type="submit" class="btn btn-primary" [disabled]="isSaving">
+          <span *ngIf="isSaving" class="spinner-border spinner-border-sm" role="status"></span>
+          <span *ngIf="!isSaving">Save</span>
+        </button>
         <button type="button" class="btn btn-secondary cancel-button" (click)="cancelForm()">Cancel</button>
       </div>
     </form>
@@ -147,7 +155,8 @@
         [disabled]="!selectedFile || isUploadingPicture"
         (click)="uploadPicture()"
       >
-        Upload picture
+        <span *ngIf="isUploadingPicture" class="spinner-border spinner-border-sm" role="status"></span>
+        <span *ngIf="!isUploadingPicture">Upload picture</span>
       </button>
     </div>
   </ng-container>

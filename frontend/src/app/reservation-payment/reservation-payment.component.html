@@ -130,10 +130,21 @@
     </ng-container>
 
     <ng-template #stateBlock>
-      <section class="state-card details-card">
-        <p *ngIf="isLoading">{{ 'loading' | translate }}</p>
-        <p *ngIf="!isLoading">{{ errorMessage | translate }}</p>
-      </section>
+      <div class="payment-grid" *ngIf="isLoading; else errorBlock">
+        <section class="payment-card details-card">
+          <app-skeleton-text-block headingWidth="45%" [lineCount]="4"></app-skeleton-text-block>
+        </section>
+
+        <aside class="summary-card details-card">
+          <app-skeleton-text-block headingWidth="55%" [lineCount]="3"></app-skeleton-text-block>
+        </aside>
+      </div>
+
+      <ng-template #errorBlock>
+        <section class="state-card details-card">
+          <p>{{ errorMessage | translate }}</p>
+        </section>
+      </ng-template>
     </ng-template>
   </div>
 </div>

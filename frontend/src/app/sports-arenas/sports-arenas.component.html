@@ -17,9 +17,11 @@
             type="button"
             class="favorite-chip-remove"
             [attr.aria-label]="'removeFavorite' | translate"
+            [disabled]="removingFavoriteArenaId === favorite.arenaId"
             (click)="removeFavoriteArena(favorite, $event)"
           >
-            <i class="bi bi-heart-fill"></i>
+            <span *ngIf="removingFavoriteArenaId === favorite.arenaId" class="spinner-border spinner-border-sm" role="status"></span>
+            <i *ngIf="removingFavoriteArenaId !== favorite.arenaId" class="bi bi-heart-fill"></i>
           </button>
 
           <button type="button" class="favorite-chip-body" (click)="viewFavoriteDetails(favorite)">
@@ -126,37 +128,50 @@
       <p>{{ errorMessage | translate }}</p>
     </div>
 
-    <section class="results-card" *ngIf="pagedArenas.length && !errorMessage; else emptyArenasState">
-      <article class="result-row arena-row" *ngFor="let arena of pagedArenas">
-        <div class="result-main arena-main">
-          <div class="arena-image-shell">
-            <img
-              [src]="getArenaImageUrl(arena)"
-              [alt]="arena.name"
-              class="arena-image"
-            />
-          </div>
-
-          <div class="result-copy">
-            <h2>{{ arena.name }}</h2>
-            <p class="group-meta">{{ arena.city }}</p>
-            <p class="sport-meta">{{ arena.sportType | translate }}</p>
-            <p class="meta-text description-preview">{{ getDescriptionPreview(arena) | translate }}</p>
-          </div>
-        </div>
-
-        <div class="result-actions">
-          <button type="button" class="outline-button" (click)="viewDetails(arena)">
-            {{ 'viewDetails' | translate }}
-          </button>
-        </div>
-      </article>
+    <section class="results-card" *ngIf="isLoadingArenas; else arenaResults">
+      <app-skeleton-list-item
+        *ngFor="let placeholder of [1, 2, 3, 4, 5]"
+        avatarShape="square"
+        avatarWidth="168px"
+        avatarHeight="112px"
+        [lineWidths]="['50%', '28%', '22%', '75%']"
+        [actionWidths]="['140px']"
+        actionHeight="46px"
+      ></app-skeleton-list-item>
     </section>
+
+    <ng-template #arenaResults>
+      <section class="results-card" *ngIf="pagedArenas.length && !errorMessage; else emptyArenasState">
+        <article class="result-row arena-row" *ngFor="let arena of pagedArenas">
+          <div class="result-main arena-main">
+            <div class="arena-image-shell">
+              <img
+                [src]="getArenaImageUrl(arena)"
+                [alt]="arena.name"
+                class="arena-image"
+              />
+            </div>
+
+            <div class="result-copy">
+              <h2>{{ arena.name }}</h2>
+              <p class="group-meta">{{ arena.city }}</p>
+              <p class="sport-meta">{{ arena.sportType | translate }}</p>
+              <p class="meta-text description-preview">{{ getDescriptionPreview(arena) | translate }}</p>
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <button type="button" class="outline-button" (click)="viewDetails(arena)">
+              {{ 'viewDetails' | translate }}
+            </button>
+          </div>
+        </article>
+      </section>
+    </ng-template>
 
     <ng-template #emptyArenasState>
       <section class="empty-state" *ngIf="!errorMessage">
-        <p *ngIf="isLoadingArenas">{{ 'loading' | translate }}</p>
-        <p *ngIf="!isLoadingArenas">{{ 'noArenasFound' | translate }}</p>
+        <p>{{ 'noArenasFound' | translate }}</p>
       </section>
     </ng-template>
 

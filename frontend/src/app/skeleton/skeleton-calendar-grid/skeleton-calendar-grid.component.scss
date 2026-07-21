@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+.skeleton-calendar-grid {
+  display: grid;
+  gap: 0.75rem;
+  min-width: fit-content;
+  width: max-content;
+}
+
+.skeleton-grid-corner,
+.skeleton-day-card {
+  min-height: 4.4rem;
+}
+
+.skeleton-day-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  justify-content: center;
+  padding: 0.9rem 1rem;
+}
+
+.skeleton-time-label {
+  align-self: center;
+}
+
+.skeleton-slot {
+  min-height: 2.8rem;
+}
+
+@media (max-width: 767.98px) {
+  .skeleton-grid-corner,
+  .skeleton-day-card {
+    min-height: 3.35rem;
+  }
+
+  .skeleton-slot {
+    min-height: 2.1rem;
+  }
+}

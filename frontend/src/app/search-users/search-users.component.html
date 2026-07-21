@@ -91,7 +91,21 @@
       </p>
     </section>
 
-    <section class="results-card" *ngIf="pagedUsers.length; else emptyUsersState">
+    <section class="results-card" *ngIf="isLoadingUsers || (activeFilter === 'commonGroups' && isLoadingCommonGroups)">
+      <app-skeleton-list-item
+        *ngFor="let placeholder of [1, 2, 3, 4]"
+        avatarShape="circle"
+        avatarSize="88px"
+        [lineWidths]="['40%', '28%', '35%']"
+        [actionWidths]="['120px', '46px', '46px']"
+        actionHeight="46px"
+      ></app-skeleton-list-item>
+    </section>
+
+    <section
+      class="results-card"
+      *ngIf="!isLoadingUsers && !(activeFilter === 'commonGroups' && isLoadingCommonGroups) && pagedUsers.length; else emptyUsersState"
+    >
       <article class="result-row" *ngFor="let user of pagedUsers">
         <div class="result-main">
           <div class="avatar-shell">
@@ -126,9 +140,11 @@
               type="button"
               class="icon-button"
               [title]="'sendMessage' | translate"
+              [disabled]="isOpeningChat(user)"
               (click)="openPrivateChat($event, user)"
             >
-              <i class="bi bi-chat-dots"></i>
+              <span *ngIf="isOpeningChat(user)" class="spinner-border spinner-border-sm" role="status"></span>
+              <i *ngIf="!isOpeningChat(user)" class="bi bi-chat-dots"></i>
             </button>
             <button
               type="button"
@@ -156,12 +172,7 @@
 
     <ng-template #emptyUsersState>
       <section class="empty-state">
-        <p *ngIf="isLoadingUsers || (activeFilter === 'commonGroups' && isLoadingCommonGroups)">
-          {{ 'loading' | translate }}
-        </p>
-        <p *ngIf="!isLoadingUsers && !(activeFilter === 'commonGroups' && isLoadingCommonGroups)">
-          {{ 'noUsersFound' | translate }}
-        </p>
+        <p>{{ 'noUsersFound' | translate }}</p>
       </section>
     </ng-template>
 

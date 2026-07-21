@@ -2,11 +2,50 @@
 
 <main class="group-chat-page">
   <div class="chat-window">
-    <div *ngIf="isLoading" class="chat-state status-message">
-      {{ 'loading' | translate }}
+    <div *ngIf="isLoading" class="chat-layout">
+      <aside class="conversations-sidebar">
+        <div class="sidebar-header">
+          <p class="section-label">{{ 'messages' | translate }}</p>
+          <h2>{{ 'messages' | translate }}</h2>
+        </div>
+        <div class="conversation-list">
+          <div class="conversation-item" *ngFor="let placeholder of [1, 2, 3, 4]">
+            <div class="conversation-avatar-shell">
+              <app-skeleton [circle]="true" width="44px" height="44px"></app-skeleton>
+            </div>
+            <div class="conversation-item-content">
+              <app-skeleton width="70%" height="0.85rem" class="mb-1" style="display: block"></app-skeleton>
+              <app-skeleton width="90%" height="0.75rem" style="display: block"></app-skeleton>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="chat-shell">
+        <header class="chat-header">
+          <app-skeleton [circle]="true" width="52px" height="52px"></app-skeleton>
+          <div class="group-summary-text" style="flex: 1; min-width: 0;">
+            <app-skeleton width="30%" height="0.8rem" class="mb-1" style="display: block"></app-skeleton>
+            <app-skeleton width="45%" height="1.2rem" style="display: block"></app-skeleton>
+          </div>
+        </header>
+
+        <div class="messages-panel skeleton-messages-panel">
+          <div class="message-row" *ngFor="let bubble of skeletonBubbles" [ngClass]="{ 'own-message': bubble.own }">
+            <app-skeleton class="message-avatar" [circle]="true" width="36px" height="36px"></app-skeleton>
+            <app-skeleton [width]="bubble.width" height="2.5rem" radius="1rem"></app-skeleton>
+          </div>
+        </div>
+
+        <div class="chat-composer">
+          <div class="input-group">
+            <app-skeleton width="100%" height="40px" radius="var(--app-control-radius)"></app-skeleton>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <div *ngIf="errorMessage" class="chat-state alert alert-danger">
+    <div *ngIf="errorMessage" class="chat-state app-state-message">
       {{ errorMessage }}
     </div>
 
@@ -195,7 +234,8 @@
             />
             <app-chat-emoji-picker (emojiSelected)="insertEmoji($event)"></app-chat-emoji-picker>
             <button type="submit" class="btn btn-primary" [disabled]="!canSendMessage()">
-              <i class="bi bi-send"></i>
+              <span *ngIf="isSending" class="spinner-border spinner-border-sm" role="status"></span>
+              <i *ngIf="!isSending" class="bi bi-send"></i>
               <span class="send-button-label">
                 {{ (isSending ? 'sending' : 'send') | translate }}
               </span>

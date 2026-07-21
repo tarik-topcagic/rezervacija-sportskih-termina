@@ -1,46 +1,92 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './home/home.component';
-import { RegisterComponent } from './register/register.component';
-import { LoginComponent } from './login/login.component';
-import { DashboardComponent } from './dashboard/dashboard.component';
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
-import { ProfileComponent } from './profile/profile.component';
-import { ProfileEditComponent } from './profile-edit/profile-edit.component';
 import { PendingChangesGuard } from './guards/pending-changes.guard';
-import { SearchUsersComponent } from './search-users/search-users.component';
-import { UserProfileComponent } from './user-profile/user-profile.component';
-import { SearchGroupsComponent } from './search-groups/search-groups.component';
-import { SportsArenasComponent } from './sports-arenas/sports-arenas.component';
-import { SettingsComponent } from './settings/settings.component';
-import { GroupDetailsComponent } from './group-details/group-details.component';
-import { NotificationsComponent } from './notifications/notifications.component';
-import { ArenaDetailsComponent } from './arena-details/arena-details.component';
-import { ReservationPaymentComponent } from './reservation-payment/reservation-payment.component';
-import { MyReservationsComponent } from './my-reservations/my-reservations.component';
 
 export const routes: Routes = [
-    { path: '', component: HomeComponent },
-    { path: 'register', component: RegisterComponent },
-    { path: 'login', component: LoginComponent },
-    { path: 'home', component: DashboardComponent, canActivate: [AuthGuard] },
-    { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
-    { path: 'profile/edit', component: ProfileEditComponent, canActivate: [AuthGuard], canDeactivate: [PendingChangesGuard] },
-    { path: 'settings', component: SettingsComponent, canActivate: [AuthGuard] },
-    { path: 'users', component: SearchUsersComponent, canActivate: [AuthGuard] },
-    { path: 'users/:username', component: UserProfileComponent, canActivate: [AuthGuard] },
-    { path: 'sports-arenas', component: SportsArenasComponent, canActivate: [AuthGuard] },
-    { path: 'sports-arenas/:id', component: ArenaDetailsComponent, canActivate: [AuthGuard] },
-    { path: 'payment', component: ReservationPaymentComponent, canActivate: [AuthGuard] },
-    { path: 'my-reservations', component: MyReservationsComponent, canActivate: [AuthGuard] },
-    { path: 'groups', component: SearchGroupsComponent, canActivate: [AuthGuard] },
-    { path: 'groups/:id', component: GroupDetailsComponent, canActivate: [AuthGuard] },
+    {
+      path: '',
+      loadComponent: () => import('./home/home.component').then((module) => module.HomeComponent),
+    },
+    {
+      path: 'register',
+      loadComponent: () => import('./register/register.component').then((module) => module.RegisterComponent),
+    },
+    {
+      path: 'login',
+      loadComponent: () => import('./login/login.component').then((module) => module.LoginComponent),
+    },
+    {
+      path: 'home',
+      loadComponent: () => import('./dashboard/dashboard.component').then((module) => module.DashboardComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'profile',
+      loadComponent: () => import('./profile/profile.component').then((module) => module.ProfileComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'profile/edit',
+      loadComponent: () => import('./profile-edit/profile-edit.component').then((module) => module.ProfileEditComponent),
+      canActivate: [AuthGuard],
+      canDeactivate: [PendingChangesGuard],
+    },
+    {
+      path: 'settings',
+      loadComponent: () => import('./settings/settings.component').then((module) => module.SettingsComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'users',
+      loadComponent: () => import('./search-users/search-users.component').then((module) => module.SearchUsersComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'users/:username',
+      loadComponent: () => import('./user-profile/user-profile.component').then((module) => module.UserProfileComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'sports-arenas',
+      loadComponent: () => import('./sports-arenas/sports-arenas.component').then((module) => module.SportsArenasComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'sports-arenas/:id',
+      loadComponent: () => import('./arena-details/arena-details.component').then((module) => module.ArenaDetailsComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'payment',
+      loadComponent: () => import('./reservation-payment/reservation-payment.component').then((module) => module.ReservationPaymentComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'my-reservations',
+      loadComponent: () => import('./my-reservations/my-reservations.component').then((module) => module.MyReservationsComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'groups',
+      loadComponent: () => import('./search-groups/search-groups.component').then((module) => module.SearchGroupsComponent),
+      canActivate: [AuthGuard],
+    },
+    {
+      path: 'groups/:id',
+      loadComponent: () => import('./group-details/group-details.component').then((module) => module.GroupDetailsComponent),
+      canActivate: [AuthGuard],
+    },
     {
       path: 'groups/:id/chat',
       loadComponent: () => import('./group-chat/group-chat.component').then((module) => module.GroupChatComponent),
       canActivate: [AuthGuard],
     },
-    { path: 'notifications', component: NotificationsComponent, canActivate: [AuthGuard] },
+    {
+      path: 'notifications',
+      loadComponent: () => import('./notifications/notifications.component').then((module) => module.NotificationsComponent),
+      canActivate: [AuthGuard],
+    },
     {
       path: 'messages',
       loadComponent: () => import('./messages/messages.component').then((module) => module.MessagesComponent),

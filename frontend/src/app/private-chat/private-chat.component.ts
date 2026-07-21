@@ -42,10 +42,12 @@ import { insertTextAtSelection } from '../helpers/chat-input.helper';
 import { ChatEmojiPickerComponent } from '../chat-emoji-picker/chat-emoji-picker.component';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonComponent } from '../skeleton/skeleton/skeleton.component';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-private-chat',
-  imports: [DatePipe, NgIf, NgFor, NgClass, FormsModule, RouterLink, NavbarComponent, TranslatePipe, ChatEmojiPickerComponent],
+  imports: [DatePipe, NgIf, NgFor, NgClass, FormsModule, RouterLink, NavbarComponent, TranslatePipe, ChatEmojiPickerComponent, SkeletonComponent],
   templateUrl: './private-chat.component.html',
   styleUrl: './private-chat.component.scss',
 })
@@ -61,6 +63,11 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   messageText = '';
   isLoading = true;
   isSending = false;
+  readonly skeletonBubbles = [
+    { width: '55%', own: false },
+    { width: '40%', own: true },
+    { width: '65%', own: false },
+  ];
   showScrollToBottomButton = false;
   errorMessage = '';
   isOtherUserOnline = false;
@@ -97,6 +104,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     private languageService: LanguageService,
     private presenceService: PresenceService,
     private groupService: GroupService,
+    private toastService: ToastService,
   ) {}
 
   ngOnInit(): void {
@@ -194,7 +202,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (error) => {
         this.isSending = false;
-        this.errorMessage = this.languageService.translate('privateChatSendError');
+        this.toastService.showError(this.languageService.translate('privateChatSendError'));
         console.error('Error sending private chat message:', error);
       },
     });

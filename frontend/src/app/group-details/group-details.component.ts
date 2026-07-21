@@ -15,6 +15,7 @@ import { GroupMembersModalComponent } from '../group-members-modal/group-members
 import { GroupPresence } from '../interfaces/group-presence.model';
 import { UserPresence } from '../interfaces/user-presence.model';
 import { ToastService } from '../../services/toast.service';
+import { SkeletonComponent } from '../skeleton/skeleton/skeleton.component';
 import {
   cancelGroupAccessRequest,
   requestGroupAccess,
@@ -23,7 +24,18 @@ import {
 
 @Component({
   selector: 'app-group-details',
-  imports: [DatePipe, NgIf, RouterLink, NavbarComponent, TranslatePipe, EditGroupModalComponent, GroupInviteMembersModalComponent, GroupMembersModalComponent],
+  imports: [
+    DatePipe,
+    NgIf,
+    NgFor,
+    RouterLink,
+    NavbarComponent,
+    TranslatePipe,
+    EditGroupModalComponent,
+    GroupInviteMembersModalComponent,
+    GroupMembersModalComponent,
+    SkeletonComponent,
+  ],
   templateUrl: './group-details.component.html',
   styleUrl: './group-details.component.scss'
 })
@@ -34,6 +46,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   isRequestingAccess = false;
   isCancelingAccessRequest = false;
   isRespondingToInvitation = false;
+  isLeavingGroup = false;
   showEditGroupModal = false;
   showInviteMembersModal = false;
   showMembersModal = false;
@@ -210,7 +223,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   }
 
   async leaveGroup(): Promise<void> {
-    if (!this.group || this.group.isAdmin || !this.group.isMember) {
+    if (!this.group || this.group.isAdmin || !this.group.isMember || this.isLeavingGroup) {
       return;
     }
 
@@ -220,9 +233,11 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
 
     const currentUserId = this.group.currentUserId;
     this.isMemberMenuOpen = false;
+    this.isLeavingGroup = true;
 
     this.groupService.removeMember(this.group.id, currentUserId).subscribe(
       () => {
+        this.isLeavingGroup = false;
         this.group = this.group
           ? {
               ...this.group,
@@ -234,6 +249,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
         this.toastService.showSuccess(this.languageService.translate('leftGroup'));
       },
       (error) => {
+        this.isLeavingGroup = false;
         this.toastService.showError(this.languageService.translate('leaveGroupError'));
         console.error('Error leaving group:', error);
       },
@@ -246,6 +262,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     this.isRequestingAccess = false;
     this.isCancelingAccessRequest = false;
     this.isRespondingToInvitation = false;
+    this.isLeavingGroup = false;
     this.showEditGroupModal = false;
     this.showInviteMembersModal = false;
     this.showMembersModal = false;

@@ -12,6 +12,7 @@ import { Arena } from '../interfaces/arena.model';
 import { FavoriteArena } from '../interfaces/favorite-arena.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonListItemComponent } from '../skeleton/skeleton-list-item/skeleton-list-item.component';
 import { ArenaService } from '../../services/arena.service';
 import { FavoriteArenaService } from '../../services/favorite-arena.service';
 import { LanguageService } from '../../services/language.service';
@@ -19,7 +20,7 @@ import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-sports-arenas',
-  imports: [NgIf, NgFor, NgClass, FormsModule, NavbarComponent, TranslatePipe],
+  imports: [NgIf, NgFor, NgClass, FormsModule, NavbarComponent, TranslatePipe, SkeletonListItemComponent],
   templateUrl: './sports-arenas.component.html',
   styleUrl: './sports-arenas.component.scss',
 })
@@ -49,6 +50,7 @@ export class SportsArenasComponent implements OnInit {
   errorMessage = '';
 
   favoriteArenas: FavoriteArena[] = [];
+  removingFavoriteArenaId: number | null = null;
 
   currentPage = 1;
   pageSize = 6;
@@ -75,12 +77,20 @@ export class SportsArenasComponent implements OnInit {
   removeFavoriteArena(favorite: FavoriteArena, event: Event): void {
     event.stopPropagation();
 
+    if (this.removingFavoriteArenaId !== null) {
+      return;
+    }
+
+    this.removingFavoriteArenaId = favorite.arenaId;
+
     this.favoriteArenaService.removeFavorite(favorite.arenaId).subscribe({
       next: () => {
+        this.removingFavoriteArenaId = null;
         this.favoriteArenas = this.favoriteArenas.filter((f) => f.arenaId !== favorite.arenaId);
         this.toastService.showSuccess(this.languageService.translate('removedFromFavorites'));
       },
       error: (error) => {
+        this.removingFavoriteArenaId = null;
         console.error('Error removing favorite arena:', error);
         this.toastService.showError(this.languageService.translate('removeFavoriteError'));
       },

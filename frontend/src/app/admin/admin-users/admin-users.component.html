@@ -23,10 +23,9 @@
     </div>
   </form>
 
-  <div *ngIf="isLoading" class="text-muted">Loading...</div>
-  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+  <div *ngIf="errorMessage" class="app-state-message">{{ errorMessage }}</div>
 
-  <div class="table-responsive" *ngIf="!isLoading && !errorMessage">
+  <div class="table-responsive" *ngIf="!errorMessage">
     <table class="table table-striped align-middle">
       <thead>
         <tr>
@@ -41,38 +40,44 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let user of pagedUsers">
-          <td>{{ user.id }}</td>
-          <td>{{ user.fullName }}</td>
-          <td>{{ user.userName || '-' }}</td>
-          <td>{{ user.email || '-' }}</td>
-          <td>
-            <span class="badge text-bg-secondary me-1" *ngFor="let role of user.roles">{{ role }}</span>
-            <span *ngIf="!user.roles.length" class="text-muted">-</span>
-          </td>
-          <td>
-            <span class="badge" [class.text-bg-danger]="isLocked(user)" [class.text-bg-success]="!isLocked(user)">
-              {{ isLocked(user) ? 'Locked' : 'Active' }}
-            </span>
-          </td>
-          <td>{{ user.createdAt ? (user.createdAt | date: 'short') : '-' }}</td>
-          <td>
-            <button
-              type="button"
-              class="btn btn-sm"
-              [class.btn-outline-danger]="!isLocked(user)"
-              [class.btn-outline-success]="isLocked(user)"
-              [disabled]="isPending(user) || (!isLocked(user) && isSelf(user))"
-              [title]="!isLocked(user) && isSelf(user) ? 'You cannot lock your own account' : ''"
-              (click)="toggleLock(user)"
-            >
-              {{ isLocked(user) ? 'Unlock' : 'Lock' }}
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="!users.length">
-          <td colspan="8" class="text-center text-muted">No users found.</td>
-        </tr>
+        <ng-container *ngIf="isLoading">
+          <tr app-skeleton-row *ngFor="let placeholder of [1, 2, 3, 4, 5, 6]" [columnCount]="8"></tr>
+        </ng-container>
+        <ng-container *ngIf="!isLoading">
+          <tr *ngFor="let user of pagedUsers">
+            <td>{{ user.id }}</td>
+            <td>{{ user.fullName }}</td>
+            <td>{{ user.userName || '-' }}</td>
+            <td>{{ user.email || '-' }}</td>
+            <td>
+              <span class="badge text-bg-secondary me-1" *ngFor="let role of user.roles">{{ role }}</span>
+              <span *ngIf="!user.roles.length" class="text-muted">-</span>
+            </td>
+            <td>
+              <span class="badge" [class.text-bg-danger]="isLocked(user)" [class.text-bg-success]="!isLocked(user)">
+                {{ isLocked(user) ? 'Locked' : 'Active' }}
+              </span>
+            </td>
+            <td>{{ user.createdAt ? (user.createdAt | date: 'short') : '-' }}</td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-outline-danger]="!isLocked(user)"
+                [class.btn-outline-success]="isLocked(user)"
+                [disabled]="isPending(user) || (!isLocked(user) && isSelf(user))"
+                [title]="!isLocked(user) && isSelf(user) ? 'You cannot lock your own account' : ''"
+                (click)="toggleLock(user)"
+              >
+                <span *ngIf="isPending(user)" class="spinner-border spinner-border-sm" role="status"></span>
+                <span *ngIf="!isPending(user)">{{ isLocked(user) ? 'Unlock' : 'Lock' }}</span>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!users.length">
+            <td colspan="8" class="text-center text-muted">No users found.</td>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
 

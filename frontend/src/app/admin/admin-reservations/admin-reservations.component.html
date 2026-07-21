@@ -23,10 +23,9 @@
     </div>
   </form>
 
-  <div *ngIf="isLoading" class="text-muted">Loading...</div>
-  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+  <div *ngIf="errorMessage" class="app-state-message">{{ errorMessage }}</div>
 
-  <div class="table-responsive" *ngIf="!isLoading && !errorMessage">
+  <div class="table-responsive" *ngIf="!errorMessage">
     <table class="table table-striped align-middle">
       <thead>
         <tr>
@@ -41,33 +40,39 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let reservation of pagedReservations">
-          <td>{{ reservation.id }}</td>
-          <td>{{ reservation.arenaName }}</td>
-          <td>{{ reservation.username }}</td>
-          <td>{{ reservation.startTime | date: 'short' }}</td>
-          <td>{{ reservation.endTime | date: 'short' }}</td>
-          <td>{{ reservation.durationInHours }}</td>
-          <td>
-            <span class="badge" [class.text-bg-success]="reservation.status === 'Confirmed'" [class.text-bg-secondary]="reservation.status === 'Cancelled'">
-              {{ reservation.status }}
-            </span>
-          </td>
-          <td class="text-end">
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-danger"
-              *ngIf="canCancel(reservation)"
-              [disabled]="isPending(reservation)"
-              (click)="cancelReservation(reservation)"
-            >
-              Cancel
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="!reservations.length">
-          <td colspan="8" class="text-center text-muted">No reservations found.</td>
-        </tr>
+        <ng-container *ngIf="isLoading">
+          <tr app-skeleton-row *ngFor="let placeholder of [1, 2, 3, 4, 5, 6]" [columnCount]="8"></tr>
+        </ng-container>
+        <ng-container *ngIf="!isLoading">
+          <tr *ngFor="let reservation of pagedReservations">
+            <td>{{ reservation.id }}</td>
+            <td>{{ reservation.arenaName }}</td>
+            <td>{{ reservation.username }}</td>
+            <td>{{ reservation.startTime | date: 'short' }}</td>
+            <td>{{ reservation.endTime | date: 'short' }}</td>
+            <td>{{ reservation.durationInHours }}</td>
+            <td>
+              <span class="badge" [class.text-bg-success]="reservation.status === 'Confirmed'" [class.text-bg-secondary]="reservation.status === 'Cancelled'">
+                {{ reservation.status }}
+              </span>
+            </td>
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                *ngIf="canCancel(reservation)"
+                [disabled]="isPending(reservation)"
+                (click)="cancelReservation(reservation)"
+              >
+                <span *ngIf="isPending(reservation)" class="spinner-border spinner-border-sm" role="status"></span>
+                <span *ngIf="!isPending(reservation)">Cancel</span>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!reservations.length">
+            <td colspan="8" class="text-center text-muted">No reservations found.</td>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
 

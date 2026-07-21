@@ -41,10 +41,12 @@ import { UserPresence } from '../interfaces/user-presence.model';
 import { ChatEmojiPickerComponent } from '../chat-emoji-picker/chat-emoji-picker.component';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { SkeletonComponent } from '../skeleton/skeleton/skeleton.component';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-group-chat',
-  imports: [DatePipe, NgIf, NgFor, NgClass, FormsModule, RouterLink, NavbarComponent, TranslatePipe, ChatEmojiPickerComponent],
+  imports: [DatePipe, NgIf, NgFor, NgClass, FormsModule, RouterLink, NavbarComponent, TranslatePipe, ChatEmojiPickerComponent, SkeletonComponent],
   templateUrl: './group-chat.component.html',
   styleUrl: './group-chat.component.scss',
 })
@@ -59,6 +61,11 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   messageText = '';
   isLoading = true;
   isSending = false;
+  readonly skeletonBubbles = [
+    { width: '55%', own: false },
+    { width: '40%', own: true },
+    { width: '65%', own: false },
+  ];
   showScrollToBottomButton = false;
   errorMessage = '';
   onlineMemberUserIds = new Set<string>();
@@ -92,6 +99,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     private groupChatNotificationService: GroupChatNotificationService,
     private languageService: LanguageService,
     private presenceService: PresenceService,
+    private toastService: ToastService,
   ) {}
 
   ngOnInit(): void {
@@ -190,7 +198,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (error) => {
         this.isSending = false;
-        this.errorMessage = this.languageService.translate('groupChatSendError');
+        this.toastService.showError(this.languageService.translate('groupChatSendError'));
         console.error('Error sending group chat message:', error);
       },
     });

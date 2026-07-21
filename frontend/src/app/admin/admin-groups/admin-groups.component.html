@@ -19,10 +19,9 @@
     </div>
   </form>
 
-  <div *ngIf="isLoading" class="text-muted">Loading...</div>
-  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+  <div *ngIf="errorMessage" class="app-state-message">{{ errorMessage }}</div>
 
-  <div class="table-responsive" *ngIf="!isLoading && !errorMessage">
+  <div class="table-responsive" *ngIf="!errorMessage">
     <table class="table table-striped align-middle">
       <thead>
         <tr>
@@ -38,35 +37,41 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let group of pagedGroups">
-          <td>{{ group.id }}</td>
-          <td>{{ group.name }}</td>
-          <td>{{ group.adminDisplayName || '-' }}</td>
-          <td>{{ group.adminUsername || '-' }}</td>
-          <td>{{ group.grad }}</td>
-          <td>{{ group.kategorijaSporta }}</td>
-          <td>{{ group.membersCount ?? '-' }}</td>
-          <td>{{ group.dateCreated | date: 'short' }}</td>
-          <td class="text-end">
-            <button type="button" class="btn btn-sm btn-outline-secondary me-1" (click)="openMembers(group)">
-              Members
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="openEdit(group)">
-              Edit
-            </button>
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-danger"
-              [disabled]="isPending(group)"
-              (click)="deleteGroup(group)"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="!groups.length">
-          <td colspan="9" class="text-center text-muted">No groups found.</td>
-        </tr>
+        <ng-container *ngIf="isLoading">
+          <tr app-skeleton-row *ngFor="let placeholder of [1, 2, 3, 4, 5, 6]" [columnCount]="9"></tr>
+        </ng-container>
+        <ng-container *ngIf="!isLoading">
+          <tr *ngFor="let group of pagedGroups">
+            <td>{{ group.id }}</td>
+            <td>{{ group.name }}</td>
+            <td>{{ group.adminDisplayName || '-' }}</td>
+            <td>{{ group.adminUsername || '-' }}</td>
+            <td>{{ group.grad }}</td>
+            <td>{{ group.kategorijaSporta }}</td>
+            <td>{{ group.membersCount ?? '-' }}</td>
+            <td>{{ group.dateCreated | date: 'short' }}</td>
+            <td class="text-end">
+              <button type="button" class="btn btn-sm btn-outline-secondary me-1" (click)="openMembers(group)">
+                Members
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="openEdit(group)">
+                Edit
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                [disabled]="isPending(group)"
+                (click)="deleteGroup(group)"
+              >
+                <span *ngIf="isPending(group)" class="spinner-border spinner-border-sm" role="status"></span>
+                <span *ngIf="!isPending(group)">Delete</span>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!groups.length">
+            <td colspan="9" class="text-center text-muted">No groups found.</td>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
 
@@ -136,7 +141,15 @@
       </button>
     </div>
 
-    <div *ngIf="isLoadingMembers" class="text-muted">Loading...</div>
+    <div *ngIf="isLoadingMembers" class="admin-members-skeleton">
+      <app-skeleton-list-item
+        *ngFor="let placeholder of [1, 2, 3]"
+        [showAvatar]="false"
+        [lineWidths]="['60%']"
+        [actionCount]="1"
+        actionWidth="80px"
+      ></app-skeleton-list-item>
+    </div>
 
     <ul class="list-group" *ngIf="membersGroup">
       <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let member of membersGroup.members">
@@ -150,7 +163,8 @@
           [disabled]="isRemovingMember(member)"
           (click)="removeMember(member)"
         >
-          Remove
+          <span *ngIf="isRemovingMember(member)" class="spinner-border spinner-border-sm" role="status"></span>
+          <span *ngIf="!isRemovingMember(member)">Remove</span>
         </button>
       </li>
       <li class="list-group-item text-center text-muted" *ngIf="!membersGroup.members.length">

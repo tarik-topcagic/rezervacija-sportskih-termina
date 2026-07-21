@@ -19,6 +19,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   };
   errorMessageKey: string = '';
   passwordVisible: boolean = false;
+  isLoading = false;
 
   constructor(
     private authService: AuthService,
@@ -30,14 +31,18 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   login() {
+    this.isLoading = true;
+
     this.authService.login(this.loginModel).subscribe(
       (user) => {
         this.languageService.syncLanguageFromBackend().subscribe(() => {
+          this.isLoading = false;
           this.router.navigate(['/home']);
           console.log('Login successful');
         });
       },
       (error) => {
+        this.isLoading = false;
         console.error('Login error:', error);
         this.errorMessageKey = 'invalidLogin';
       }
