@@ -96,10 +96,26 @@ namespace SportskiTerminiAPI.Repositories
         public async Task<IReadOnlyList<PrivateMessage>> GetMessagesForConversationAsync(int conversationId)
         {
             return await _context.PrivateMessages
-                .Where(message => message.ConversationId == conversationId)
+                .Where(message => message.ConversationId == conversationId && !message.IsDeleted)
                 .Include(message => message.SenderUser)
+                .Include(message => message.Reactions)
+                    .ThenInclude(reaction => reaction.User)
+                .Include(message => message.ReplyToMessage)
+                    .ThenInclude(replyToMessage => replyToMessage!.SenderUser)
                 .OrderBy(message => message.CreatedAt)
                 .ToListAsync();
+        }
+
+        public async Task<PrivateMessage?> GetMessageByIdAsync(int conversationId, int messageId)
+        {
+            return await _context.PrivateMessages
+                .Where(message => message.ConversationId == conversationId && message.Id == messageId && !message.IsDeleted)
+                .Include(message => message.SenderUser)
+                .Include(message => message.Reactions)
+                    .ThenInclude(reaction => reaction.User)
+                .Include(message => message.ReplyToMessage)
+                    .ThenInclude(replyToMessage => replyToMessage!.SenderUser)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<PrivateMessage> CreateMessageAsync(PrivateMessage message)
@@ -110,6 +126,20 @@ namespace SportskiTerminiAPI.Repositories
             await _context.Entry(message)
                 .Reference(savedMessage => savedMessage.SenderUser)
                 .LoadAsync();
+
+            if (message.ReplyToMessageId.HasValue)
+            {
+                await _context.Entry(message)
+                    .Reference(savedMessage => savedMessage.ReplyToMessage)
+                    .LoadAsync();
+
+                if (message.ReplyToMessage != null)
+                {
+                    await _context.Entry(message.ReplyToMessage)
+                        .Reference(replyToMessage => replyToMessage.SenderUser)
+                        .LoadAsync();
+                }
+            }
 
             return message;
         }
@@ -387,6 +417,70 @@ namespace SportskiTerminiAPI.Repositories
             await _context.SaveChangesAsync();
 
             return changes;
+        }
+
+        public async Task SoftDeleteMessageAsync(PrivateMessage message)
+        {
+            message.IsDeleted = true;
+            message.DeletedAt = DateTime.UtcNow;
+            message.MessageText = string.Empty;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task SetMessagePinnedAsync(PrivateMessage message, bool isPinned, DateTime? pinnedAt)
+        {
+            message.IsPinned = isPinned;
+            message.PinnedAt = pinnedAt;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IReadOnlyList<PrivateMessageReaction>> AddOrUpdateReactionAsync(int messageId, string userId, string emoji)
+        {
+            var existingReaction = await _context.PrivateMessageReactions
+                .FirstOrDefaultAsync(reaction => reaction.PrivateMessageId == messageId && reaction.UserId == userId);
+
+            if (existingReaction == null)
+            {
+                _context.PrivateMessageReactions.Add(new PrivateMessageReaction
+                {
+                    PrivateMessageId = messageId,
+                    UserId = userId,
+                    Emoji = emoji,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                existingReaction.Emoji = emoji;
+                existingReaction.CreatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return await GetReactionsForMessageAsync(messageId);
+        }
+
+        public async Task<IReadOnlyList<PrivateMessageReaction>> RemoveReactionAsync(int messageId, string userId)
+        {
+            var existingReaction = await _context.PrivateMessageReactions
+                .FirstOrDefaultAsync(reaction => reaction.PrivateMessageId == messageId && reaction.UserId == userId);
+
+            if (existingReaction != null)
+            {
+                _context.PrivateMessageReactions.Remove(existingReaction);
+                await _context.SaveChangesAsync();
+            }
+
+            return await GetReactionsForMessageAsync(messageId);
+        }
+
+        private async Task<IReadOnlyList<PrivateMessageReaction>> GetReactionsForMessageAsync(int messageId)
+        {
+            return await _context.PrivateMessageReactions
+                .Where(reaction => reaction.PrivateMessageId == messageId)
+                .Include(reaction => reaction.User)
+                .OrderBy(reaction => reaction.CreatedAt)
+                .ToListAsync();
         }
     }
 }

@@ -12,5 +12,12 @@ namespace SportskiTerminiAPI.DTOs
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? DeliveredAt { get; set; }
         public DateTimeOffset? SeenAt { get; set; }
+        public bool IsPinned { get; set; }
+        public DateTimeOffset? PinnedAt { get; set; }
+        public int? ReplyToMessageId { get; set; }
+        public string? ReplyToSenderName { get; set; }
+        public string? ReplyToMessageTextPreview { get; set; }
+        public bool ReplyToIsDeleted { get; set; }
+        public List<MessageReactionDto> Reactions { get; set; } = new();
     }
 }

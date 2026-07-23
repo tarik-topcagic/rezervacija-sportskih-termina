@@ -16,5 +16,9 @@ namespace SportskiTerminiAPI.Interfaces
         Task<MessageStatusChange?> MarkMessageDeliveredAsync(int groupId, int messageId, string userId, DateTime deliveredAt);
         Task<IReadOnlyList<MessageStatusChange>> MarkMessageSeenAsync(int groupId, int messageId, string userId, DateTime seenAt);
         Task<IReadOnlyList<MessageStatusChange>> MarkMessagesSeenForGroupAsync(int groupId, string userId, DateTime seenAt);
+        Task SoftDeleteMessageAsync(GroupMessage message);
+        Task SetMessagePinnedAsync(GroupMessage message, bool isPinned, DateTime? pinnedAt);
+        Task<IReadOnlyList<GroupMessageReaction>> AddOrUpdateReactionAsync(int messageId, string userId, string emoji);
+        Task<IReadOnlyList<GroupMessageReaction>> RemoveReactionAsync(int messageId, string userId);
     }
 }

@@ -9,5 +9,7 @@ namespace SportskiTerminiAPI.DTOs
         public string SenderName { get; set; } = string.Empty;
         public string Preview { get; set; } = string.Empty;
         public DateTimeOffset CreatedAt { get; set; }
+        public string Kind { get; set; } = "message";
+        public string? ReactionEmoji { get; set; }
     }
 }

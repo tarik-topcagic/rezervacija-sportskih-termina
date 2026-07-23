@@ -1,0 +1,106 @@
+<div class="message-actions" *ngIf="!disabled">
+  <div class="action-triggers" *ngIf="activePopup !== 'mobile-combo'">
+    <button
+      #moreTriggerBtn
+      type="button"
+      class="action-trigger-btn"
+      [attr.aria-label]="'moreActions' | translate"
+      [attr.aria-expanded]="activePopup === 'more'"
+      (click)="toggleMore($event)"
+    >
+      <i class="bi bi-three-dots"></i>
+    </button>
+    <button
+      type="button"
+      class="action-trigger-btn"
+      [attr.aria-label]="'reply' | translate"
+      (click)="requestReply($event)"
+    >
+      <i class="bi bi-reply"></i>
+    </button>
+    <button
+      #reactionTriggerBtn
+      type="button"
+      class="action-trigger-btn"
+      [attr.aria-label]="'react' | translate"
+      [attr.aria-expanded]="activePopup === 'quick-reaction'"
+      (click)="toggleQuickReaction($event)"
+    >
+      <i class="bi bi-emoji-smile"></i>
+    </button>
+  </div>
+</div>
+
+<ng-template #moreMenuContent>
+  <button type="button" class="more-option" (click)="requestCopy($event)">
+    <span>{{ 'copy' | translate }}</span>
+    <i class="bi bi-clipboard"></i>
+  </button>
+  <button type="button" class="more-option" (click)="requestPin($event)">
+    <span>{{ (isPinned ? 'unpin' : 'pin') | translate }}</span>
+    <i class="bi" [ngClass]="isPinned ? 'bi-pin-angle-fill' : 'bi-pin-angle'"></i>
+  </button>
+  <button type="button" class="more-option danger" *ngIf="isOwnMessage" (click)="requestUnsend($event)">
+    <span>{{ 'unsend' | translate }}</span>
+    <i class="bi bi-arrow-counterclockwise"></i>
+  </button>
+</ng-template>
+
+<ng-template #quickReactionContent>
+  <button
+    type="button"
+    class="quick-emoji-btn"
+    *ngFor="let emoji of quickReactions"
+    [class.active]="emoji === currentUserReactionEmoji"
+    (click)="selectReaction(emoji, $event)"
+  >
+    {{ emoji }}
+  </button>
+  <button
+    type="button"
+    class="quick-emoji-more-btn"
+    [attr.aria-label]="'moreEmojis' | translate"
+    (click)="openWidePicker($event)"
+  >
+    <i class="bi bi-plus-lg"></i>
+  </button>
+</ng-template>
+
+<ng-template #moreMenuPopup>
+  <div class="popup more-popup" (click)="$event.stopPropagation()">
+    <ng-container [ngTemplateOutlet]="moreMenuContent"></ng-container>
+  </div>
+</ng-template>
+
+<ng-template #quickReactionPopup>
+  <div class="popup quick-reaction-popup" (click)="$event.stopPropagation()">
+    <ng-container [ngTemplateOutlet]="quickReactionContent"></ng-container>
+  </div>
+</ng-template>
+
+<ng-template #mobileComboPopup>
+  <div class="popup-stack" (click)="$event.stopPropagation()">
+    <div class="popup quick-reaction-popup stacked">
+      <ng-container [ngTemplateOutlet]="quickReactionContent"></ng-container>
+    </div>
+    <div class="popup more-popup stacked">
+      <ng-container [ngTemplateOutlet]="moreMenuContent"></ng-container>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #widePickerPopup>
+  <div class="popup wide-picker-popup" (click)="$event.stopPropagation()">
+    <div class="wide-picker-grid">
+      <button
+        type="button"
+        class="wide-emoji-btn"
+        *ngFor="let emoji of allEmojis"
+        [class.active]="emoji === currentUserReactionEmoji"
+        (click)="selectReaction(emoji, $event)"
+      >
+        {{ emoji }}
+      </button>
+    </div>
+  </div>
+</ng-template>

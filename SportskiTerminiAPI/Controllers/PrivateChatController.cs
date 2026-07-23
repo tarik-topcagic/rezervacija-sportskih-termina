@@ -72,5 +72,49 @@ namespace SportskiTerminiAPI.Controllers
             var result = await _privateChatService.CreateMessageForConversationAsync(senderUserId, conversationId, createPrivateMessageDto);
             return StatusCode(result.StatusCode, result.Payload);
         }
+
+        [HttpDelete("conversations/{conversationId:int}/messages/{messageId:int}")]
+        public async Task<IActionResult> DeletePrivateMessage(int conversationId, int messageId)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _privateChatService.DeletePrivateMessageAsync(userId, conversationId, messageId);
+            return StatusCode(result.StatusCode, result.Payload);
+        }
+
+        [HttpPost("conversations/{conversationId:int}/messages/{messageId:int}/pin")]
+        public async Task<IActionResult> SetPrivateMessagePinned(int conversationId, int messageId, [FromBody] SetMessagePinnedDto setMessagePinnedDto)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _privateChatService.SetPrivateMessagePinnedAsync(userId, conversationId, messageId, setMessagePinnedDto.IsPinned);
+            return StatusCode(result.StatusCode, result.Payload);
+        }
+
+        [HttpPost("conversations/{conversationId:int}/messages/{messageId:int}/reactions")]
+        public async Task<IActionResult> AddOrUpdatePrivateMessageReaction(int conversationId, int messageId, [FromBody] AddReactionDto addReactionDto)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _privateChatService.AddOrUpdatePrivateMessageReactionAsync(userId, conversationId, messageId, addReactionDto.Emoji);
+            return StatusCode(result.StatusCode, result.Payload);
+        }
+
+        [HttpDelete("conversations/{conversationId:int}/messages/{messageId:int}/reactions")]
+        public async Task<IActionResult> RemovePrivateMessageReaction(int conversationId, int messageId)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _privateChatService.RemovePrivateMessageReactionAsync(userId, conversationId, messageId);
+            return StatusCode(result.StatusCode, result.Payload);
+        }
     }
 }

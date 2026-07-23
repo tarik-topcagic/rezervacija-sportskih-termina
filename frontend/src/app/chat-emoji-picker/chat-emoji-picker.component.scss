@@ -127,5 +127,11 @@
 
   .emoji-picker-grid {
     grid-template-columns: repeat(7, minmax(0, 1fr));
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .emoji-picker-grid::-webkit-scrollbar {
+    display: none;
   }
 }

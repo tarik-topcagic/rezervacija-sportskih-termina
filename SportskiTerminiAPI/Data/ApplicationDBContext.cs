@@ -17,9 +17,11 @@ namespace SportskiTerminiAPI.Data
         public DbSet<GroupMembership> GroupMemberships { get; set; }
         public DbSet<GroupMessage> GroupMessages { get; set; }
         public DbSet<GroupMessageReceipt> GroupMessageReceipts { get; set; }
+        public DbSet<GroupMessageReaction> GroupMessageReactions { get; set; }
         public DbSet<GroupChatReadState> GroupChatReadStates { get; set; }
         public DbSet<PrivateConversation> PrivateConversations { get; set; }
         public DbSet<PrivateMessage> PrivateMessages { get; set; }
+        public DbSet<PrivateMessageReaction> PrivateMessageReactions { get; set; }
         public DbSet<PrivateChatReadState> PrivateChatReadStates { get; set; }
         public DbSet<AppNotification> Notifications { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
@@ -101,6 +103,28 @@ namespace SportskiTerminiAPI.Data
             modelBuilder.Entity<GroupMessage>()
                 .HasIndex(message => new { message.GroupId, message.CreatedAt });
 
+            modelBuilder.Entity<GroupMessage>()
+                .HasOne(message => message.ReplyToMessage)
+                .WithMany()
+                .HasForeignKey(message => message.ReplyToMessageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupMessageReaction>()
+                .HasOne(reaction => reaction.GroupMessage)
+                .WithMany(message => message.Reactions)
+                .HasForeignKey(reaction => reaction.GroupMessageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupMessageReaction>()
+                .HasOne(reaction => reaction.User)
+                .WithMany()
+                .HasForeignKey(reaction => reaction.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupMessageReaction>()
+                .HasIndex(reaction => new { reaction.GroupMessageId, reaction.UserId })
+                .IsUnique();
+
             modelBuilder.Entity<GroupMessageReceipt>()
                 .HasOne(receipt => receipt.GroupMessage)
                 .WithMany(message => message.Receipts)
@@ -163,6 +187,28 @@ namespace SportskiTerminiAPI.Data
 
             modelBuilder.Entity<PrivateMessage>()
                 .HasIndex(message => new { message.ConversationId, message.CreatedAt });
+
+            modelBuilder.Entity<PrivateMessage>()
+                .HasOne(message => message.ReplyToMessage)
+                .WithMany()
+                .HasForeignKey(message => message.ReplyToMessageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PrivateMessageReaction>()
+                .HasOne(reaction => reaction.PrivateMessage)
+                .WithMany(message => message.Reactions)
+                .HasForeignKey(reaction => reaction.PrivateMessageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PrivateMessageReaction>()
+                .HasOne(reaction => reaction.User)
+                .WithMany()
+                .HasForeignKey(reaction => reaction.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PrivateMessageReaction>()
+                .HasIndex(reaction => new { reaction.PrivateMessageId, reaction.UserId })
+                .IsUnique();
 
             modelBuilder.Entity<PrivateChatReadState>()
                 .HasOne(readState => readState.Conversation)

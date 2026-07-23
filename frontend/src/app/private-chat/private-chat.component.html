@@ -143,12 +143,63 @@
               </ng-template>
             </div>
 
-            <div class="message-bubble">
+            <div
+              class="message-bubble"
+              [class.failed-message]="isMessageFailed(message)"
+              [class.swiping]="isSwiping(message)"
+              [style.transform]="getSwipeOffset(message) ? 'translateX(' + getSwipeOffset(message) + 'px)' : null"
+              appLongPress
+              [longPressDisabled]="isMessageFailed(message)"
+              (longPress)="messageActionsRef.triggerMobileCombo()"
+              (doubleTap)="reactToMessage(message, '❤️')"
+              (dblclick)="onBubbleDoubleClick($event, message)"
+              (swipeProgress)="onSwipeProgress(message, $event)"
+              (swipeCompleted)="onSwipeCompleted(message, $event)"
+              (swipeCancelled)="onSwipeCancelled()"
+            >
+              <app-message-actions
+                #messageActionsRef
+                [disabled]="isMessageFailed(message)"
+                [isOwnMessage]="isOwnMessage(message)"
+                [isPinned]="!!message.isPinned"
+                [currentUserReactionEmoji]="getCurrentUserReactionEmoji(message)"
+                (copyRequested)="copyMessageText(message)"
+                (pinRequested)="requestPin(message)"
+                (unsendRequested)="requestUnsend(message)"
+                (replyRequested)="startReply(message)"
+                (reactionSelected)="reactToMessage(message, $event)"
+              ></app-message-actions>
+
+              <div *ngIf="message.replyToMessageId" class="reply-preview-block">
+                <span class="reply-preview-sender">
+                  {{ message.replyToIsDeleted ? ('messageUnavailable' | translate) : message.replyToSenderName }}
+                </span>
+                <span *ngIf="!message.replyToIsDeleted" class="reply-preview-text">{{ message.replyToMessageTextPreview }}</span>
+              </div>
+
               <div class="message-meta">
                 <strong>{{ message.senderFullName }}</strong>
                 <span>{{ message.createdAt | date:'dd.MM.yyyy. HH:mm' }}</span>
               </div>
               <p>{{ message.messageText }}</p>
+
+              <div *ngIf="message.reactions?.length" class="message-reactions">
+                <button
+                  type="button"
+                  class="reaction-chip"
+                  *ngFor="let group of getGroupedReactions(message)"
+                  [class.own]="group.isOwnReaction"
+                  [title]="group.userNames"
+                  (click)="reactToMessage(message, group.emoji)"
+                >
+                  {{ group.emoji }}<span *ngIf="group.count > 1" class="reaction-count">{{ group.count }}</span>
+                </button>
+              </div>
+
+              <span *ngIf="isMessageFailed(message)" class="failed-indicator" [title]="'messageFailedToSend' | translate">
+                <i class="bi bi-exclamation-circle"></i>
+              </span>
+
               <span *ngIf="shouldShowOwnMessageStatus(message)" class="message-status">
                 {{ getMessageStatusLabel(message) }}
               </span>
@@ -192,6 +243,21 @@
           <div class="typing-indicator-text">
             {{ getTypingIndicatorAvatarAlt() }} {{ 'isTyping' | translate }}
           </div>
+        </div>
+
+        <div *ngIf="replyTarget" class="reply-composer-strip">
+          <div class="reply-composer-content">
+            <span class="reply-composer-label">{{ 'replyingTo' | translate }} {{ replyTarget.senderFullName }}</span>
+            <span class="reply-composer-preview">{{ replyTarget.messageText }}</span>
+          </div>
+          <button
+            type="button"
+            class="reply-composer-cancel"
+            (click)="cancelReply()"
+            [attr.aria-label]="'cancelReply' | translate"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
 
         <form class="chat-composer" (ngSubmit)="sendMessage()">

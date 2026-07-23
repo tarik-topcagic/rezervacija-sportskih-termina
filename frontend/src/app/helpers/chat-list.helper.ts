@@ -8,6 +8,56 @@ export function getChatListItemKey(item: ChatInboxItem): string {
   return `${item.type}:${item.id}`;
 }
 
+/**
+ * Reaction notifications arrive from the backend with a raw sender name + emoji
+ * rather than pre-baked display text, the same way the typing indicator's "{count}
+ * users are typing..." works -- the backend can't localize since it doesn't know the
+ * viewer's language, so the frontend composes the final sentence via the translation
+ * key's {name}/{emoji} placeholders. Plain "new message" notifications already carry
+ * their own preview text and pass through unchanged.
+ */
+export function buildNotificationPreviewText(
+  notification: ChatMessageNotification,
+  translate: (key: string) => string,
+): string {
+  if (notification.kind !== 'reaction') {
+    return notification.preview;
+  }
+
+  return translate('reactedToYourMessage')
+    .replace('{name}', notification.senderName)
+    .replace('{emoji}', notification.reactionEmoji ?? '');
+}
+
+/**
+ * A fresh HTTP fetch of the inbox list derives its preview purely from the latest
+ * stored message per conversation/group — reactions aren't messages, so a refresh
+ * would silently clobber a real-time "X reacted to your message" preview with the
+ * stale message text. This re-applies any cached reaction overlay that's newer than
+ * what the fresh fetch returned for that item.
+ */
+export function mergeInboxItemsWithReactionOverlays(
+  freshItems: ChatInboxItem[],
+  overlaysByKey: Map<string, ChatInboxItem>,
+): ChatInboxItem[] {
+  return freshItems.map((item) => {
+    const overlay = overlaysByKey.get(getChatListItemKey(item));
+
+    if (!overlay || new Date(overlay.createdAt).getTime() <= new Date(item.createdAt).getTime()) {
+      return item;
+    }
+
+    return {
+      ...item,
+      subtitle: overlay.subtitle,
+      preview: overlay.preview,
+      createdAt: overlay.createdAt,
+      unreadCount: Math.max(item.unreadCount, overlay.unreadCount),
+      isRead: item.isRead && overlay.isRead,
+    };
+  });
+}
+
 export function createChatListHighlightedKeys(items: ChatInboxItem[]): Set<string> {
   return createHighlightedSet(
     items,

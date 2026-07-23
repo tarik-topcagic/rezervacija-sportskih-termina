@@ -51,12 +51,23 @@ namespace SportskiTerminiAPI.Services
             if (string.IsNullOrWhiteSpace(trimmedMessageText))
                 return ServiceResult.BadRequest("Message text is required");
 
+            int? replyToMessageId = null;
+            if (createGroupMessageDto.ReplyToMessageId.HasValue)
+            {
+                var replyToMessage = await _groupChatRepository.GetMessageByIdAsync(groupId, createGroupMessageDto.ReplyToMessageId.Value);
+                if (replyToMessage != null)
+                {
+                    replyToMessageId = replyToMessage.Id;
+                }
+            }
+
             var message = new GroupMessage
             {
                 GroupId = groupId,
                 SenderUserId = userId,
                 MessageText = trimmedMessageText,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                ReplyToMessageId = replyToMessageId
             };
 
             var createdMessage = await _groupChatRepository.CreateMessageAsync(message);
@@ -104,6 +115,155 @@ namespace SportskiTerminiAPI.Services
 
             var changes = await _groupChatRepository.MarkMessageSeenAsync(groupId, messageId, userId, DateTime.UtcNow);
             await BroadcastStatusUpdatesAsync(groupId, null, "group", changes);
+        }
+
+        public async Task<ServiceResult> DeleteGroupMessageAsync(string userId, int groupId, int messageId)
+        {
+            var group = await _groupRepository.GetGroupByIdAsync(groupId);
+            if (group == null)
+                return ServiceResult.NotFound("Group not found");
+
+            if (!CanAccessGroupChat(group, userId))
+                return ServiceResult.Forbid("Only accepted group members and admin can access group chat");
+
+            var message = await _groupChatRepository.GetMessageByIdAsync(groupId, messageId);
+            if (message == null)
+                return ServiceResult.NotFound("Message not found");
+
+            if (message.SenderUserId != userId)
+                return ServiceResult.Forbid("Only the sender can unsend this message");
+
+            await _groupChatRepository.SoftDeleteMessageAsync(message);
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetGroupChannelName(groupId.ToString()))
+                .SendAsync("ReceiveGroupMessageDeleted", new MessageDeletedDto
+                {
+                    MessageId = messageId,
+                    GroupId = groupId,
+                    ConversationId = null
+                });
+
+            return ServiceResult.Ok();
+        }
+
+        public async Task<ServiceResult> SetGroupMessagePinnedAsync(string userId, int groupId, int messageId, bool isPinned)
+        {
+            var group = await _groupRepository.GetGroupByIdAsync(groupId);
+            if (group == null)
+                return ServiceResult.NotFound("Group not found");
+
+            if (!CanAccessGroupChat(group, userId))
+                return ServiceResult.Forbid("Only accepted group members and admin can access group chat");
+
+            var message = await _groupChatRepository.GetMessageByIdAsync(groupId, messageId);
+            if (message == null)
+                return ServiceResult.NotFound("Message not found");
+
+            var pinnedAt = isPinned ? DateTime.UtcNow : (DateTime?)null;
+            await _groupChatRepository.SetMessagePinnedAsync(message, isPinned, pinnedAt);
+
+            var pinnedAtOffset = pinnedAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(pinnedAt.Value) : (DateTimeOffset?)null;
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetGroupChannelName(groupId.ToString()))
+                .SendAsync("ReceiveGroupMessagePinStateChanged", new MessagePinStateChangedDto
+                {
+                    MessageId = messageId,
+                    GroupId = groupId,
+                    ConversationId = null,
+                    IsPinned = isPinned,
+                    PinnedAt = pinnedAtOffset
+                });
+
+            return ServiceResult.Ok(new { isPinned, pinnedAt = pinnedAtOffset });
+        }
+
+        public async Task<ServiceResult> AddOrUpdateGroupMessageReactionAsync(string userId, int groupId, int messageId, string emoji)
+        {
+            var group = await _groupRepository.GetGroupByIdAsync(groupId);
+            if (group == null)
+                return ServiceResult.NotFound("Group not found");
+
+            if (!CanAccessGroupChat(group, userId))
+                return ServiceResult.Forbid("Only accepted group members and admin can access group chat");
+
+            var trimmedEmoji = emoji?.Trim();
+            if (string.IsNullOrWhiteSpace(trimmedEmoji))
+                return ServiceResult.BadRequest("Emoji is required");
+
+            var message = await _groupChatRepository.GetMessageByIdAsync(groupId, messageId);
+            if (message == null)
+                return ServiceResult.NotFound("Message not found");
+
+            var reactions = await _groupChatRepository.AddOrUpdateReactionAsync(messageId, userId, trimmedEmoji);
+            var reactionDtos = ToMessageReactionDtos(reactions);
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetGroupChannelName(groupId.ToString()))
+                .SendAsync("ReceiveGroupMessageReactionsChanged", new MessageReactionsChangedDto
+                {
+                    MessageId = messageId,
+                    GroupId = groupId,
+                    ConversationId = null,
+                    Reactions = reactionDtos
+                });
+
+            if (message.SenderUserId != userId)
+            {
+                var reactorReaction = reactions.FirstOrDefault(reaction => reaction.UserId == userId);
+                var reactorName = reactorReaction != null
+                    ? (!string.IsNullOrWhiteSpace(reactorReaction.User?.FullName)
+                        ? reactorReaction.User.FullName
+                        : reactorReaction.User?.UserName ?? string.Empty)
+                    : string.Empty;
+
+                await _hubContext.Clients
+                    .User(message.SenderUserId)
+                    .SendAsync("ReceiveMessageNotification", new ChatMessageNotificationDto
+                    {
+                        Type = "group",
+                        GroupId = groupId,
+                        ConversationId = null,
+                        SenderUserId = userId,
+                        SenderName = reactorName,
+                        Preview = $"{trimmedEmoji} Reacted to your message",
+                        CreatedAt = BosniaTimeHelper.ToSarajevoOffset(DateTime.UtcNow),
+                        Kind = "reaction",
+                        ReactionEmoji = trimmedEmoji
+                    });
+            }
+
+            return ServiceResult.Ok(reactionDtos);
+        }
+
+        public async Task<ServiceResult> RemoveGroupMessageReactionAsync(string userId, int groupId, int messageId)
+        {
+            var group = await _groupRepository.GetGroupByIdAsync(groupId);
+            if (group == null)
+                return ServiceResult.NotFound("Group not found");
+
+            if (!CanAccessGroupChat(group, userId))
+                return ServiceResult.Forbid("Only accepted group members and admin can access group chat");
+
+            var message = await _groupChatRepository.GetMessageByIdAsync(groupId, messageId);
+            if (message == null)
+                return ServiceResult.NotFound("Message not found");
+
+            var reactions = await _groupChatRepository.RemoveReactionAsync(messageId, userId);
+            var reactionDtos = ToMessageReactionDtos(reactions);
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetGroupChannelName(groupId.ToString()))
+                .SendAsync("ReceiveGroupMessageReactionsChanged", new MessageReactionsChangedDto
+                {
+                    MessageId = messageId,
+                    GroupId = groupId,
+                    ConversationId = null,
+                    Reactions = reactionDtos
+                });
+
+            return ServiceResult.Ok(reactionDtos);
         }
 
         private static bool CanAccessGroupChat(Group group, string userId)
@@ -189,8 +349,43 @@ namespace SportskiTerminiAPI.Services
                     .ToList(),
                 SeenByUserProfilePictureUrls = seenReceipts
                     .Select(receipt => receipt.User?.ProfilePictureUrl ?? "default-profile.png")
-                    .ToList()
+                    .ToList(),
+                IsPinned = message.IsPinned,
+                PinnedAt = message.PinnedAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(message.PinnedAt.Value) : null,
+                ReplyToMessageId = message.ReplyToMessageId,
+                ReplyToSenderName = message.ReplyToMessage != null
+                    ? (!string.IsNullOrWhiteSpace(message.ReplyToMessage.SenderUser?.FullName)
+                        ? message.ReplyToMessage.SenderUser.FullName
+                        : message.ReplyToMessage.SenderUser?.UserName ?? string.Empty)
+                    : null,
+                ReplyToMessageTextPreview = message.ReplyToMessage != null && !message.ReplyToMessage.IsDeleted
+                    ? TruncateMessagePreview(message.ReplyToMessage.MessageText)
+                    : null,
+                ReplyToIsDeleted = message.ReplyToMessage?.IsDeleted ?? false,
+                Reactions = ToMessageReactionDtos(message.Reactions.OrderBy(reaction => reaction.CreatedAt))
             };
+        }
+
+        private static List<MessageReactionDto> ToMessageReactionDtos(IEnumerable<GroupMessageReaction> reactions)
+        {
+            return reactions
+                .Select(reaction => new MessageReactionDto
+                {
+                    UserId = reaction.UserId,
+                    UserName = !string.IsNullOrWhiteSpace(reaction.User?.FullName)
+                        ? reaction.User.FullName
+                        : reaction.User?.UserName ?? string.Empty,
+                    Emoji = reaction.Emoji
+                })
+                .ToList();
+        }
+
+        private static string TruncateMessagePreview(string text, int maxLength = 120)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+                return text;
+
+            return text[..maxLength].TrimEnd() + "…";
         }
 
         private async Task BroadcastStatusUpdatesAsync(

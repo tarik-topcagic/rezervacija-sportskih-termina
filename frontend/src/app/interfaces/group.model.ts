@@ -1,3 +1,5 @@
+import { ChatMessageSendStatus, MessageReaction } from './message-reaction.model';
+
 export interface Group {
   id: number;
   name: string;
@@ -55,6 +57,15 @@ export interface GroupChatMessage {
   seenByUserIds?: string[];
   seenByUserNames?: string[];
   seenByUserProfilePictureUrls?: string[];
+  isPinned?: boolean;
+  pinnedAt?: Date | string | null;
+  replyToMessageId?: number | null;
+  replyToSenderName?: string | null;
+  replyToMessageTextPreview?: string | null;
+  replyToIsDeleted?: boolean;
+  reactions?: MessageReaction[];
+  clientTempId?: string;
+  sendStatus?: ChatMessageSendStatus;
 }
 
 export interface GroupMembership {

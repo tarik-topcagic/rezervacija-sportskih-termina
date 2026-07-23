@@ -19,10 +19,14 @@ namespace SportskiTerminiAPI.Repositories
         public async Task<IReadOnlyList<GroupMessage>> GetMessagesForGroupAsync(int groupId)
         {
             return await _context.GroupMessages
-                .Where(message => message.GroupId == groupId)
+                .Where(message => message.GroupId == groupId && !message.IsDeleted)
                 .Include(message => message.SenderUser)
                 .Include(message => message.Receipts)
                     .ThenInclude(receipt => receipt.User)
+                .Include(message => message.Reactions)
+                    .ThenInclude(reaction => reaction.User)
+                .Include(message => message.ReplyToMessage)
+                    .ThenInclude(replyToMessage => replyToMessage!.SenderUser)
                 .OrderBy(message => message.CreatedAt)
                 .ToListAsync();
         }
@@ -30,10 +34,14 @@ namespace SportskiTerminiAPI.Repositories
         public async Task<GroupMessage?> GetMessageByIdAsync(int groupId, int messageId)
         {
             return await _context.GroupMessages
-                .Where(message => message.GroupId == groupId && message.Id == messageId)
+                .Where(message => message.GroupId == groupId && message.Id == messageId && !message.IsDeleted)
                 .Include(message => message.SenderUser)
                 .Include(message => message.Receipts)
                     .ThenInclude(receipt => receipt.User)
+                .Include(message => message.Reactions)
+                    .ThenInclude(reaction => reaction.User)
+                .Include(message => message.ReplyToMessage)
+                    .ThenInclude(replyToMessage => replyToMessage!.SenderUser)
                 .FirstOrDefaultAsync();
         }
 
@@ -45,6 +53,20 @@ namespace SportskiTerminiAPI.Repositories
             await _context.Entry(message)
                 .Reference(savedMessage => savedMessage.SenderUser)
                 .LoadAsync();
+
+            if (message.ReplyToMessageId.HasValue)
+            {
+                await _context.Entry(message)
+                    .Reference(savedMessage => savedMessage.ReplyToMessage)
+                    .LoadAsync();
+
+                if (message.ReplyToMessage != null)
+                {
+                    await _context.Entry(message.ReplyToMessage)
+                        .Reference(replyToMessage => replyToMessage.SenderUser)
+                        .LoadAsync();
+                }
+            }
 
             return message;
         }
@@ -364,6 +386,70 @@ namespace SportskiTerminiAPI.Repositories
             await _context.SaveChangesAsync();
 
             return changes;
+        }
+
+        public async Task SoftDeleteMessageAsync(GroupMessage message)
+        {
+            message.IsDeleted = true;
+            message.DeletedAt = DateTime.UtcNow;
+            message.MessageText = string.Empty;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task SetMessagePinnedAsync(GroupMessage message, bool isPinned, DateTime? pinnedAt)
+        {
+            message.IsPinned = isPinned;
+            message.PinnedAt = pinnedAt;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IReadOnlyList<GroupMessageReaction>> AddOrUpdateReactionAsync(int messageId, string userId, string emoji)
+        {
+            var existingReaction = await _context.GroupMessageReactions
+                .FirstOrDefaultAsync(reaction => reaction.GroupMessageId == messageId && reaction.UserId == userId);
+
+            if (existingReaction == null)
+            {
+                _context.GroupMessageReactions.Add(new GroupMessageReaction
+                {
+                    GroupMessageId = messageId,
+                    UserId = userId,
+                    Emoji = emoji,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                existingReaction.Emoji = emoji;
+                existingReaction.CreatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return await GetReactionsForMessageAsync(messageId);
+        }
+
+        public async Task<IReadOnlyList<GroupMessageReaction>> RemoveReactionAsync(int messageId, string userId)
+        {
+            var existingReaction = await _context.GroupMessageReactions
+                .FirstOrDefaultAsync(reaction => reaction.GroupMessageId == messageId && reaction.UserId == userId);
+
+            if (existingReaction != null)
+            {
+                _context.GroupMessageReactions.Remove(existingReaction);
+                await _context.SaveChangesAsync();
+            }
+
+            return await GetReactionsForMessageAsync(messageId);
+        }
+
+        private async Task<IReadOnlyList<GroupMessageReaction>> GetReactionsForMessageAsync(int messageId)
+        {
+            return await _context.GroupMessageReactions
+                .Where(reaction => reaction.GroupMessageId == messageId)
+                .Include(reaction => reaction.User)
+                .OrderBy(reaction => reaction.CreatedAt)
+                .ToListAsync();
         }
     }
 }

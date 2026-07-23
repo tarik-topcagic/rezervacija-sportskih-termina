@@ -64,7 +64,8 @@
   z-index: 1100;
   width: min(360px, calc(100vw - 1.5rem));
   max-height: min(520px, calc(100vh - 5rem));
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid #dee2e6;
   border-radius: 1rem;
   background: #fff;
@@ -123,6 +124,7 @@
   margin: 0;
   font-size: 0.92rem;
   line-height: 1.35;
+  overflow-wrap: break-word;
 }
 
 .notification-time {

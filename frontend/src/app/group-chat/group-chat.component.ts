@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { ChatRealtimeService } from '../../services/chat-realtime.service';
 import { ChatInboxService } from '../../services/chat-inbox.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { GroupChatNotificationService } from '../../services/group-chat-notification.service';
 import { GroupService } from '../../services/group.service';
 import { LanguageService } from '../../services/language.service';
@@ -31,6 +32,11 @@ import { clearTypingTimer, scheduleTypingTimer } from '../helpers/chat-typing.he
 import { scrollToBottom, shouldShowScrollButton } from '../helpers/chat-ui.helper';
 import { getUserIdFromToken } from '../helpers/jwt.helper';
 import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
+import {
+  ChatMessageDeletedEvent,
+  ChatMessagePinStateChangedEvent,
+  ChatMessageReactionsChangedEvent,
+} from '../interfaces/chat-message-mutation-event.model';
 import { ChatMessageNotification } from '../interfaces/chat-message-notification.model';
 import { ChatMessageStatusUpdate } from '../interfaces/chat-message-status-update.model';
 import { ChatTypingEvent } from '../interfaces/chat-typing-event.model';
@@ -39,6 +45,8 @@ import { insertTextAtSelection } from '../helpers/chat-input.helper';
 import { GroupChatMessage, GroupDetails } from '../interfaces/group.model';
 import { UserPresence } from '../interfaces/user-presence.model';
 import { ChatEmojiPickerComponent } from '../chat-emoji-picker/chat-emoji-picker.component';
+import { LongPressDirective } from '../directives/long-press.directive';
+import { MessageActionsComponent } from '../message-actions/message-actions.component';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { SkeletonComponent } from '../skeleton/skeleton/skeleton.component';
@@ -46,7 +54,20 @@ import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-group-chat',
-  imports: [DatePipe, NgIf, NgFor, NgClass, FormsModule, RouterLink, NavbarComponent, TranslatePipe, ChatEmojiPickerComponent, SkeletonComponent],
+  imports: [
+    DatePipe,
+    NgIf,
+    NgFor,
+    NgClass,
+    FormsModule,
+    RouterLink,
+    NavbarComponent,
+    TranslatePipe,
+    ChatEmojiPickerComponent,
+    SkeletonComponent,
+    LongPressDirective,
+    MessageActionsComponent,
+  ],
   templateUrl: './group-chat.component.html',
   styleUrl: './group-chat.component.scss',
 })
@@ -71,6 +92,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   onlineMemberUserIds = new Set<string>();
   privateChatListPresenceByUserId = new Map<string, boolean>();
   groupChatListPresenceByGroupId = new Map<number, boolean>();
+  replyTarget: GroupChatMessage | null = null;
   private currentUserId: string | null = null;
   private currentUserSubscription?: Subscription;
   private routeSubscription?: Subscription;
@@ -79,7 +101,12 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   private realtimeStatusSubscription?: Subscription;
   private realtimeTypingSubscription?: Subscription;
   private realtimeStopTypingSubscription?: Subscription;
+  private realtimeMessageDeletedSubscription?: Subscription;
+  private realtimeMessagePinStateChangedSubscription?: Subscription;
+  private realtimeMessageReactionsChangedSubscription?: Subscription;
+  private realtimeReconnectedSubscription?: Subscription;
   private presenceSubscription?: Subscription;
+  private readonly onConnectionRestored = () => this.retryFailedMessages();
   private connectedGroupId: number | null = null;
   private pendingStatusUpdates = new Map<number, ChatMessageStatusUpdate>();
   private readonly typingUsers = new Map<string, string>();
@@ -100,6 +127,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     private languageService: LanguageService,
     private presenceService: PresenceService,
     private toastService: ToastService,
+    private confirmDialogService: ConfirmDialogService,
   ) {}
 
   ngOnInit(): void {
@@ -128,6 +156,24 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.realtimeStopTypingSubscription = this.chatRealtimeService.incomingStopTyping$.subscribe((event) => {
       this.handleStopTypingEvent(event);
     });
+
+    this.realtimeMessageDeletedSubscription = this.chatRealtimeService.incomingGroupMessageDeleted$.subscribe((event) => {
+      this.handleMessageDeleted(event);
+    });
+
+    this.realtimeMessagePinStateChangedSubscription = this.chatRealtimeService.incomingGroupMessagePinStateChanged$.subscribe((event) => {
+      this.handleMessagePinStateChanged(event);
+    });
+
+    this.realtimeMessageReactionsChangedSubscription = this.chatRealtimeService.incomingGroupMessageReactionsChanged$.subscribe((event) => {
+      this.handleMessageReactionsChanged(event);
+    });
+
+    this.realtimeReconnectedSubscription = this.chatRealtimeService.reconnected$.subscribe(() => {
+      this.retryFailedMessages();
+    });
+
+    window.addEventListener('online', this.onConnectionRestored);
 
     this.presenceSubscription = this.presenceService.presenceUpdates$.subscribe((update) => {
       this.handlePresenceUpdate(update);
@@ -158,6 +204,11 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.realtimeStatusSubscription?.unsubscribe();
     this.realtimeTypingSubscription?.unsubscribe();
     this.realtimeStopTypingSubscription?.unsubscribe();
+    this.realtimeMessageDeletedSubscription?.unsubscribe();
+    this.realtimeMessagePinStateChangedSubscription?.unsubscribe();
+    this.realtimeMessageReactionsChangedSubscription?.unsubscribe();
+    this.realtimeReconnectedSubscription?.unsubscribe();
+    window.removeEventListener('online', this.onConnectionRestored);
     this.presenceSubscription?.unsubscribe();
     this.stopTypingLocally();
     if (this.connectedGroupId !== null) {
@@ -176,28 +227,47 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSending = true;
     this.errorMessage = '';
 
-    this.groupService.sendGroupMessage(this.group.id, trimmedMessage).subscribe({
+    const groupId = this.group.id;
+    const replyTarget = this.replyTarget;
+    const clientTempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    const optimisticMessage: GroupChatMessage = {
+      id: -Date.now(),
+      groupId,
+      senderUserId: this.currentUserId ?? '',
+      senderUsername: '',
+      senderFullName: this.getCurrentUserDisplayName(),
+      senderProfilePictureUrl: this.getCurrentUserProfilePictureUrl(),
+      messageText: trimmedMessage,
+      createdAt: new Date(),
+      replyToMessageId: replyTarget?.id ?? null,
+      replyToSenderName: replyTarget?.senderFullName ?? null,
+      replyToMessageTextPreview: replyTarget?.messageText ?? null,
+      replyToIsDeleted: false,
+      reactions: [],
+      clientTempId,
+      sendStatus: 'sending',
+    };
+
+    this.messages = [...this.messages, optimisticMessage];
+    this.messageText = '';
+    this.cancelReply();
+    this.scrollMessagesToBottom('smooth');
+
+    this.groupService.sendGroupMessage(groupId, trimmedMessage, replyTarget?.id ?? null).subscribe({
       next: (message) => {
-        const appendResult = appendMessageIfNotExists(
-          this.messages,
-          message,
-          this.pendingStatusUpdates,
-          this.mapSeenByStatusFields,
-        );
-        this.messages = appendResult.messages;
-
-        if (!appendResult.appended) {
-          this.messageText = '';
-          this.isSending = false;
-          return;
-        }
-
-        this.messageText = '';
         this.isSending = false;
-        this.scrollMessagesToBottom('smooth');
+        this.messages = this.messages.map((existingMessage) =>
+          existingMessage.clientTempId === clientTempId ? message : existingMessage,
+        );
       },
       error: (error) => {
         this.isSending = false;
+        this.messages = this.messages.map((existingMessage) =>
+          existingMessage.clientTempId === clientTempId
+            ? { ...existingMessage, sendStatus: 'failed' as const }
+            : existingMessage,
+        );
         this.toastService.showError(this.languageService.translate('groupChatSendError'));
         console.error('Error sending group chat message:', error);
       },
@@ -206,6 +276,251 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
 
   isOwnMessage(message: GroupChatMessage): boolean {
     return message.senderUserId === this.group?.currentUserId;
+  }
+
+  isMessageFailed(message: GroupChatMessage): boolean {
+    return message.sendStatus === 'failed';
+  }
+
+  startReply(message: GroupChatMessage): void {
+    this.replyTarget = message;
+    this.messageInput?.nativeElement.focus();
+  }
+
+  cancelReply(): void {
+    this.replyTarget = null;
+  }
+
+  // Mobile swipe-to-reply. Only one bubble can be mid-drag at a time (one finger, one
+  // touch sequence), so a single active-id + offset pair is enough -- no need for a
+  // map keyed by message. The directive reports raw signed deltas without knowing
+  // which message it's attached to or that ownership even exists; direction gating
+  // (left-only for own messages, right-only for received) happens here instead.
+  private swipingMessageId: number | null = null;
+  private swipeOffsetPx = 0;
+
+  isSwiping(message: GroupChatMessage): boolean {
+    return this.swipingMessageId === message.id;
+  }
+
+  getSwipeOffset(message: GroupChatMessage): number {
+    return this.swipingMessageId === message.id ? this.swipeOffsetPx : 0;
+  }
+
+  onSwipeProgress(message: GroupChatMessage, deltaPx: number): void {
+    this.swipingMessageId = message.id;
+    this.swipeOffsetPx = this.isOwnMessage(message) ? Math.min(0, deltaPx) : Math.max(0, deltaPx);
+  }
+
+  onSwipeCompleted(message: GroupChatMessage, direction: 'left' | 'right'): void {
+    const expectedDirection = this.isOwnMessage(message) ? 'left' : 'right';
+
+    if (direction === expectedDirection) {
+      this.startReply(message);
+    }
+
+    this.swipingMessageId = null;
+    this.swipeOffsetPx = 0;
+  }
+
+  onSwipeCancelled(): void {
+    this.swipingMessageId = null;
+    this.swipeOffsetPx = 0;
+  }
+
+  copyMessageText(message: GroupChatMessage): void {
+    navigator.clipboard.writeText(message.messageText).then(
+      () => this.toastService.showSuccess(this.languageService.translate('messageCopied')),
+      () => this.toastService.showError(this.languageService.translate('messageCopyError')),
+    );
+  }
+
+  async requestUnsend(message: GroupChatMessage): Promise<void> {
+    if (!this.group?.id) {
+      return;
+    }
+
+    const confirmed = await this.confirmDialogService.confirm('confirmUnsendMessage');
+    if (!confirmed) {
+      return;
+    }
+
+    this.groupService.deleteGroupMessage(this.group.id, message.id).subscribe({
+      error: (error) => {
+        this.toastService.showError(this.languageService.translate('unsendMessageError'));
+        console.error('Error unsending group chat message:', error);
+      },
+    });
+  }
+
+  requestPin(message: GroupChatMessage): void {
+    if (!this.group?.id) {
+      return;
+    }
+
+    this.groupService.setGroupMessagePinned(this.group.id, message.id, !message.isPinned).subscribe({
+      error: (error) => {
+        this.toastService.showError(this.languageService.translate('pinMessageError'));
+        console.error('Error pinning group chat message:', error);
+      },
+    });
+  }
+
+  onBubbleDoubleClick(event: MouseEvent, message: GroupChatMessage): void {
+    if (this.isMessageFailed(message)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.reactToMessage(message, '❤️');
+  }
+
+  reactToMessage(message: GroupChatMessage, emoji: string): void {
+    if (!this.group?.id) {
+      return;
+    }
+
+    const existingEmoji = this.getCurrentUserReactionEmoji(message);
+    const request$ = existingEmoji === emoji
+      ? this.groupService.removeGroupMessageReaction(this.group.id, message.id)
+      : this.groupService.addOrUpdateGroupMessageReaction(this.group.id, message.id, emoji);
+
+    request$.subscribe({
+      error: (error) => {
+        this.toastService.showError(this.languageService.translate('reactToMessageError'));
+        console.error('Error reacting to group chat message:', error);
+      },
+    });
+  }
+
+  getCurrentUserReactionEmoji(message: GroupChatMessage): string | null {
+    return message.reactions?.find((reaction) => reaction.userId === this.currentUserId)?.emoji ?? null;
+  }
+
+  getGroupedReactions(message: GroupChatMessage): { emoji: string; count: number; userNames: string; isOwnReaction: boolean }[] {
+    const groups = new Map<string, string[]>();
+    const userIds = new Map<string, string[]>();
+
+    for (const reaction of message.reactions ?? []) {
+      const userNames = groups.get(reaction.emoji) ?? [];
+      userNames.push(reaction.userName);
+      groups.set(reaction.emoji, userNames);
+
+      const reactionUserIds = userIds.get(reaction.emoji) ?? [];
+      reactionUserIds.push(reaction.userId);
+      userIds.set(reaction.emoji, reactionUserIds);
+    }
+
+    return Array.from(groups.entries()).map(([emoji, userNames]) => ({
+      emoji,
+      count: userNames.length,
+      userNames: userNames.join(', '),
+      isOwnReaction: (userIds.get(emoji) ?? []).includes(this.currentUserId ?? ''),
+    }));
+  }
+
+  private retryFailedMessages(): void {
+    if (!this.group?.id) {
+      return;
+    }
+
+    const failedMessages = this.messages.filter((message) => message.sendStatus === 'failed');
+
+    for (const failedMessage of failedMessages) {
+      this.retryMessage(failedMessage);
+    }
+  }
+
+  private retryMessage(message: GroupChatMessage): void {
+    if (!this.group?.id || !message.clientTempId) {
+      return;
+    }
+
+    const groupId = this.group.id;
+    const clientTempId = message.clientTempId;
+
+    this.messages = this.messages.map((existingMessage) =>
+      existingMessage.clientTempId === clientTempId
+        ? { ...existingMessage, sendStatus: 'sending' as const }
+        : existingMessage,
+    );
+
+    this.groupService.sendGroupMessage(groupId, message.messageText, message.replyToMessageId ?? null).subscribe({
+      next: (sentMessage) => {
+        this.messages = this.messages.map((existingMessage) =>
+          existingMessage.clientTempId === clientTempId ? sentMessage : existingMessage,
+        );
+      },
+      error: (error) => {
+        this.messages = this.messages.map((existingMessage) =>
+          existingMessage.clientTempId === clientTempId
+            ? { ...existingMessage, sendStatus: 'failed' as const }
+            : existingMessage,
+        );
+        console.error('Error retrying group chat message:', error);
+      },
+    });
+  }
+
+  private reconcileOptimisticMessage(message: GroupChatMessage): boolean {
+    if (message.senderUserId !== this.currentUserId) {
+      return false;
+    }
+
+    const pendingIndex = this.messages.findIndex((existingMessage) =>
+      existingMessage.sendStatus === 'sending' || existingMessage.sendStatus === 'failed',
+    );
+    if (pendingIndex === -1) {
+      return false;
+    }
+
+    this.messages = this.messages.map((existingMessage, index) =>
+      index === pendingIndex ? message : existingMessage,
+    );
+
+    return true;
+  }
+
+  private getCurrentUserDisplayName(): string {
+    return this.group?.members.find((member) => member.userId === this.currentUserId)?.displayName ?? '';
+  }
+
+  private getCurrentUserProfilePictureUrl(): string | null {
+    return this.group?.members.find((member) => member.userId === this.currentUserId)?.profilePictureUrl ?? null;
+  }
+
+  private handleMessageDeleted(event: ChatMessageDeletedEvent): void {
+    if (!this.group?.id || event.groupId !== this.group.id) {
+      return;
+    }
+
+    this.messages = this.messages.filter((message) => message.id !== event.messageId);
+
+    if (this.replyTarget?.id === event.messageId) {
+      this.cancelReply();
+    }
+  }
+
+  private handleMessagePinStateChanged(event: ChatMessagePinStateChangedEvent): void {
+    if (!this.group?.id || event.groupId !== this.group.id) {
+      return;
+    }
+
+    this.messages = this.messages.map((message) =>
+      message.id === event.messageId
+        ? { ...message, isPinned: event.isPinned, pinnedAt: event.pinnedAt }
+        : message,
+    );
+  }
+
+  private handleMessageReactionsChanged(event: ChatMessageReactionsChangedEvent): void {
+    if (!this.group?.id || event.groupId !== this.group.id) {
+      return;
+    }
+
+    this.messages = this.messages.map((message) =>
+      message.id === event.messageId ? { ...message, reactions: event.reactions } : message,
+    );
   }
 
   canSendMessage(): boolean {
@@ -286,7 +601,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   shouldShowMessageStatus(message: GroupChatMessage): boolean {
-    if (!this.isLatestChatMessage(message)) {
+    if (!this.isLatestChatMessage(message) || message.sendStatus) {
       return false;
     }
 
@@ -489,16 +804,18 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const appendResult = appendMessageIfNotExists(
-      this.messages,
-      message,
-      this.pendingStatusUpdates,
-      this.mapSeenByStatusFields,
-    );
-    this.messages = appendResult.messages;
+    if (!this.reconcileOptimisticMessage(message)) {
+      const appendResult = appendMessageIfNotExists(
+        this.messages,
+        message,
+        this.pendingStatusUpdates,
+        this.mapSeenByStatusFields,
+      );
+      this.messages = appendResult.messages;
 
-    if (!appendResult.appended) {
-      return;
+      if (!appendResult.appended) {
+        return;
+      }
     }
 
     this.scrollMessagesToBottom('smooth');

@@ -3,6 +3,7 @@ import { environment } from '../environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, Subject, tap } from 'rxjs';
 import { Group, GroupChatMessage, GroupDetails, GroupMembershipState } from '../app/interfaces/group.model';
+import { MessageReaction } from '../app/interfaces/message-reaction.model';
 
 @Injectable({
   providedIn: 'root',
@@ -134,8 +135,27 @@ export class GroupService {
     return this.http.get<GroupChatMessage[]>(`${this.apiUrl}/${groupId}/messages`);
   }
 
-  sendGroupMessage(groupId: number, messageText: string): Observable<GroupChatMessage> {
-    return this.http.post<GroupChatMessage>(`${this.apiUrl}/${groupId}/messages`, { messageText });
+  sendGroupMessage(groupId: number, messageText: string, replyToMessageId?: number | null): Observable<GroupChatMessage> {
+    return this.http.post<GroupChatMessage>(`${this.apiUrl}/${groupId}/messages`, { messageText, replyToMessageId });
+  }
+
+  deleteGroupMessage(groupId: number, messageId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${groupId}/messages/${messageId}`);
+  }
+
+  setGroupMessagePinned(groupId: number, messageId: number, isPinned: boolean): Observable<{ isPinned: boolean; pinnedAt: string | null }> {
+    return this.http.post<{ isPinned: boolean; pinnedAt: string | null }>(
+      `${this.apiUrl}/${groupId}/messages/${messageId}/pin`,
+      { isPinned },
+    );
+  }
+
+  addOrUpdateGroupMessageReaction(groupId: number, messageId: number, emoji: string): Observable<MessageReaction[]> {
+    return this.http.post<MessageReaction[]>(`${this.apiUrl}/${groupId}/messages/${messageId}/reactions`, { emoji });
+  }
+
+  removeGroupMessageReaction(groupId: number, messageId: number): Observable<MessageReaction[]> {
+    return this.http.delete<MessageReaction[]>(`${this.apiUrl}/${groupId}/messages/${messageId}/reactions`);
   }
 
   notifyMembershipChanged(): void {

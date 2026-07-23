@@ -2,6 +2,11 @@ import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { ChatMessageNotification } from '../app/interfaces/chat-message-notification.model';
 import { ChatMessageStatusUpdate } from '../app/interfaces/chat-message-status-update.model';
+import {
+  ChatMessageDeletedEvent,
+  ChatMessagePinStateChangedEvent,
+  ChatMessageReactionsChangedEvent,
+} from '../app/interfaces/chat-message-mutation-event.model';
 import { ChatTypingEvent } from '../app/interfaces/chat-typing-event.model';
 import { GroupChatMessage } from '../app/interfaces/group.model';
 import { PrivateMessage } from '../app/interfaces/private-chat.model';
@@ -16,6 +21,7 @@ export class ChatRealtimeService {
   private hubConnection: any = null;
   private connectionConsumerCount = 0;
   private connectionStartPromise: Promise<void> | null = null;
+  private connectionEstablishPromise: Promise<void> | null = null;
   private disconnectTimeoutId?: ReturnType<typeof setTimeout>;
   private readonly disconnectDelayMs = 5000;
   private joinedGroupIds = new Set<number>();
@@ -27,6 +33,14 @@ export class ChatRealtimeService {
   private readonly incomingTypingSubject = new Subject<ChatTypingEvent>();
   private readonly incomingStopTypingSubject = new Subject<ChatTypingEvent>();
   private readonly incomingPresenceUpdateSubject = new Subject<UserPresence>();
+  private readonly incomingGroupMessageDeletedSubject = new Subject<ChatMessageDeletedEvent>();
+  private readonly incomingPrivateMessageDeletedSubject = new Subject<ChatMessageDeletedEvent>();
+  private readonly incomingGroupMessagePinStateChangedSubject = new Subject<ChatMessagePinStateChangedEvent>();
+  private readonly incomingPrivateMessagePinStateChangedSubject = new Subject<ChatMessagePinStateChangedEvent>();
+  private readonly incomingGroupMessageReactionsChangedSubject = new Subject<ChatMessageReactionsChangedEvent>();
+  private readonly incomingPrivateMessageReactionsChangedSubject = new Subject<ChatMessageReactionsChangedEvent>();
+  private readonly reconnectedSubject = new Subject<void>();
+  readonly reconnected$ = this.reconnectedSubject.asObservable();
   readonly incomingGroupMessages$ = this.incomingGroupMessageSubject.asObservable();
   readonly incomingPrivateMessages$ = this.incomingPrivateMessageSubject.asObservable();
   readonly incomingMessageNotifications$ = this.incomingMessageNotificationSubject.asObservable();
@@ -34,6 +48,12 @@ export class ChatRealtimeService {
   readonly incomingTyping$ = this.incomingTypingSubject.asObservable();
   readonly incomingStopTyping$ = this.incomingStopTypingSubject.asObservable();
   readonly incomingPresenceUpdates$ = this.incomingPresenceUpdateSubject.asObservable();
+  readonly incomingGroupMessageDeleted$ = this.incomingGroupMessageDeletedSubject.asObservable();
+  readonly incomingPrivateMessageDeleted$ = this.incomingPrivateMessageDeletedSubject.asObservable();
+  readonly incomingGroupMessagePinStateChanged$ = this.incomingGroupMessagePinStateChangedSubject.asObservable();
+  readonly incomingPrivateMessagePinStateChanged$ = this.incomingPrivateMessagePinStateChangedSubject.asObservable();
+  readonly incomingGroupMessageReactionsChanged$ = this.incomingGroupMessageReactionsChangedSubject.asObservable();
+  readonly incomingPrivateMessageReactionsChanged$ = this.incomingPrivateMessageReactionsChangedSubject.asObservable();
 
   constructor(private authService: AuthService) {}
 
@@ -58,6 +78,21 @@ export class ChatRealtimeService {
       }
     }
 
+    if (this.connectionEstablishPromise) {
+      await this.connectionEstablishPromise;
+      return;
+    }
+
+    this.connectionEstablishPromise = this.establishConnection(signalR);
+
+    try {
+      await this.connectionEstablishPromise;
+    } finally {
+      this.connectionEstablishPromise = null;
+    }
+  }
+
+  private async establishConnection(signalR: typeof import('@microsoft/signalr')): Promise<void> {
     this.hubConnection = new signalR.HubConnectionBuilder()
       .withUrl(`${this.getBaseApiUrl()}/hubs/chat`, {
         accessTokenFactory: () => this.authService.currentUserValue?.token ?? '',
@@ -67,6 +102,7 @@ export class ChatRealtimeService {
 
     this.hubConnection.onreconnected(async () => {
       await this.rejoinTrackedRooms();
+      this.reconnectedSubject.next();
     });
 
     this.hubConnection.off('ReceiveGroupMessage');
@@ -102,6 +138,36 @@ export class ChatRealtimeService {
     this.hubConnection.off('UserPresenceChanged');
     this.hubConnection.on('UserPresenceChanged', (payload: UserPresence) => {
       this.incomingPresenceUpdateSubject.next(payload);
+    });
+
+    this.hubConnection.off('ReceiveGroupMessageDeleted');
+    this.hubConnection.on('ReceiveGroupMessageDeleted', (payload: ChatMessageDeletedEvent) => {
+      this.incomingGroupMessageDeletedSubject.next(payload);
+    });
+
+    this.hubConnection.off('ReceivePrivateMessageDeleted');
+    this.hubConnection.on('ReceivePrivateMessageDeleted', (payload: ChatMessageDeletedEvent) => {
+      this.incomingPrivateMessageDeletedSubject.next(payload);
+    });
+
+    this.hubConnection.off('ReceiveGroupMessagePinStateChanged');
+    this.hubConnection.on('ReceiveGroupMessagePinStateChanged', (payload: ChatMessagePinStateChangedEvent) => {
+      this.incomingGroupMessagePinStateChangedSubject.next(payload);
+    });
+
+    this.hubConnection.off('ReceivePrivateMessagePinStateChanged');
+    this.hubConnection.on('ReceivePrivateMessagePinStateChanged', (payload: ChatMessagePinStateChangedEvent) => {
+      this.incomingPrivateMessagePinStateChangedSubject.next(payload);
+    });
+
+    this.hubConnection.off('ReceiveGroupMessageReactionsChanged');
+    this.hubConnection.on('ReceiveGroupMessageReactionsChanged', (payload: ChatMessageReactionsChangedEvent) => {
+      this.incomingGroupMessageReactionsChangedSubject.next(payload);
+    });
+
+    this.hubConnection.off('ReceivePrivateMessageReactionsChanged');
+    this.hubConnection.on('ReceivePrivateMessageReactionsChanged', (payload: ChatMessageReactionsChangedEvent) => {
+      this.incomingPrivateMessageReactionsChangedSubject.next(payload);
     });
 
     try {
@@ -221,6 +287,12 @@ export class ChatRealtimeService {
       this.hubConnection.off('UserTyping');
       this.hubConnection.off('UserStoppedTyping');
       this.hubConnection.off('UserPresenceChanged');
+      this.hubConnection.off('ReceiveGroupMessageDeleted');
+      this.hubConnection.off('ReceivePrivateMessageDeleted');
+      this.hubConnection.off('ReceiveGroupMessagePinStateChanged');
+      this.hubConnection.off('ReceivePrivateMessagePinStateChanged');
+      this.hubConnection.off('ReceiveGroupMessageReactionsChanged');
+      this.hubConnection.off('ReceivePrivateMessageReactionsChanged');
 
       if (this.hubConnection.state !== signalR.HubConnectionState.Disconnected) {
         await this.hubConnection.stop();

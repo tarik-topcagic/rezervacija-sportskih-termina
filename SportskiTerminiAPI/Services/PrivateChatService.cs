@@ -69,12 +69,23 @@ namespace SportskiTerminiAPI.Services
 
             var conversation = await GetOrCreateConversationEntityAsync(senderUserId, targetUserId);
 
+            int? replyToMessageId = null;
+            if (createPrivateMessageDto.ReplyToMessageId.HasValue)
+            {
+                var replyToMessage = await _privateChatRepository.GetMessageByIdAsync(conversation.Id, createPrivateMessageDto.ReplyToMessageId.Value);
+                if (replyToMessage != null)
+                {
+                    replyToMessageId = replyToMessage.Id;
+                }
+            }
+
             var message = new PrivateMessage
             {
                 ConversationId = conversation.Id,
                 SenderUserId = senderUserId,
                 MessageText = trimmedMessageText,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                ReplyToMessageId = replyToMessageId
             };
 
             var createdMessage = await _privateChatRepository.CreateMessageAsync(message);
@@ -130,12 +141,23 @@ namespace SportskiTerminiAPI.Services
             if (string.IsNullOrWhiteSpace(trimmedMessageText))
                 return ServiceResult.BadRequest("Message text is required");
 
+            int? replyToMessageId = null;
+            if (createPrivateMessageDto.ReplyToMessageId.HasValue)
+            {
+                var replyToMessage = await _privateChatRepository.GetMessageByIdAsync(conversation.Id, createPrivateMessageDto.ReplyToMessageId.Value);
+                if (replyToMessage != null)
+                {
+                    replyToMessageId = replyToMessage.Id;
+                }
+            }
+
             var message = new PrivateMessage
             {
                 ConversationId = conversation.Id,
                 SenderUserId = senderUserId,
                 MessageText = trimmedMessageText,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                ReplyToMessageId = replyToMessageId
             };
 
             var createdMessage = await _privateChatRepository.CreateMessageAsync(message);
@@ -164,6 +186,155 @@ namespace SportskiTerminiAPI.Services
             }
 
             return ServiceResult.Ok(messageDto);
+        }
+
+        public async Task<ServiceResult> DeletePrivateMessageAsync(string userId, int conversationId, int messageId)
+        {
+            var conversation = await _privateChatRepository.GetConversationByIdAsync(conversationId);
+            if (conversation == null)
+                return ServiceResult.NotFound("Conversation not found");
+
+            if (!IsConversationParticipant(conversation, userId))
+                return ServiceResult.Forbid("Only conversation participants can access private messages");
+
+            var message = await _privateChatRepository.GetMessageByIdAsync(conversationId, messageId);
+            if (message == null)
+                return ServiceResult.NotFound("Message not found");
+
+            if (message.SenderUserId != userId)
+                return ServiceResult.Forbid("Only the sender can unsend this message");
+
+            await _privateChatRepository.SoftDeleteMessageAsync(message);
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetConversationChannelName(conversationId.ToString()))
+                .SendAsync("ReceivePrivateMessageDeleted", new MessageDeletedDto
+                {
+                    MessageId = messageId,
+                    GroupId = null,
+                    ConversationId = conversationId
+                });
+
+            return ServiceResult.Ok();
+        }
+
+        public async Task<ServiceResult> SetPrivateMessagePinnedAsync(string userId, int conversationId, int messageId, bool isPinned)
+        {
+            var conversation = await _privateChatRepository.GetConversationByIdAsync(conversationId);
+            if (conversation == null)
+                return ServiceResult.NotFound("Conversation not found");
+
+            if (!IsConversationParticipant(conversation, userId))
+                return ServiceResult.Forbid("Only conversation participants can access private messages");
+
+            var message = await _privateChatRepository.GetMessageByIdAsync(conversationId, messageId);
+            if (message == null)
+                return ServiceResult.NotFound("Message not found");
+
+            var pinnedAt = isPinned ? DateTime.UtcNow : (DateTime?)null;
+            await _privateChatRepository.SetMessagePinnedAsync(message, isPinned, pinnedAt);
+
+            var pinnedAtOffset = pinnedAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(pinnedAt.Value) : (DateTimeOffset?)null;
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetConversationChannelName(conversationId.ToString()))
+                .SendAsync("ReceivePrivateMessagePinStateChanged", new MessagePinStateChangedDto
+                {
+                    MessageId = messageId,
+                    GroupId = null,
+                    ConversationId = conversationId,
+                    IsPinned = isPinned,
+                    PinnedAt = pinnedAtOffset
+                });
+
+            return ServiceResult.Ok(new { isPinned, pinnedAt = pinnedAtOffset });
+        }
+
+        public async Task<ServiceResult> AddOrUpdatePrivateMessageReactionAsync(string userId, int conversationId, int messageId, string emoji)
+        {
+            var conversation = await _privateChatRepository.GetConversationByIdAsync(conversationId);
+            if (conversation == null)
+                return ServiceResult.NotFound("Conversation not found");
+
+            if (!IsConversationParticipant(conversation, userId))
+                return ServiceResult.Forbid("Only conversation participants can access private messages");
+
+            var trimmedEmoji = emoji?.Trim();
+            if (string.IsNullOrWhiteSpace(trimmedEmoji))
+                return ServiceResult.BadRequest("Emoji is required");
+
+            var message = await _privateChatRepository.GetMessageByIdAsync(conversationId, messageId);
+            if (message == null)
+                return ServiceResult.NotFound("Message not found");
+
+            var reactions = await _privateChatRepository.AddOrUpdateReactionAsync(messageId, userId, trimmedEmoji);
+            var reactionDtos = ToMessageReactionDtos(reactions);
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetConversationChannelName(conversationId.ToString()))
+                .SendAsync("ReceivePrivateMessageReactionsChanged", new MessageReactionsChangedDto
+                {
+                    MessageId = messageId,
+                    GroupId = null,
+                    ConversationId = conversationId,
+                    Reactions = reactionDtos
+                });
+
+            if (message.SenderUserId != userId)
+            {
+                var reactorReaction = reactions.FirstOrDefault(reaction => reaction.UserId == userId);
+                var reactorName = reactorReaction != null
+                    ? (!string.IsNullOrWhiteSpace(reactorReaction.User?.FullName)
+                        ? reactorReaction.User.FullName
+                        : reactorReaction.User?.UserName ?? string.Empty)
+                    : string.Empty;
+
+                await _hubContext.Clients
+                    .User(message.SenderUserId)
+                    .SendAsync("ReceiveMessageNotification", new ChatMessageNotificationDto
+                    {
+                        Type = "private",
+                        GroupId = null,
+                        ConversationId = conversationId,
+                        SenderUserId = userId,
+                        SenderName = reactorName,
+                        Preview = $"{trimmedEmoji} Reacted to your message",
+                        CreatedAt = BosniaTimeHelper.ToSarajevoOffset(DateTime.UtcNow),
+                        Kind = "reaction",
+                        ReactionEmoji = trimmedEmoji
+                    });
+            }
+
+            return ServiceResult.Ok(reactionDtos);
+        }
+
+        public async Task<ServiceResult> RemovePrivateMessageReactionAsync(string userId, int conversationId, int messageId)
+        {
+            var conversation = await _privateChatRepository.GetConversationByIdAsync(conversationId);
+            if (conversation == null)
+                return ServiceResult.NotFound("Conversation not found");
+
+            if (!IsConversationParticipant(conversation, userId))
+                return ServiceResult.Forbid("Only conversation participants can access private messages");
+
+            var message = await _privateChatRepository.GetMessageByIdAsync(conversationId, messageId);
+            if (message == null)
+                return ServiceResult.NotFound("Message not found");
+
+            var reactions = await _privateChatRepository.RemoveReactionAsync(messageId, userId);
+            var reactionDtos = ToMessageReactionDtos(reactions);
+
+            await _hubContext.Clients
+                .Group(ChatHub.GetConversationChannelName(conversationId.ToString()))
+                .SendAsync("ReceivePrivateMessageReactionsChanged", new MessageReactionsChangedDto
+                {
+                    MessageId = messageId,
+                    GroupId = null,
+                    ConversationId = conversationId,
+                    Reactions = reactionDtos
+                });
+
+            return ServiceResult.Ok(reactionDtos);
         }
 
         private static bool IsConversationParticipant(PrivateConversation conversation, string userId)
@@ -250,8 +421,43 @@ namespace SportskiTerminiAPI.Services
                 MessageText = message.MessageText,
                 CreatedAt = BosniaTimeHelper.ToSarajevoOffset(message.CreatedAt),
                 DeliveredAt = message.DeliveredAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(message.DeliveredAt.Value) : null,
-                SeenAt = message.SeenAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(message.SeenAt.Value) : null
+                SeenAt = message.SeenAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(message.SeenAt.Value) : null,
+                IsPinned = message.IsPinned,
+                PinnedAt = message.PinnedAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(message.PinnedAt.Value) : null,
+                ReplyToMessageId = message.ReplyToMessageId,
+                ReplyToSenderName = message.ReplyToMessage != null
+                    ? (!string.IsNullOrWhiteSpace(message.ReplyToMessage.SenderUser?.FullName)
+                        ? message.ReplyToMessage.SenderUser.FullName
+                        : message.ReplyToMessage.SenderUser?.UserName ?? string.Empty)
+                    : null,
+                ReplyToMessageTextPreview = message.ReplyToMessage != null && !message.ReplyToMessage.IsDeleted
+                    ? TruncateMessagePreview(message.ReplyToMessage.MessageText)
+                    : null,
+                ReplyToIsDeleted = message.ReplyToMessage?.IsDeleted ?? false,
+                Reactions = ToMessageReactionDtos(message.Reactions.OrderBy(reaction => reaction.CreatedAt))
             };
+        }
+
+        private static List<MessageReactionDto> ToMessageReactionDtos(IEnumerable<PrivateMessageReaction> reactions)
+        {
+            return reactions
+                .Select(reaction => new MessageReactionDto
+                {
+                    UserId = reaction.UserId,
+                    UserName = !string.IsNullOrWhiteSpace(reaction.User?.FullName)
+                        ? reaction.User.FullName
+                        : reaction.User?.UserName ?? string.Empty,
+                    Emoji = reaction.Emoji
+                })
+                .ToList();
+        }
+
+        private static string TruncateMessagePreview(string text, int maxLength = 120)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+                return text;
+
+            return text[..maxLength].TrimEnd() + "…";
         }
 
         private async Task BroadcastStatusUpdatesAsync(int conversationId, IReadOnlyList<MessageStatusChange> changes)

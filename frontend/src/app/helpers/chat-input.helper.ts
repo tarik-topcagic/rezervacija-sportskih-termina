@@ -16,6 +16,8 @@ export const CHAT_EMOJI_OPTIONS = [
   '🏆', '🥇', '🥈', '🥉', '🍀', '☀️', '🌧️', '⭐',
 ] as const;
 
+export const MESSAGE_QUICK_REACTIONS = ['❤️', '😂', '😮', '😢', '😡', '👍'] as const;
+
 export function insertTextAtSelection(
   currentValue: string,
   insertedText: string,

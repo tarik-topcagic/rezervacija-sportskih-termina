@@ -10,10 +10,12 @@ import { NotificationTimeService } from '../../services/notification-time.servic
 import { PresenceService } from '../../services/presence.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
 import { createHighlightedSet, moveItemToTop, prependIfNotExists } from '../helpers/dropdown-ui.helper';
+import { buildNotificationPreviewText, mergeInboxItemsWithReactionOverlays } from '../helpers/chat-list.helper';
 import { ChatMessageNotification } from '../interfaces/chat-message-notification.model';
 import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { LanguageService } from '../../services/language.service';
 
 @Component({
   selector: 'app-messages',
@@ -37,6 +39,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   private presenceSubscription?: Subscription;
   private privatePresenceByUserId = new Map<string, boolean>();
   private groupPresenceByGroupId = new Map<number, boolean>();
+  private reactionOverlaysByKey = new Map<string, ChatInboxItem>();
 
   constructor(
     private authService: AuthService,
@@ -47,6 +50,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
     private notificationTimeService: NotificationTimeService,
     private presenceService: PresenceService,
     private router: Router,
+    private languageService: LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -151,16 +155,18 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     this.chatInboxService.getInboxItems().subscribe({
       next: (messages) => {
+        const mergedMessages = mergeInboxItemsWithReactionOverlays(messages, this.reactionOverlaysByKey);
+
         if (showLoading) {
           this.highlightedMessageKeys = createHighlightedSet(
-            messages,
+            mergedMessages,
             (message) => message.unreadCount > 0,
             (message) => this.getMessageKey(message),
           );
         }
 
-        this.messages = messages;
-        this.syncPresenceIndicators(messages);
+        this.messages = mergedMessages;
+        this.syncPresenceIndicators(mergedMessages);
 
         if (showLoading) {
           this.isLoading = false;
@@ -197,6 +203,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
         (message) => this.getMessageKey(message) === this.getMessageKey(newMessage),
       );
 
+      if (notification.kind === 'reaction') {
+        this.reactionOverlaysByKey.set(this.getMessageKey(newMessage), newMessage);
+      }
+
       if (shouldIncrementUnread) {
         this.highlightedMessageKeys.add(this.getMessageKey(newMessage));
       }
@@ -209,11 +219,15 @@ export class MessagesComponent implements OnInit, OnDestroy {
     const updatedMessage: ChatInboxItem = {
       ...existingMessage,
       subtitle: notification.type === 'group' ? notification.senderName : existingMessage.subtitle,
-      preview: notification.preview,
+      preview: buildNotificationPreviewText(notification, (key) => this.languageService.translate(key)),
       createdAt: notification.createdAt,
       isRead: !shouldIncrementUnread,
       unreadCount: shouldIncrementUnread ? existingMessage.unreadCount + 1 : existingMessage.unreadCount,
     };
+
+    if (notification.kind === 'reaction') {
+      this.reactionOverlaysByKey.set(this.getMessageKey(updatedMessage), updatedMessage);
+    }
 
     this.messages = moveItemToTop(
       this.messages,
@@ -230,13 +244,15 @@ export class MessagesComponent implements OnInit, OnDestroy {
     notification: ChatMessageNotification,
     shouldIncrementUnread: boolean,
   ): ChatInboxItem {
+    const preview = buildNotificationPreviewText(notification, (key) => this.languageService.translate(key));
+
     if (notification.type === 'group') {
       return {
         type: 'group',
         id: notification.groupId ?? 0,
         title: notification.groupId ? `Grupa #${notification.groupId}` : notification.senderName,
         subtitle: notification.senderName,
-        preview: notification.preview,
+        preview,
         createdAt: notification.createdAt,
         unreadCount: shouldIncrementUnread ? 1 : 0,
         isRead: !shouldIncrementUnread,
@@ -251,7 +267,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       id: notification.conversationId ?? 0,
       title: notification.senderName,
       otherUserId: notification.senderUserId,
-      preview: notification.preview,
+      preview,
       createdAt: notification.createdAt,
       unreadCount: shouldIncrementUnread ? 1 : 0,
       isRead: !shouldIncrementUnread,
@@ -264,7 +280,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
   private getUserIdFromToken(token: string): string | null {
     try {
       const payload = JSON.parse(atob(token.split('.')[1] ?? ''));
-      return payload.nameid ?? payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ?? null;
+      return payload.sub
+        ?? payload.nameid
+        ?? payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']
+        ?? null;
     } catch {
       return null;
     }

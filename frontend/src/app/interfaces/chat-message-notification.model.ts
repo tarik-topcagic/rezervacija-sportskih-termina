@@ -6,4 +6,6 @@ export interface ChatMessageNotification {
   senderName: string;
   preview: string;
   createdAt: string;
+  kind?: 'message' | 'reaction';
+  reactionEmoji?: string;
 }

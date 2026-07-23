@@ -10,10 +10,13 @@ import { NotificationTimeService } from '../../services/notification-time.servic
 import { PresenceService } from '../../services/presence.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
 import {
+  buildNotificationPreviewText,
   createGroupChatListItemFromNotification,
   createPrivateChatListItemFromNotification,
   getChatListItemKey,
+  mergeInboxItemsWithReactionOverlays,
 } from '../helpers/chat-list.helper';
+import { LanguageService } from '../../services/language.service';
 import {
   applyChatListPresenceUpdate,
   planChatListPresenceSync,
@@ -78,6 +81,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
   private loadingGroupPresenceIds = new Set<number>();
   private privatePresenceRequestVersions = new Map<string, number>();
   private groupPresenceRequestVersions = new Map<number, number>();
+  private reactionOverlaysByKey = new Map<string, ChatInboxItem>();
 
   constructor(
     private authService: AuthService,
@@ -88,6 +92,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     private notificationTimeService: NotificationTimeService,
     private presenceService: PresenceService,
     private router: Router,
+    private languageService: LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -316,17 +321,19 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
       next: (messages) => {
         this.isLoading = false;
 
+        const mergedMessages = mergeInboxItemsWithReactionOverlays(messages, this.reactionOverlaysByKey);
+
         if (captureUnreadHighlights) {
           this.highlightedMessageKeys = createHighlightedSet(
-            messages,
+            mergedMessages,
             (message) => message.unreadCount > 0,
             (message) => getChatListItemKey(message),
           );
         }
 
-        this.messages = messages;
-        void this.syncRealtimeRooms(messages);
-        this.syncPresenceIndicators(messages);
+        this.messages = mergedMessages;
+        void this.syncRealtimeRooms(mergedMessages);
+        this.syncPresenceIndicators(mergedMessages);
       },
       error: (error) => {
         this.isLoading = false;
@@ -430,6 +437,10 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
         (message) => getChatListItemKey(message) === getChatListItemKey(newMessage),
       );
 
+      if (notification.kind === 'reaction') {
+        this.reactionOverlaysByKey.set(getChatListItemKey(newMessage), newMessage);
+      }
+
       if (shouldIncrementUnread) {
         this.unreadCount = incrementIf(this.unreadCount, true);
         this.highlightedMessageKeys.add(getChatListItemKey(newMessage));
@@ -444,11 +455,15 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     const updatedMessage: ChatInboxItem = {
       ...existingMessage,
       subtitle: notification.type === 'group' ? notification.senderName : existingMessage.subtitle,
-      preview: notification.preview,
+      preview: buildNotificationPreviewText(notification, (key) => this.languageService.translate(key)),
       createdAt: notification.createdAt,
       isRead: !shouldIncrementUnread,
       unreadCount: shouldIncrementUnread ? existingMessage.unreadCount + 1 : existingMessage.unreadCount,
     };
+
+    if (notification.kind === 'reaction') {
+      this.reactionOverlaysByKey.set(getChatListItemKey(updatedMessage), updatedMessage);
+    }
 
     this.messages = moveItemToTop(
       this.messages,
@@ -482,11 +497,14 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     notification: ChatMessageNotification,
     shouldIncrementUnread: boolean,
   ): ChatInboxItem {
-    if (notification.type === 'group') {
-      return createGroupChatListItemFromNotification(notification, shouldIncrementUnread, null);
-    }
+    const item = notification.type === 'group'
+      ? createGroupChatListItemFromNotification(notification, shouldIncrementUnread, null)
+      : createPrivateChatListItemFromNotification(notification, shouldIncrementUnread, null);
 
-    return createPrivateChatListItemFromNotification(notification, shouldIncrementUnread, null);
+    return {
+      ...item,
+      preview: buildNotificationPreviewText(notification, (key) => this.languageService.translate(key)),
+    };
   }
 
   private syncPresenceIndicators(messages: ChatInboxItem[]): void {

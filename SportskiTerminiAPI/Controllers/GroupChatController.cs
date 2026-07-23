@@ -39,5 +39,49 @@ namespace SportskiTerminiAPI.Controllers
             var result = await _groupChatService.CreateGroupMessageAsync(userId, groupId, createGroupMessageDto);
             return StatusCode(result.StatusCode, result.Payload);
         }
+
+        [HttpDelete("{groupId}/messages/{messageId}")]
+        public async Task<IActionResult> DeleteGroupMessage(int groupId, int messageId)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _groupChatService.DeleteGroupMessageAsync(userId, groupId, messageId);
+            return StatusCode(result.StatusCode, result.Payload);
+        }
+
+        [HttpPost("{groupId}/messages/{messageId}/pin")]
+        public async Task<IActionResult> SetGroupMessagePinned(int groupId, int messageId, [FromBody] SetMessagePinnedDto setMessagePinnedDto)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _groupChatService.SetGroupMessagePinnedAsync(userId, groupId, messageId, setMessagePinnedDto.IsPinned);
+            return StatusCode(result.StatusCode, result.Payload);
+        }
+
+        [HttpPost("{groupId}/messages/{messageId}/reactions")]
+        public async Task<IActionResult> AddOrUpdateGroupMessageReaction(int groupId, int messageId, [FromBody] AddReactionDto addReactionDto)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _groupChatService.AddOrUpdateGroupMessageReactionAsync(userId, groupId, messageId, addReactionDto.Emoji);
+            return StatusCode(result.StatusCode, result.Payload);
+        }
+
+        [HttpDelete("{groupId}/messages/{messageId}/reactions")]
+        public async Task<IActionResult> RemoveGroupMessageReaction(int groupId, int messageId)
+        {
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
+            var result = await _groupChatService.RemoveGroupMessageReactionAsync(userId, groupId, messageId);
+            return StatusCode(result.StatusCode, result.Payload);
+        }
     }
 }

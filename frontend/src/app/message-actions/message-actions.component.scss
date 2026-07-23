@@ -1,0 +1,271 @@
+:host {
+  position: absolute;
+  top: 0.35rem;
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+:host(.own-message-actions) {
+  right: 100%;
+  padding-right: 0.4rem;
+}
+
+:host(:not(.own-message-actions)) {
+  left: 100%;
+  padding-left: 0.4rem;
+}
+
+:host(.actions-open) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+:host-context(.message-row:hover) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.message-actions {
+  position: relative;
+  display: inline-flex;
+}
+
+.action-triggers {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.action-trigger-btn {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.06);
+  color: #4b5563;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.action-trigger-btn:hover,
+.action-trigger-btn:focus-visible {
+  background: rgba(15, 23, 42, 0.12);
+  color: #1f2937;
+  outline: none;
+}
+
+.action-trigger-btn .bi {
+  font-size: 0.92rem;
+  line-height: 1;
+}
+
+.popup {
+  border: 1px solid #dee2e6;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
+}
+
+.popup-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  // Own/sent messages are disproportionately likely to be the newest message in the
+  // scrollback, i.e. sitting right above the composer with the least vertical room in
+  // .messages-panel for a two-section stack to open into. The panel clamp can only
+  // reposition this box, not shrink it, so without a cap a too-tall stack could end up
+  // with one section pushed past the clamped edge. Matching .wide-picker-popup's own
+  // max-height + scroll pattern below guarantees both sections stay reachable.
+  max-height: min(20rem, 60vh);
+  overflow-y: auto;
+}
+
+.popup-stack .popup {
+  position: static;
+}
+
+.more-popup {
+  min-width: 9.5rem;
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.more-option {
+  border: 0;
+  background: transparent;
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #212529;
+  font-size: 0.88rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.more-option:hover,
+.more-option:focus-visible {
+  background: #f3f6f9;
+  outline: none;
+}
+
+.more-option .bi {
+  font-size: 0.95rem;
+  color: #6c757d;
+}
+
+.more-option.danger {
+  color: #dc3545;
+}
+
+.more-option.danger .bi {
+  color: #dc3545;
+}
+
+.quick-reaction-popup {
+  padding: 0.4rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  white-space: nowrap;
+}
+
+.quick-emoji-btn {
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 1.2rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.quick-emoji-btn:hover,
+.quick-emoji-btn:focus-visible {
+  background: #f3f6f9;
+  outline: none;
+  transform: translateY(-2px) scale(1.08);
+}
+
+.quick-emoji-btn.active {
+  background: #eaf5ff;
+}
+
+.quick-emoji-more-btn {
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 0;
+  border-radius: 50%;
+  background: #f3f6f9;
+  color: #495057;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.15rem;
+}
+
+.quick-emoji-more-btn:hover,
+.quick-emoji-more-btn:focus-visible {
+  background: #e9ecef;
+  outline: none;
+}
+
+.wide-picker-popup {
+  width: min(20rem, calc(100vw - 1.5rem));
+  max-height: min(18rem, 45vh);
+  overflow: hidden;
+  padding: 0.55rem;
+}
+
+.wide-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.2rem;
+  max-height: min(16rem, 42vh);
+  overflow-y: auto;
+}
+
+.wide-emoji-btn {
+  border: 0;
+  border-radius: 0.7rem;
+  background: transparent;
+  min-height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.18rem;
+  line-height: 1;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.wide-emoji-btn:hover,
+.wide-emoji-btn:focus-visible {
+  background: #f3f6f9;
+  outline: none;
+}
+
+.wide-emoji-btn.active {
+  background: #eaf5ff;
+}
+
+:host-context(body.dark-mode) .action-trigger-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #c5c8cc;
+}
+
+:host-context(body.dark-mode) .action-trigger-btn:hover,
+:host-context(body.dark-mode) .action-trigger-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+  color: #f1f3f5;
+}
+
+/*
+ * Dark-mode overrides for this popup content live in the GLOBAL stylesheet
+ * (styles.scss), not here. This content is rendered via CDK Overlay (TemplatePortal),
+ * portaled to a container appended directly to <body> -- outside this component's own
+ * host element. A plain "body.dark-mode X" selector written in a component stylesheet
+ * doesn't work here: Angular's emulated encapsulation appends its scoping attribute to
+ * EVERY compound in the selector, not just the rightmost one, so it compiles to
+ * "body.dark-mode[_ngcontent-xxx] .popup[_ngcontent-xxx]" -- requiring <body> itself
+ * to carry this component's content attribute, which it never will. :host-context()
+ * doesn't work either, since it requires .popup to still be a DOM descendant of
+ * <app-message-actions>, which portaling also breaks. Only a rule with no component
+ * scoping at all (i.e. one living in the global stylesheet) can match here.
+ */
+
+@media (max-width: 767.98px) {
+  .action-triggers {
+    display: none;
+  }
+
+  // Desktop's 18rem/45vh cap (unchanged, see .wide-picker-popup above) is tall enough
+  // that it often can't fit tight to the bubble the way the shorter mobile-combo popup
+  // (quick-reaction + more menu) did, forcing the panel-bounded fallback to land it on
+  // whichever side has more room -- which can be a visibly different spot than where
+  // the combo popup was. A shorter cap on mobile specifically makes it fit near the
+  // bubble far more often, without touching desktop's own sizing at all.
+  .wide-picker-popup {
+    max-height: min(13rem, 34vh);
+  }
+
+  .wide-picker-grid {
+    max-height: min(11rem, 30vh);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .wide-picker-grid::-webkit-scrollbar {
+    display: none;
+  }
+}

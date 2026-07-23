@@ -187,6 +187,13 @@ body:not(.dark-mode) .navbar .list-group-item {
     --bs-dropdown-color: #495057;
     --bs-dropdown-link-color: #495057;
     --bs-dropdown-border-color: rgba(0, 0, 0, 0.175);
+    /* Bootstrap's dropdown-divider reads this variable (border-top color) too --
+       without resetting it here, it stays whatever data-bs-theme="dark" (set on
+       .navbar above, for contrast against the blue navbar background) resolved it to,
+       which is a light color meant to show up against a DARK dropdown background. That
+       makes the divider invisible once the rest of this block forces the dropdown back
+       to a light background. */
+    --bs-dropdown-divider-bg: rgba(0, 0, 0, 0.175);
     background-color: #fff;
     color: #495057;
     border-color: rgba(0, 0, 0, 0.175);
@@ -962,6 +969,70 @@ body.dark-mode .app-error-toast {
         top: 3.65rem;
         width: min(340px, calc(100vw - 1.5rem));
     }
+}
+
+/* app-message-actions popups (More menu, quick-reaction bar, wide emoji picker) are
+   rendered through Angular CDK Overlay, which portals them to a container appended
+   directly to <body> -- outside app-message-actions' own host element. That alone
+   doesn't stop component-scoped selectors from matching (Angular's emulated
+   encapsulation attribute stays on the moved elements), but it does rule out writing
+   these dark-mode overrides as plain "body.dark-mode X" rules inside the component's
+   own stylesheet: Angular's CSS shim appends its scoping attribute to EVERY compound
+   in a selector, not just the rightmost one -- so a rule written that way there
+   compiles to "body.dark-mode[_ngcontent-xxx] .popup[_ngcontent-xxx]", which requires
+   <body> itself to carry the component's content attribute. It never will, so the
+   rule can never match anything. :host-context() has the opposite problem (it needs
+   .popup to still be a DOM descendant of <app-message-actions>, which portaling also
+   breaks). Global styles are the only place a plain ancestor-based selector like this
+   actually works, which is exactly the existing convention already used for e.g. the
+   admin-table dark-mode rules above. */
+body.dark-mode .popup {
+    background: #1f1f1f;
+    border-color: #3a3a3a;
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .more-option {
+    color: #f1f3f5;
+}
+
+body.dark-mode .more-option:hover,
+body.dark-mode .more-option:focus-visible {
+    background: #2a2a2a;
+}
+
+body.dark-mode .more-option .bi {
+    color: #c5c8cc;
+}
+
+body.dark-mode .more-option.danger,
+body.dark-mode .more-option.danger .bi {
+    color: #f77;
+}
+
+body.dark-mode .quick-emoji-btn:hover,
+body.dark-mode .quick-emoji-btn:focus-visible {
+    background: #2a2a2a;
+}
+
+body.dark-mode .quick-emoji-btn.active,
+body.dark-mode .wide-emoji-btn.active {
+    background: #1b2b3b;
+}
+
+body.dark-mode .quick-emoji-more-btn {
+    background: #2a2a2a;
+    color: #c5c8cc;
+}
+
+body.dark-mode .quick-emoji-more-btn:hover,
+body.dark-mode .quick-emoji-more-btn:focus-visible {
+    background: #333;
+}
+
+body.dark-mode .wide-emoji-btn:hover,
+body.dark-mode .wide-emoji-btn:focus-visible {
+    background: #2a2a2a;
 }
   
   
