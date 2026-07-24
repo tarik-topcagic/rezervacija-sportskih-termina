@@ -190,7 +190,7 @@ SportsBookingApp/
 ### 🔧 Backend
 
 ```bash
-cd SportskiTerminiAPI
+cd SportsBookingAPI
 dotnet restore
 dotnet ef database update
 dotnet run

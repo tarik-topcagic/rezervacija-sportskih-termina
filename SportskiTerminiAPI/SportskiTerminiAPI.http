@@ -1,6 +1,0 @@
-@SportskiTerminiAPI_HostAddress = http://localhost:5135
-
-GET {{SportskiTerminiAPI_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
