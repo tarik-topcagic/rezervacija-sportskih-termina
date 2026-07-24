@@ -22,6 +22,8 @@ namespace SportskiTerminiAPI.Interfaces
         Task<IReadOnlyList<MessageStatusChange>> MarkMessagesSeenForConversationAsync(int conversationId, string userId, DateTime seenAt);
         Task<PrivateMessage?> GetMessageByIdAsync(int conversationId, int messageId);
         Task SoftDeleteMessageAsync(PrivateMessage message);
+        Task<bool> HasAnyMessagesAsync(int conversationId);
+        Task<PrivateMessage?> GetLatestNonDeletedMessageAsync(int conversationId);
         Task SetMessagePinnedAsync(PrivateMessage message, bool isPinned, DateTime? pinnedAt);
         Task<IReadOnlyList<PrivateMessageReaction>> AddOrUpdateReactionAsync(int messageId, string userId, string emoji);
         Task<IReadOnlyList<PrivateMessageReaction>> RemoveReactionAsync(int messageId, string userId);

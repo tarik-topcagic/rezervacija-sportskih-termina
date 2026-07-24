@@ -13,6 +13,7 @@ import {
   buildNotificationPreviewText,
   createGroupChatListItemFromNotification,
   createPrivateChatListItemFromNotification,
+  formatGroupPreviewText,
   getChatListItemKey,
   mergeInboxItemsWithReactionOverlays,
 } from '../helpers/chat-list.helper';
@@ -33,6 +34,7 @@ import {
 } from '../helpers/dropdown-ui.helper';
 import { getUserIdFromToken } from '../helpers/jwt.helper';
 import { ChatMessageNotification } from '../interfaces/chat-message-notification.model';
+import { ChatMessageDeletedEvent } from '../interfaces/chat-message-mutation-event.model';
 import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { SkeletonListItemComponent } from '../skeleton/skeleton-list-item/skeleton-list-item.component';
@@ -60,6 +62,8 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
   private unreadCountSubscription?: Subscription;
   private privateUnreadCountSubscription?: Subscription;
   private realtimeNotificationSubscription?: Subscription;
+  private realtimeGroupMessageDeletedSubscription?: Subscription;
+  private realtimePrivateMessageDeletedSubscription?: Subscription;
   private presenceSubscription?: Subscription;
   private readonly refreshIntervalMs = 30000;
   private readonly relativeTimeRefreshIntervalMs = 60000;
@@ -126,6 +130,14 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
       this.applyPresenceUpdate(update.userId, update.isOnline);
     });
 
+    this.realtimeGroupMessageDeletedSubscription = this.chatRealtimeService.incomingGroupMessageDeleted$.subscribe((event) => {
+      this.applyMessageDeletedToChatListItem('group', event.groupId, event);
+    });
+
+    this.realtimePrivateMessageDeletedSubscription = this.chatRealtimeService.incomingPrivateMessageDeleted$.subscribe((event) => {
+      this.applyMessageDeletedToChatListItem('private', event.conversationId, event);
+    });
+
     this.syncCurrentChatContext(this.router.url);
 
     this.unreadCountSubscription = this.groupChatNotificationService.unreadCountRefresh$.subscribe(() => {
@@ -154,6 +166,8 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     this.unreadCountSubscription?.unsubscribe();
     this.privateUnreadCountSubscription?.unsubscribe();
     this.realtimeNotificationSubscription?.unsubscribe();
+    this.realtimeGroupMessageDeletedSubscription?.unsubscribe();
+    this.realtimePrivateMessageDeletedSubscription?.unsubscribe();
     this.presenceSubscription?.unsubscribe();
     this.desktopMediaQuery.removeEventListener('change', this.onViewportChange);
     window.removeEventListener('app-notification-dropdown-opened', this.onNotificationDropdownOpened);
@@ -214,6 +228,58 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
           this.closeMessages();
         },
       });
+    }
+  }
+
+  private applyMessageDeletedToChatListItem(type: 'group' | 'private', id: number | null, event: ChatMessageDeletedEvent): void {
+    if (id === null) {
+      return;
+    }
+
+    const targetItem = this.messages.find((item) =>
+      type === 'group' ? item.type === 'group' && item.groupId === id : item.type === 'private' && item.conversationId === id,
+    );
+
+    if (!targetItem) {
+      return;
+    }
+    
+    const wasUnread = targetItem.unreadCount > 0;
+    const nextUnreadCount = wasUnread ? targetItem.unreadCount - 1 : targetItem.unreadCount;
+    const targetKey = getChatListItemKey(targetItem);
+
+    const updatedItem: ChatInboxItem = event.isChatNowEmpty
+      ? {
+          ...targetItem,
+          preview: this.languageService.translate(type === 'group' ? 'noGroupMessages' : 'noPrivateMessages'),
+          unreadCount: nextUnreadCount,
+          isRead: nextUnreadCount === 0,
+        }
+      : {
+          ...targetItem,
+          preview:
+            type === 'group' && event.updatedPreviewText && event.updatedPreviewSenderUserId && event.updatedPreviewSenderName
+              ? formatGroupPreviewText(
+                  event.updatedPreviewSenderUserId,
+                  event.updatedPreviewSenderName,
+                  event.updatedPreviewText,
+                  this.currentUserId,
+                  (key) => this.languageService.translate(key),
+                )
+              : (event.updatedPreviewText ?? targetItem.preview),
+          createdAt: event.updatedPreviewCreatedAt ?? targetItem.createdAt,
+          unreadCount: nextUnreadCount,
+          isRead: nextUnreadCount === 0,
+        };
+
+    this.messages = this.messages.map((item) => (item === targetItem ? updatedItem : item));
+
+    if (wasUnread) {
+      this.unreadCount = Math.max(0, this.unreadCount - 1);
+
+      if (nextUnreadCount === 0) {
+        this.highlightedMessageKeys.delete(targetKey);
+      }
     }
   }
 
@@ -317,7 +383,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
       this.isLoading = true;
     }
 
-    this.chatInboxService.getInboxItems().subscribe({
+    this.chatInboxService.getInboxItems(this.currentUserId).subscribe({
       next: (messages) => {
         this.isLoading = false;
 
@@ -454,8 +520,7 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
 
     const updatedMessage: ChatInboxItem = {
       ...existingMessage,
-      subtitle: notification.type === 'group' ? notification.senderName : existingMessage.subtitle,
-      preview: buildNotificationPreviewText(notification, (key) => this.languageService.translate(key)),
+      preview: buildNotificationPreviewText(notification, this.currentUserId, (key) => this.languageService.translate(key)),
       createdAt: notification.createdAt,
       isRead: !shouldIncrementUnread,
       unreadCount: shouldIncrementUnread ? existingMessage.unreadCount + 1 : existingMessage.unreadCount,
@@ -497,14 +562,15 @@ export class MessageDropdownComponent implements OnInit, OnDestroy {
     notification: ChatMessageNotification,
     shouldIncrementUnread: boolean,
   ): ChatInboxItem {
-    const item = notification.type === 'group'
-      ? createGroupChatListItemFromNotification(notification, shouldIncrementUnread, null)
+    return notification.type === 'group'
+      ? createGroupChatListItemFromNotification(
+          notification,
+          shouldIncrementUnread,
+          null,
+          this.currentUserId,
+          (key) => this.languageService.translate(key),
+        )
       : createPrivateChatListItemFromNotification(notification, shouldIncrementUnread, null);
-
-    return {
-      ...item,
-      preview: buildNotificationPreviewText(notification, (key) => this.languageService.translate(key)),
-    };
   }
 
   private syncPresenceIndicators(messages: ChatInboxItem[]): void {

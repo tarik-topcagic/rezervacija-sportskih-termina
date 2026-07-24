@@ -287,6 +287,18 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return message.sendStatus === 'failed';
   }
 
+  isFirstInSenderRun(index: number): boolean {
+    return index === 0 || this.messages[index - 1].senderUserId !== this.messages[index].senderUserId;
+  }
+
+  getDisplayName(senderUserId: string | null | undefined, senderName: string | null | undefined): string {
+    if (!senderName) {
+      return '';
+    }
+
+    return senderUserId === this.currentUserId ? this.languageService.translate('you') : senderName;
+  }
+
   startReply(message: PrivateMessage): void {
     this.replyTarget = message;
     this.messageInput?.nativeElement.focus();
@@ -296,10 +308,6 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.replyTarget = null;
   }
 
-  // Mobile swipe-to-reply. See group-chat.component.ts for the identical
-  // implementation/rationale -- only one bubble can be mid-drag at a time, so a single
-  // active-id + offset pair is enough. Direction gating (left-only for own messages,
-  // right-only for received) happens here, not in the directive.
   private swipingMessageId: number | null = null;
   private swipeOffsetPx = 0;
 
@@ -664,7 +672,7 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadChatListItems(): void {
-    this.chatInboxService.getInboxItems().subscribe({
+    this.chatInboxService.getInboxItems(this.currentUserId).subscribe({
       next: (items) => {
         this.chatListItems = items;
         this.highlightedChatListKeys = createChatListHighlightedKeys(items);
@@ -1023,7 +1031,13 @@ export class PrivateChatComponent implements OnInit, AfterViewInit, OnDestroy {
       createItem: (incomingNotification, shouldHighlight) =>
         incomingNotification.type === 'private'
           ? createPrivateChatListItemFromNotification(incomingNotification, shouldHighlight, this.conversation)
-          : createGroupChatListItemFromNotification(incomingNotification, shouldHighlight, null),
+          : createGroupChatListItemFromNotification(
+              incomingNotification,
+              shouldHighlight,
+              null,
+              this.currentUserId,
+              (key) => this.languageService.translate(key),
+            ),
     });
 
     this.chatListItems = updateResult.items;

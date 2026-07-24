@@ -60,6 +60,7 @@ export interface GroupChatMessage {
   isPinned?: boolean;
   pinnedAt?: Date | string | null;
   replyToMessageId?: number | null;
+  replyToSenderUserId?: string | null;
   replyToSenderName?: string | null;
   replyToMessageTextPreview?: string | null;
   replyToIsDeleted?: boolean;

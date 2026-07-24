@@ -168,6 +168,7 @@ namespace SportskiTerminiAPI.Repositories
                 {
                     Conversation = conversation,
                     LatestMessage = conversation.PrivateMessages
+                        .Where(message => !message.IsDeleted)
                         .OrderByDescending(message => message.CreatedAt)
                         .FirstOrDefault()
                 })
@@ -183,6 +184,7 @@ namespace SportskiTerminiAPI.Repositories
                 var otherUser = conversation.UserOneId == userId ? conversation.UserTwo : conversation.UserOne;
                 var unreadCount = conversation.PrivateMessages.Count(message =>
                     message.SenderUserId != userId
+                    && !message.IsDeleted
                     && (!readStates.TryGetValue(conversation.Id, out var lastReadAt) || message.CreatedAt > lastReadAt));
 
                 return new PrivateChatNotificationDto
@@ -219,6 +221,7 @@ namespace SportskiTerminiAPI.Repositories
 
             return conversations.Sum(conversation => conversation.PrivateMessages.Count(message =>
                 message.SenderUserId != userId
+                && !message.IsDeleted
                 && (!readStates.TryGetValue(conversation.Id, out var lastReadAt) || message.CreatedAt > lastReadAt)));
         }
 
@@ -425,6 +428,21 @@ namespace SportskiTerminiAPI.Repositories
             message.DeletedAt = DateTime.UtcNow;
             message.MessageText = string.Empty;
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> HasAnyMessagesAsync(int conversationId)
+        {
+            return await _context.PrivateMessages
+                .AnyAsync(message => message.ConversationId == conversationId && !message.IsDeleted);
+        }
+
+        public async Task<PrivateMessage?> GetLatestNonDeletedMessageAsync(int conversationId)
+        {
+            return await _context.PrivateMessages
+                .Where(message => message.ConversationId == conversationId && !message.IsDeleted)
+                .Include(message => message.SenderUser)
+                .OrderByDescending(message => message.CreatedAt)
+                .FirstOrDefaultAsync();
         }
 
         public async Task SetMessagePinnedAsync(PrivateMessage message, bool isPinned, DateTime? pinnedAt)

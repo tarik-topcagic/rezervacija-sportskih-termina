@@ -128,19 +128,21 @@
           </div>
 
           <div
-            *ngFor="let message of messages"
+            *ngFor="let message of messages; let i = index"
             class="message-row"
             [ngClass]="{ 'own-message': isOwnMessage(message) }"
           >
             <div class="message-avatar">
-              <ng-container *ngIf="message.senderProfilePictureUrl && message.senderProfilePictureUrl !== 'default-profile.png'; else defaultAvatar">
-                <img [src]="message.senderProfilePictureUrl" [alt]="message.senderFullName" class="avatar-image" />
+              <ng-container *ngIf="isFirstInSenderRun(i)">
+                <ng-container *ngIf="message.senderProfilePictureUrl && message.senderProfilePictureUrl !== 'default-profile.png'; else defaultAvatar">
+                  <img [src]="message.senderProfilePictureUrl" [alt]="message.senderFullName" class="avatar-image" />
+                </ng-container>
+                <ng-template #defaultAvatar>
+                  <div class="default-avatar">
+                    <i class="bi bi-person"></i>
+                  </div>
+                </ng-template>
               </ng-container>
-              <ng-template #defaultAvatar>
-                <div class="default-avatar">
-                  <i class="bi bi-person"></i>
-                </div>
-              </ng-template>
             </div>
 
             <div
@@ -172,13 +174,12 @@
 
               <div *ngIf="message.replyToMessageId" class="reply-preview-block">
                 <span class="reply-preview-sender">
-                  {{ message.replyToIsDeleted ? ('messageUnavailable' | translate) : message.replyToSenderName }}
+                  {{ message.replyToIsDeleted ? ('messageUnavailable' | translate) : getDisplayName(message.replyToSenderUserId, message.replyToSenderName) }}
                 </span>
                 <span *ngIf="!message.replyToIsDeleted" class="reply-preview-text">{{ message.replyToMessageTextPreview }}</span>
               </div>
 
               <div class="message-meta">
-                <strong>{{ message.senderFullName }}</strong>
                 <span>{{ message.createdAt | date:'dd.MM.yyyy. HH:mm' }}</span>
               </div>
               <p>{{ message.messageText }}</p>
@@ -247,7 +248,7 @@
 
         <div *ngIf="replyTarget" class="reply-composer-strip">
           <div class="reply-composer-content">
-            <span class="reply-composer-label">{{ 'replyingTo' | translate }} {{ replyTarget.senderFullName }}</span>
+            <span class="reply-composer-label">{{ 'replyingTo' | translate }} {{ getDisplayName(replyTarget.senderUserId, replyTarget.senderFullName) }}</span>
             <span class="reply-composer-preview">{{ replyTarget.messageText }}</span>
           </div>
           <button
@@ -273,6 +274,7 @@
               (keyup)="syncMessageSelection()"
               (select)="syncMessageSelection()"
               name="messageText"
+              autocomplete="off"
               [placeholder]="'writeMessage' | translate"
               maxlength="1000"
             />

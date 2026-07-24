@@ -15,6 +15,7 @@ namespace SportskiTerminiAPI.DTOs
         public bool IsPinned { get; set; }
         public DateTimeOffset? PinnedAt { get; set; }
         public int? ReplyToMessageId { get; set; }
+        public string? ReplyToSenderUserId { get; set; }
         public string? ReplyToSenderName { get; set; }
         public string? ReplyToMessageTextPreview { get; set; }
         public bool ReplyToIsDeleted { get; set; }

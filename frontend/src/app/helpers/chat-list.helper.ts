@@ -8,34 +8,39 @@ export function getChatListItemKey(item: ChatInboxItem): string {
   return `${item.type}:${item.id}`;
 }
 
-/**
- * Reaction notifications arrive from the backend with a raw sender name + emoji
- * rather than pre-baked display text, the same way the typing indicator's "{count}
- * users are typing..." works -- the backend can't localize since it doesn't know the
- * viewer's language, so the frontend composes the final sentence via the translation
- * key's {name}/{emoji} placeholders. Plain "new message" notifications already carry
- * their own preview text and pass through unchanged.
- */
 export function buildNotificationPreviewText(
   notification: ChatMessageNotification,
+  currentUserId: string | null,
   translate: (key: string) => string,
 ): string {
-  if (notification.kind !== 'reaction') {
-    return notification.preview;
+  if (notification.kind === 'reaction') {
+    return translate('reactedToYourMessage')
+      .replace('{name}', notification.senderName)
+      .replace('{emoji}', notification.reactionEmoji ?? '');
   }
 
-  return translate('reactedToYourMessage')
-    .replace('{name}', notification.senderName)
-    .replace('{emoji}', notification.reactionEmoji ?? '');
+  if (notification.type === 'group') {
+    return formatGroupPreviewText(notification.senderUserId, notification.senderName, notification.preview, currentUserId, translate);
+  }
+
+  return notification.preview;
 }
 
-/**
- * A fresh HTTP fetch of the inbox list derives its preview purely from the latest
- * stored message per conversation/group — reactions aren't messages, so a refresh
- * would silently clobber a real-time "X reacted to your message" preview with the
- * stale message text. This re-applies any cached reaction overlay that's newer than
- * what the fresh fetch returned for that item.
- */
+export function formatGroupPreviewText(
+  senderUserId: string,
+  senderName: string,
+  messageText: string,
+  currentUserId: string | null,
+  translate: (key: string) => string,
+): string {
+  const isOwnMessage = !!senderUserId && !!currentUserId && senderUserId === currentUserId;
+  const displayName = isOwnMessage
+    ? translate('you')
+    : senderName.split(' ').filter(Boolean)[0] || senderName;
+
+  return `${displayName}: ${messageText}`;
+}
+
 export function mergeInboxItemsWithReactionOverlays(
   freshItems: ChatInboxItem[],
   overlaysByKey: Map<string, ChatInboxItem>,
@@ -70,6 +75,8 @@ export function createGroupChatListItemFromNotification(
   notification: ChatMessageNotification,
   shouldHighlight: boolean,
   currentGroup: GroupDetails | null,
+  currentUserId: string | null,
+  translate: (key: string) => string,
 ): ChatInboxItem {
   const currentGroupMatches = currentGroup?.id === notification.groupId;
 
@@ -77,8 +84,7 @@ export function createGroupChatListItemFromNotification(
     type: 'group',
     id: notification.groupId ?? 0,
     title: currentGroupMatches ? (currentGroup?.name ?? `Grupa #${notification.groupId}`) : `Grupa #${notification.groupId}`,
-    subtitle: notification.senderName,
-    preview: notification.preview,
+    preview: buildNotificationPreviewText(notification, currentUserId, translate),
     createdAt: notification.createdAt,
     unreadCount: shouldHighlight ? 1 : 0,
     isRead: !shouldHighlight,
@@ -162,7 +168,6 @@ export function applyRealtimeChatListNotification(
 
   const updatedItem: ChatInboxItem = {
     ...existingItem,
-    subtitle: notification.type === 'group' ? notification.senderName : existingItem.subtitle,
     preview: notification.preview,
     createdAt: notification.createdAt,
     isRead: !shouldHighlight,

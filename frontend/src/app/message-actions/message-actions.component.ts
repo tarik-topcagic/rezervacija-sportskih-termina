@@ -60,9 +60,6 @@ export class MessageActionsComponent implements OnDestroy {
   private overlayRef: OverlayRef | null = null;
   private readonly coordinatorSubscription: Subscription;
   private mobileRestabilizeSubscription: Subscription | null = null;
-  // Only ever populated for a desktop popup while it's open (see openPopup/
-  // disposeOverlay). Not used on mobile -- positionMobilePopupDirectly() already
-  // reruns on every zone-stable event, which covers viewport/orientation changes too.
   private windowResizeListener: (() => void) | null = null;
 
   constructor(
@@ -182,9 +179,6 @@ export class MessageActionsComponent implements OnDestroy {
     this.coordinator.setActive(this);
     this.activePopup = popup;
 
-    // Matches the exact breakpoint the mobile media query in this component's own
-    // .scss uses (see "@media (max-width: 767.98px)"), so JS and CSS can never
-    // disagree about what counts as mobile.
     const isMobile = window.matchMedia('(max-width: 767.98px)').matches;
 
     const positionStrategy = isMobile
@@ -220,10 +214,6 @@ export class MessageActionsComponent implements OnDestroy {
         this.positionMobilePopupDirectly();
       });
     } else {
-      // A resized window leaves the popup at a now-stale, likely-wrong position
-      // (computed against the old viewport/panel dimensions) rather than adjusting to
-      // fit -- simplest correct behavior is to just close it, matching how it already
-      // closes on scroll (scrollStrategies.close()) rather than trying to reposition.
       this.windowResizeListener = () => this.close();
       window.addEventListener('resize', this.windowResizeListener);
     }

@@ -3,8 +3,10 @@ import { forkJoin, map, Observable } from 'rxjs';
 import { ChatInboxItem } from '../app/interfaces/chat-inbox-item.model';
 import { GroupChatNotification } from '../app/interfaces/group-chat-notification.model';
 import { PrivateChatNotification } from '../app/interfaces/private-chat-notification.model';
+import { formatGroupPreviewText } from '../app/helpers/chat-list.helper';
 import { GroupChatNotificationService } from './group-chat-notification.service';
 import { PrivateChatNotificationService } from './private-chat-notification.service';
+import { LanguageService } from './language.service';
 
 @Injectable({
   providedIn: 'root',
@@ -13,16 +15,17 @@ export class ChatInboxService {
   constructor(
     private groupChatNotificationService: GroupChatNotificationService,
     private privateChatNotificationService: PrivateChatNotificationService,
+    private languageService: LanguageService,
   ) {}
 
-  getInboxItems(): Observable<ChatInboxItem[]> {
+  getInboxItems(currentUserId: string | null): Observable<ChatInboxItem[]> {
     return forkJoin({
       groupItems: this.groupChatNotificationService.getChatNotifications(),
       privateItems: this.privateChatNotificationService.getChatNotifications(),
     }).pipe(
       map(({ groupItems, privateItems }) => {
         return [
-          ...groupItems.map((message) => this.toGroupInboxItem(message)),
+          ...groupItems.map((message) => this.toGroupInboxItem(message, currentUserId)),
           ...privateItems.map((message) => this.toPrivateInboxItem(message)),
         ].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
       }),
@@ -38,13 +41,18 @@ export class ChatInboxService {
     );
   }
 
-  private toGroupInboxItem(message: GroupChatNotification): ChatInboxItem {
+  private toGroupInboxItem(message: GroupChatNotification, currentUserId: string | null): ChatInboxItem {
     return {
       type: 'group',
       id: message.groupId,
       title: message.groupName,
-      subtitle: message.senderName,
-      preview: message.latestMessagePreview,
+      preview: formatGroupPreviewText(
+        message.senderUserId,
+        message.senderName,
+        message.latestMessagePreview,
+        currentUserId,
+        (key) => this.languageService.translate(key),
+      ),
       createdAt: message.createdAt,
       unreadCount: message.unreadCount,
       isRead: message.isRead,

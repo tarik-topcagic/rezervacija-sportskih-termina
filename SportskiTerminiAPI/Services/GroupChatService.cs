@@ -135,13 +135,27 @@ namespace SportskiTerminiAPI.Services
 
             await _groupChatRepository.SoftDeleteMessageAsync(message);
 
+            var newLatestMessage = await _groupChatRepository.GetLatestNonDeletedMessageAsync(groupId);
+            var newLatestSenderName = newLatestMessage != null
+                ? (!string.IsNullOrWhiteSpace(newLatestMessage.SenderUser?.FullName)
+                    ? newLatestMessage.SenderUser.FullName
+                    : newLatestMessage.SenderUser?.UserName ?? string.Empty)
+                : null;
+
             await _hubContext.Clients
                 .Group(ChatHub.GetGroupChannelName(groupId.ToString()))
                 .SendAsync("ReceiveGroupMessageDeleted", new MessageDeletedDto
                 {
                     MessageId = messageId,
                     GroupId = groupId,
-                    ConversationId = null
+                    ConversationId = null,
+                    IsChatNowEmpty = newLatestMessage == null,
+                    UpdatedPreviewText = newLatestMessage?.MessageText,
+                    UpdatedPreviewCreatedAt = newLatestMessage != null
+                        ? BosniaTimeHelper.ToSarajevoOffset(newLatestMessage.CreatedAt)
+                        : null,
+                    UpdatedPreviewSenderUserId = newLatestMessage?.SenderUserId,
+                    UpdatedPreviewSenderName = newLatestSenderName
                 });
 
             return ServiceResult.Ok();
@@ -353,6 +367,7 @@ namespace SportskiTerminiAPI.Services
                 IsPinned = message.IsPinned,
                 PinnedAt = message.PinnedAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(message.PinnedAt.Value) : null,
                 ReplyToMessageId = message.ReplyToMessageId,
+                ReplyToSenderUserId = message.ReplyToMessage?.SenderUserId,
                 ReplyToSenderName = message.ReplyToMessage != null
                     ? (!string.IsNullOrWhiteSpace(message.ReplyToMessage.SenderUser?.FullName)
                         ? message.ReplyToMessage.SenderUser.FullName

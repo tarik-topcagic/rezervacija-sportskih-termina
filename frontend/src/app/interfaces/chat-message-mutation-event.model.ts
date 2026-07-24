@@ -4,6 +4,11 @@ export interface ChatMessageDeletedEvent {
   messageId: number;
   groupId: number | null;
   conversationId: number | null;
+  isChatNowEmpty: boolean;
+  updatedPreviewText?: string | null;
+  updatedPreviewCreatedAt?: string | null;
+  updatedPreviewSenderUserId?: string | null;
+  updatedPreviewSenderName?: string | null;
 }
 
 export interface ChatMessagePinStateChangedEvent {

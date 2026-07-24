@@ -95,16 +95,17 @@ namespace SportskiTerminiAPI.Repositories
             if (accessibleGroupIds.Count == 0)
                 return Array.Empty<GroupChatNotificationDto>();
 
-            var candidateMessages = await _context.GroupMessages
-                .Where(message => accessibleGroupIds.Contains(message.GroupId) && message.SenderUserId != userId)
+            var allMessages = await _context.GroupMessages
+                .Where(message => accessibleGroupIds.Contains(message.GroupId))
                 .Include(message => message.Group)
                 .Include(message => message.SenderUser)
                 .ToListAsync();
 
-            if (candidateMessages.Count == 0)
+            if (allMessages.Count == 0)
                 return Array.Empty<GroupChatNotificationDto>();
 
-            var latestMessages = candidateMessages
+            var latestMessages = allMessages
+                .Where(message => !message.IsDeleted)
                 .GroupBy(message => message.GroupId)
                 .Select(group => group
                     .OrderByDescending(message => message.CreatedAt)
@@ -113,14 +114,17 @@ namespace SportskiTerminiAPI.Repositories
                 .Take(take)
                 .ToList();
 
+            if (latestMessages.Count == 0)
+                return Array.Empty<GroupChatNotificationDto>();
+
             var groupIds = latestMessages.Select(message => message.GroupId).Distinct().ToList();
 
             var readStates = await _context.GroupChatReadStates
                 .Where(readState => readState.UserId == userId && groupIds.Contains(readState.GroupId))
                 .ToDictionaryAsync(readState => readState.GroupId, readState => readState.LastReadAt);
 
-            var unreadCounts = candidateMessages
-                .Where(message => groupIds.Contains(message.GroupId))
+            var unreadCounts = allMessages
+                .Where(message => groupIds.Contains(message.GroupId) && message.SenderUserId != userId && !message.IsDeleted)
                 .GroupBy(message => message.GroupId)
                 .ToDictionary(
                     group => group.Key,
@@ -131,6 +135,9 @@ namespace SportskiTerminiAPI.Repositories
             return latestMessages.Select(message =>
             {
                 var unreadCount = unreadCounts.GetValueOrDefault(message.GroupId);
+                var senderName = !string.IsNullOrWhiteSpace(message.SenderUser?.FullName)
+                    ? message.SenderUser.FullName
+                    : message.SenderUser?.UserName ?? string.Empty;
 
                 return new GroupChatNotificationDto
                 {
@@ -138,9 +145,7 @@ namespace SportskiTerminiAPI.Repositories
                     GroupName = message.Group?.Name ?? string.Empty,
                     GroupImageUrl = message.Group?.ImageUrl ?? "default-group.png",
                     SenderUserId = message.SenderUserId,
-                    SenderName = !string.IsNullOrWhiteSpace(message.SenderUser?.FullName)
-                        ? message.SenderUser.FullName
-                        : message.SenderUser?.UserName ?? string.Empty,
+                    SenderName = senderName,
                     SenderProfilePictureUrl = message.SenderUser?.ProfilePictureUrl ?? "default-profile.png",
                     LatestMessagePreview = message.MessageText,
                     CreatedAt = BosniaTimeHelper.ToSarajevoOffset(message.CreatedAt),
@@ -171,7 +176,8 @@ namespace SportskiTerminiAPI.Repositories
             var unreadMessages = await _context.GroupMessages
                 .Where(message =>
                     accessibleGroupIds.Contains(message.GroupId)
-                    && message.SenderUserId != userId)
+                    && message.SenderUserId != userId
+                    && !message.IsDeleted)
                 .ToListAsync();
 
             return unreadMessages.Count(message =>
@@ -394,6 +400,21 @@ namespace SportskiTerminiAPI.Repositories
             message.DeletedAt = DateTime.UtcNow;
             message.MessageText = string.Empty;
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> HasAnyMessagesAsync(int groupId)
+        {
+            return await _context.GroupMessages
+                .AnyAsync(message => message.GroupId == groupId && !message.IsDeleted);
+        }
+
+        public async Task<GroupMessage?> GetLatestNonDeletedMessageAsync(int groupId)
+        {
+            return await _context.GroupMessages
+                .Where(message => message.GroupId == groupId && !message.IsDeleted)
+                .Include(message => message.SenderUser)
+                .OrderByDescending(message => message.CreatedAt)
+                .FirstOrDefaultAsync();
         }
 
         public async Task SetMessagePinnedAsync(GroupMessage message, bool isPinned, DateTime? pinnedAt)

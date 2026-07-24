@@ -24,8 +24,8 @@ export class ChatRealtimeService {
   private connectionEstablishPromise: Promise<void> | null = null;
   private disconnectTimeoutId?: ReturnType<typeof setTimeout>;
   private readonly disconnectDelayMs = 5000;
-  private joinedGroupIds = new Set<number>();
-  private joinedConversationIds = new Set<number>();
+  private joinedGroupIds = new Map<number, number>();
+  private joinedConversationIds = new Map<number, number>();
   private readonly incomingGroupMessageSubject = new Subject<GroupChatMessage>();
   private readonly incomingPrivateMessageSubject = new Subject<PrivateMessage>();
   private readonly incomingMessageNotificationSubject = new Subject<ChatMessageNotification>();
@@ -185,12 +185,18 @@ export class ChatRealtimeService {
 
       await this.connectionStartPromise;
     } catch (error) {
-      // Already logged above; keep callers resilient.
+
     }
   }
 
   async joinGroup(groupId: number): Promise<void> {
-    this.joinedGroupIds.add(groupId);
+    const currentCount = this.joinedGroupIds.get(groupId) ?? 0;
+    this.joinedGroupIds.set(groupId, currentCount + 1);
+
+    if (currentCount > 0) {
+
+      return;
+    }
 
     try {
       await this.ensureConnected();
@@ -207,6 +213,14 @@ export class ChatRealtimeService {
   }
 
   async leaveGroup(groupId: number): Promise<void> {
+    const currentCount = this.joinedGroupIds.get(groupId) ?? 0;
+    const nextCount = Math.max(0, currentCount - 1);
+
+    if (nextCount > 0) {
+      this.joinedGroupIds.set(groupId, nextCount);
+      return;
+    }
+
     this.joinedGroupIds.delete(groupId);
 
     try {
@@ -223,7 +237,12 @@ export class ChatRealtimeService {
   }
 
   async joinConversation(conversationId: number): Promise<void> {
-    this.joinedConversationIds.add(conversationId);
+    const currentCount = this.joinedConversationIds.get(conversationId) ?? 0;
+    this.joinedConversationIds.set(conversationId, currentCount + 1);
+
+    if (currentCount > 0) {
+      return;
+    }
 
     try {
       await this.ensureConnected();
@@ -240,6 +259,14 @@ export class ChatRealtimeService {
   }
 
   async leaveConversation(conversationId: number): Promise<void> {
+    const currentCount = this.joinedConversationIds.get(conversationId) ?? 0;
+    const nextCount = Math.max(0, currentCount - 1);
+
+    if (nextCount > 0) {
+      this.joinedConversationIds.set(conversationId, nextCount);
+      return;
+    }
+
     this.joinedConversationIds.delete(conversationId);
 
     try {
@@ -401,7 +428,7 @@ export class ChatRealtimeService {
       return;
     }
 
-    for (const groupId of this.joinedGroupIds) {
+    for (const groupId of this.joinedGroupIds.keys()) {
       try {
         await this.hubConnection.invoke('JoinGroup', groupId.toString());
       } catch (error) {
@@ -409,7 +436,7 @@ export class ChatRealtimeService {
       }
     }
 
-    for (const conversationId of this.joinedConversationIds) {
+    for (const conversationId of this.joinedConversationIds.keys()) {
       try {
         await this.hubConnection.invoke('JoinConversation', conversationId.toString());
       } catch (error) {

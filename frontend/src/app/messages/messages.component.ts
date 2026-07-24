@@ -10,8 +10,9 @@ import { NotificationTimeService } from '../../services/notification-time.servic
 import { PresenceService } from '../../services/presence.service';
 import { PrivateChatNotificationService } from '../../services/private-chat-notification.service';
 import { createHighlightedSet, moveItemToTop, prependIfNotExists } from '../helpers/dropdown-ui.helper';
-import { buildNotificationPreviewText, mergeInboxItemsWithReactionOverlays } from '../helpers/chat-list.helper';
+import { buildNotificationPreviewText, formatGroupPreviewText, mergeInboxItemsWithReactionOverlays } from '../helpers/chat-list.helper';
 import { ChatMessageNotification } from '../interfaces/chat-message-notification.model';
+import { ChatMessageDeletedEvent } from '../interfaces/chat-message-mutation-event.model';
 import { ChatInboxItem } from '../interfaces/chat-inbox-item.model';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
@@ -36,6 +37,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
   private currentUserId: string | null = null;
   private currentUserSubscription?: Subscription;
   private realtimeNotificationSubscription?: Subscription;
+  private realtimeGroupMessageDeletedSubscription?: Subscription;
+  private realtimePrivateMessageDeletedSubscription?: Subscription;
   private presenceSubscription?: Subscription;
   private privatePresenceByUserId = new Map<string, boolean>();
   private groupPresenceByGroupId = new Map<number, boolean>();
@@ -68,6 +71,14 @@ export class MessagesComponent implements OnInit, OnDestroy {
       this.applyPresenceUpdate(update.userId, update.isOnline);
     });
 
+    this.realtimeGroupMessageDeletedSubscription = this.chatRealtimeService.incomingGroupMessageDeleted$.subscribe((event) => {
+      this.applyMessageDeletedToChatListItem('group', event.groupId, event);
+    });
+
+    this.realtimePrivateMessageDeletedSubscription = this.chatRealtimeService.incomingPrivateMessageDeleted$.subscribe((event) => {
+      this.applyMessageDeletedToChatListItem('private', event.conversationId, event);
+    });
+
     this.loadMessages();
 
     this.messagesRefreshIntervalId = setInterval(() => {
@@ -82,6 +93,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.currentUserSubscription?.unsubscribe();
     this.realtimeNotificationSubscription?.unsubscribe();
+    this.realtimeGroupMessageDeletedSubscription?.unsubscribe();
+    this.realtimePrivateMessageDeletedSubscription?.unsubscribe();
     this.presenceSubscription?.unsubscribe();
 
     if (this.messagesRefreshIntervalId) {
@@ -153,7 +166,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       this.isLoading = true;
     }
 
-    this.chatInboxService.getInboxItems().subscribe({
+    this.chatInboxService.getInboxItems(this.currentUserId).subscribe({
       next: (messages) => {
         const mergedMessages = mergeInboxItemsWithReactionOverlays(messages, this.reactionOverlaysByKey);
 
@@ -184,6 +197,54 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   private getMessageKey(message: ChatInboxItem): string {
     return `${message.type}:${message.id}`;
+  }
+
+  private applyMessageDeletedToChatListItem(type: 'group' | 'private', id: number | null, event: ChatMessageDeletedEvent): void {
+    if (id === null) {
+      return;
+    }
+
+    const targetItem = this.messages.find((item) =>
+      type === 'group' ? item.type === 'group' && item.groupId === id : item.type === 'private' && item.conversationId === id,
+    );
+
+    if (!targetItem) {
+      return;
+    }
+
+    const wasUnread = targetItem.unreadCount > 0;
+    const nextUnreadCount = wasUnread ? targetItem.unreadCount - 1 : targetItem.unreadCount;
+    const targetKey = this.getMessageKey(targetItem);
+
+    const updatedItem: ChatInboxItem = event.isChatNowEmpty
+      ? {
+          ...targetItem,
+          preview: this.languageService.translate(type === 'group' ? 'noGroupMessages' : 'noPrivateMessages'),
+          unreadCount: nextUnreadCount,
+          isRead: nextUnreadCount === 0,
+        }
+      : {
+          ...targetItem,
+          preview:
+            type === 'group' && event.updatedPreviewText && event.updatedPreviewSenderUserId && event.updatedPreviewSenderName
+              ? formatGroupPreviewText(
+                  event.updatedPreviewSenderUserId,
+                  event.updatedPreviewSenderName,
+                  event.updatedPreviewText,
+                  this.currentUserId,
+                  (key) => this.languageService.translate(key),
+                )
+              : (event.updatedPreviewText ?? targetItem.preview),
+          createdAt: event.updatedPreviewCreatedAt ?? targetItem.createdAt,
+          unreadCount: nextUnreadCount,
+          isRead: nextUnreadCount === 0,
+        };
+
+    this.messages = this.messages.map((item) => (item === targetItem ? updatedItem : item));
+
+    if (wasUnread && nextUnreadCount === 0) {
+      this.highlightedMessageKeys.delete(targetKey);
+    }
   }
 
   private applyRealtimeNotification(notification: ChatMessageNotification): void {
@@ -218,8 +279,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     const updatedMessage: ChatInboxItem = {
       ...existingMessage,
-      subtitle: notification.type === 'group' ? notification.senderName : existingMessage.subtitle,
-      preview: buildNotificationPreviewText(notification, (key) => this.languageService.translate(key)),
+      preview: buildNotificationPreviewText(notification, this.currentUserId, (key) => this.languageService.translate(key)),
       createdAt: notification.createdAt,
       isRead: !shouldIncrementUnread,
       unreadCount: shouldIncrementUnread ? existingMessage.unreadCount + 1 : existingMessage.unreadCount,
@@ -244,14 +304,13 @@ export class MessagesComponent implements OnInit, OnDestroy {
     notification: ChatMessageNotification,
     shouldIncrementUnread: boolean,
   ): ChatInboxItem {
-    const preview = buildNotificationPreviewText(notification, (key) => this.languageService.translate(key));
+    const preview = buildNotificationPreviewText(notification, this.currentUserId, (key) => this.languageService.translate(key));
 
     if (notification.type === 'group') {
       return {
         type: 'group',
         id: notification.groupId ?? 0,
         title: notification.groupId ? `Grupa #${notification.groupId}` : notification.senderName,
-        subtitle: notification.senderName,
         preview,
         createdAt: notification.createdAt,
         unreadCount: shouldIncrementUnread ? 1 : 0,

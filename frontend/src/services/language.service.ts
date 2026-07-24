@@ -2781,6 +2781,16 @@ export class LanguageService {
       fr: 'Pas encore de messages',
       it: 'Ancora nessun messaggio',
     },
+    you: {
+      en: 'You',
+      de: 'Du',
+      bs: 'Ti',
+      hr: 'Ti',
+      sr: 'Ti',
+      es: 'Tu',
+      fr: 'Vous',
+      it: 'Tu',
+    },
     groupChatLoadError: {
       en: 'Error loading group chat.',
       de: 'Fehler beim Laden des Gruppenchats.',

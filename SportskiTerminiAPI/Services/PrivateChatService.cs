@@ -206,13 +206,20 @@ namespace SportskiTerminiAPI.Services
 
             await _privateChatRepository.SoftDeleteMessageAsync(message);
 
+            var newLatestMessage = await _privateChatRepository.GetLatestNonDeletedMessageAsync(conversationId);
+
             await _hubContext.Clients
                 .Group(ChatHub.GetConversationChannelName(conversationId.ToString()))
                 .SendAsync("ReceivePrivateMessageDeleted", new MessageDeletedDto
                 {
                     MessageId = messageId,
                     GroupId = null,
-                    ConversationId = conversationId
+                    ConversationId = conversationId,
+                    IsChatNowEmpty = newLatestMessage == null,
+                    UpdatedPreviewText = newLatestMessage?.MessageText,
+                    UpdatedPreviewCreatedAt = newLatestMessage != null
+                        ? BosniaTimeHelper.ToSarajevoOffset(newLatestMessage.CreatedAt)
+                        : null
                 });
 
             return ServiceResult.Ok();
@@ -425,6 +432,7 @@ namespace SportskiTerminiAPI.Services
                 IsPinned = message.IsPinned,
                 PinnedAt = message.PinnedAt.HasValue ? BosniaTimeHelper.ToSarajevoOffset(message.PinnedAt.Value) : null,
                 ReplyToMessageId = message.ReplyToMessageId,
+                ReplyToSenderUserId = message.ReplyToMessage?.SenderUserId,
                 ReplyToSenderName = message.ReplyToMessage != null
                     ? (!string.IsNullOrWhiteSpace(message.ReplyToMessage.SenderUser?.FullName)
                         ? message.ReplyToMessage.SenderUser.FullName

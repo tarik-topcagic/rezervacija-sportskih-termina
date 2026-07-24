@@ -282,6 +282,18 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     return message.sendStatus === 'failed';
   }
 
+  isFirstInSenderRun(index: number): boolean {
+    return index === 0 || this.messages[index - 1].senderUserId !== this.messages[index].senderUserId;
+  }
+
+  getDisplayName(senderUserId: string | null | undefined, senderName: string | null | undefined): string {
+    if (!senderName) {
+      return '';
+    }
+
+    return senderUserId === this.currentUserId ? this.languageService.translate('you') : senderName;
+  }
+
   startReply(message: GroupChatMessage): void {
     this.replyTarget = message;
     this.messageInput?.nativeElement.focus();
@@ -291,11 +303,6 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
     this.replyTarget = null;
   }
 
-  // Mobile swipe-to-reply. Only one bubble can be mid-drag at a time (one finger, one
-  // touch sequence), so a single active-id + offset pair is enough -- no need for a
-  // map keyed by message. The directive reports raw signed deltas without knowing
-  // which message it's attached to or that ownership even exists; direction gating
-  // (left-only for own messages, right-only for received) happens here instead.
   private swipingMessageId: number | null = null;
   private swipeOffsetPx = 0;
 
@@ -753,7 +760,7 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadChatListItems(): void {
-    this.chatInboxService.getInboxItems().subscribe({
+    this.chatInboxService.getInboxItems(this.currentUserId).subscribe({
       next: (items) => {
         this.chatListItems = items;
         this.highlightedChatListKeys = createChatListHighlightedKeys(items);
@@ -1049,7 +1056,13 @@ export class GroupChatComponent implements OnInit, AfterViewInit, OnDestroy {
       isCurrentOpenChat: notification.type === 'group' && notification.groupId === this.group?.id,
       createItem: (incomingNotification, shouldHighlight) =>
         incomingNotification.type === 'group'
-          ? createGroupChatListItemFromNotification(incomingNotification, shouldHighlight, this.group)
+          ? createGroupChatListItemFromNotification(
+              incomingNotification,
+              shouldHighlight,
+              this.group,
+              this.currentUserId,
+              (key) => this.languageService.translate(key),
+            )
           : createPrivateChatListItemFromNotification(incomingNotification, shouldHighlight, null),
     });
 
